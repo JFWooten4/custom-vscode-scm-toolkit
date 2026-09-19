@@ -52,3 +52,63 @@
 .monaco-workbench .part.panel .scm-view .scm-editor:has(> .scm-toolkit-branch) > .scm-editor-container {
     outline: none;
 }
+
+.scm-view .scm-editor > .scm-toolkit-push {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 27px;
+    width: 27px;
+    height: 26px;
+    border-left: 1px solid var(--vscode-widget-border, transparent);
+    cursor: pointer;
+}
+
+.scm-view .scm-editor > .scm-toolkit-push[hidden] {
+    display: none;
+}
+
+.scm-toolkit-push-checkbox {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+}
+
+.scm-toolkit-push-mark {
+    position: relative;
+    width: 13px;
+    height: 13px;
+    box-sizing: border-box;
+    border: 1px solid var(--vscode-input-border, var(--vscode-widget-border));
+    border-radius: 3px;
+    background: var(--vscode-input-background);
+}
+
+.scm-toolkit-push-checkbox:checked + .scm-toolkit-push-mark::after {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 0;
+    width: 4px;
+    height: 8px;
+    border: solid var(--vscode-button-background);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.scm-view .scm-editor > .scm-toolkit-push:hover {
+    background: var(--vscode-toolbar-hoverBackground);
+}
+
+.scm-toolkit-push-checkbox:focus-visible + .scm-toolkit-push-mark {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: 1px;
+}
+
+.scm-toolkit-push-checkbox:disabled + .scm-toolkit-push-mark {
+    opacity: .6;
+    cursor: default;
+}
