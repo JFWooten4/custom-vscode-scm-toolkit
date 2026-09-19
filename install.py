@@ -4,11 +4,80 @@
 import argparse
 import json
 import re
+import subprocess
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 START = '\n/* scm-toolkit:start */\n'
 END = '\n/* scm-toolkit:end */\n'
+
+DEFAULT_SETTINGS = {
+    "branchPicker": True,
+    "shortPlaceholder": True,
+    "commitAndPush": True,
+    "branchCleanup": True,
+    "hideOutgoingSyncCount": True,
+    "defaultBranch": "main",
+    "remote": "origin",
+}
+
+
+def read_git_bool(key, default):
+    try:
+        result = subprocess.run(
+            ["git", "config", "--global", "--type=bool", "--get", key],
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError:
+        return default
+
+    if result.returncode == 1:
+        return default
+    if result.returncode != 0:
+        raise RuntimeError(f"Unable to read global Git config key {key}: {result.stderr.strip()}")
+    return result.stdout.strip() == "true"
+
+
+def read_git_string(key, default):
+    try:
+        result = subprocess.run(
+            ["git", "config", "--global", "--get", key],
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError:
+        return default
+
+    if result.returncode == 1:
+        return default
+    if result.returncode != 0:
+        raise RuntimeError(f"Unable to read global Git config key {key}: {result.stderr.strip()}")
+    value = result.stdout.strip()
+    return value or default
+
+
+def load_settings():
+    return {
+        "branchPicker": read_git_bool("scm-toolkit.branch-picker", DEFAULT_SETTINGS["branchPicker"]),
+        "shortPlaceholder": read_git_bool(
+            "scm-toolkit.short-placeholder", DEFAULT_SETTINGS["shortPlaceholder"]
+        ),
+        "commitAndPush": read_git_bool(
+            "scm-toolkit.commit-and-push", DEFAULT_SETTINGS["commitAndPush"]
+        ),
+        "branchCleanup": read_git_bool(
+            "scm-toolkit.branch-cleanup", DEFAULT_SETTINGS["branchCleanup"]
+        ),
+        "hideOutgoingSyncCount": read_git_bool(
+            "scm-toolkit.hide-outgoing-sync-count",
+            DEFAULT_SETTINGS["hideOutgoingSyncCount"],
+        ),
+        "defaultBranch": read_git_string(
+            "scm-toolkit.default-branch", DEFAULT_SETTINGS["defaultBranch"]
+        ),
+        "remote": read_git_string("scm-toolkit.remote", DEFAULT_SETTINGS["remote"]),
+    }
 
 
 def edits(js=None):
@@ -39,7 +108,7 @@ def edits(js=None):
             "this.disposables.add(this.toolbar)}static{this.ValidationTimeouts=",
             "this.disposables.add(this.toolbar);this.scmToolkitControls="
             f"i.invokeFunction(accessor=>scmToolkitCreateControls(this,{observe},"
-            f"accessor.get({command}),accessor.get({notification})))}}"
+            f"accessor.get({command}),accessor.get({notification}),scmToolkitSettings))}}"
             "static{this.ValidationTimeouts=",
         ),
         (
@@ -72,7 +141,7 @@ def strip_payload(text):
     return before + after
 
 
-def transform(js, css, remove=False):
+def transform(js, css, remove=False, settings=None):
     installed = START in js
     if installed != (START in css):
         raise ValueError("Incomplete toolkit installation; refusing to overwrite it.")
@@ -99,8 +168,12 @@ def transform(js, css, remove=False):
             raise ValueError("Unsupported VS Code build: SCM widget anchor does not match.")
         js = js.replace(original, replacement, 1)
 
+    settings = load_settings() if settings is None else settings
     js += (
         START
+        + "const scmToolkitSettings = "
+        + json.dumps(settings, separators=(",", ":"))
+        + ";\\n"
         + "/* edits:"
         + json.dumps(changes)
         + " */\n"
