@@ -72,10 +72,20 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     deleteButton.className = 'scm-toolkit-delete-branch codicon codicon-trash';
     deleteButton.hidden = true;
 
+    const deleteTooltip = doc.createElement('span');
+    deleteTooltip.className = 'scm-toolkit-tooltip';
+    deleteTooltip.setAttribute('aria-hidden', 'true');
+    deleteButton.append(deleteTooltip);
+
     const autocompleteButton = doc.createElement('button');
     autocompleteButton.type = 'button';
     autocompleteButton.className = 'scm-toolkit-autocomplete codicon codicon-sparkle';
     autocompleteButton.hidden = true;
+
+    const autocompleteTooltip = doc.createElement('span');
+    autocompleteTooltip.className = 'scm-toolkit-tooltip';
+    autocompleteTooltip.setAttribute('aria-hidden', 'true');
+    autocompleteButton.append(autocompleteTooltip);
 
     widget.element.prepend(branchButton);
     widget.element.append(pushControl, deleteButton, autocompleteButton);
@@ -126,8 +136,8 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         const description = enabled
             ? 'Turn off inline autocomplete'
             : 'Turn on inline autocomplete';
-        autocompleteButton.title = description;
         autocompleteButton.setAttribute('aria-label', description);
+        autocompleteTooltip.textContent = description;
     };
 
     const toggleAutocomplete = async event => {
@@ -172,17 +182,17 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             || currentBranch === settings.defaultBranch;
 
         if (!currentBranch) {
-            deleteButton.title = '';
             deleteButton.removeAttribute('aria-label');
+            deleteTooltip.textContent = '';
         } else if (currentBranch === settings.defaultBranch) {
             const description = `${settings.defaultBranch} cannot be deleted`;
-            deleteButton.title = description;
             deleteButton.setAttribute('aria-label', description);
+            deleteTooltip.textContent = description;
         } else {
             const description =
                 `Delete local branch ${currentBranch} if it no longer exists on ${settings.remote}`;
-            deleteButton.title = description;
             deleteButton.setAttribute('aria-label', description);
+            deleteTooltip.textContent = description;
         }
     };
 
