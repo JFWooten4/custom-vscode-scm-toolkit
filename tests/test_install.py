@@ -20,15 +20,15 @@ SETTINGS = {
 def workbench_fixture():
     return "".join(
         [
-            'fe=svc("commandService")',
-            'Le=svc("notificationService")',
-            'Xe=svc("configurationService")',
-            'function pe(s,o=aa.ofCaller()){return new bb(new cc(void 0,void 0,s),s,void 0,o)}',
+            'cmd=svc("commandService")',
+            'notify=svc("notificationService")',
+            'config=svc("configurationService")',
+            'function watch(s,o=source.ofCaller()){return new first(new second(void 0,void 0,s),s,void 0,o)}',
             'this.disposables.add(this.toolbar)}static{this.ValidationTimeouts=',
             'this.inputEditor.setModel(void 0),this.model=void 0;return}'
             'let e=o.repository.provider.inputBoxTextModel;',
             'this.toolbar.setInput(o),this.model={input:o,textModel:e}}get selections()',
-            't=new xi(this.element.clientWidth-e,o);if(t.width<0)',
+            't=new size(this.element.clientWidth-e,o);if(t.width<0)',
         ]
     )
 

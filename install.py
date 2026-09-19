@@ -154,7 +154,7 @@ def transform(js, css, remove=False, settings=None):
 
     if installed:
         payload = js.split(START, 1)[1].split(END, 1)[0]
-        saved = re.search(r"^/\\* edits:(.*?) \\*/$", payload, re.MULTILINE)
+        saved = re.search(r"^/\* edits:(.*?) \*/$", payload, re.MULTILINE)
         previous = json.loads(saved.group(1)) if saved else edits()
         js, css = strip_payload(js), strip_payload(css)
 
