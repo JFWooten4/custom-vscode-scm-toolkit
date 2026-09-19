@@ -1,5 +1,5 @@
 // Runs inside VS Code's SCM input widget; services and observables are supplied by install.py.
-function scmToolkitCreateControls(widget, observe, commands, notifications, settings) {
+function scmToolkitCreateControls(widget, observe, commands, notifications, configuration, settings) {
     const doc = widget.element.ownerDocument;
     const branchButton = doc.createElement('button');
     branchButton.type = 'button';
@@ -14,10 +14,58 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, sett
     arrow.setAttribute('aria-hidden', 'true');
 
     branchButton.append(branchLabel, arrow);
+
+    const pushControl = doc.createElement('label');
+    pushControl.className = 'scm-toolkit-push';
+    pushControl.hidden = true;
+    pushControl.title = 'Commit and push after a successful commit';
+
+    const pushCheckbox = doc.createElement('input');
+    pushCheckbox.type = 'checkbox';
+    pushCheckbox.className = 'scm-toolkit-push-checkbox';
+    pushCheckbox.setAttribute('aria-label', 'Commit and push');
+
+    const pushMark = doc.createElement('span');
+    pushMark.className = 'scm-toolkit-push-mark';
+    pushMark.setAttribute('aria-hidden', 'true');
+
+    pushControl.append(pushCheckbox, pushMark);
     widget.element.prepend(branchButton);
+    widget.element.append(pushControl);
 
     let currentCommand;
     let pending = false;
+    let updatingPush = false;
+
+    const refreshPush = () => {
+        pushCheckbox.checked = configuration.getValue('git.postCommitCommand') === 'push';
+    };
+
+    const changePush = async event => {
+        event.stopPropagation();
+        if (updatingPush) return;
+
+        updatingPush = true;
+        pushCheckbox.disabled = true;
+        const enabled = pushCheckbox.checked;
+        try {
+            await configuration.updateValue(
+                'git.postCommitCommand',
+                enabled ? 'push' : 'none'
+            );
+        } catch (error) {
+            notifications.error(error);
+        } finally {
+            updatingPush = false;
+            pushCheckbox.disabled = false;
+            refreshPush();
+        }
+    };
+
+    pushCheckbox.addEventListener('change', changePush);
+    widget.disposables.add(configuration.onDidChangeConfiguration(event => {
+        if (event.affectsConfiguration('git.postCommitCommand')) refreshPush();
+    }));
 
     const openBranchPicker = async event => {
         event.stopPropagation();
@@ -40,21 +88,35 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, sett
     widget.disposables.add({
         dispose() {
             branchButton.removeEventListener('click', openBranchPicker);
+            pushCheckbox.removeEventListener('change', changePush);
             branchButton.remove();
+            pushControl.remove();
         }
     });
 
     return {
         width() {
-            return branchButton.hidden ? 0 : branchButton.getBoundingClientRect().width;
+            const branchWidth = branchButton.hidden
+                ? 0
+                : branchButton.getBoundingClientRect().width;
+            const pushWidth = pushControl.hidden
+                ? 0
+                : pushControl.getBoundingClientRect().width;
+            return branchWidth + pushWidth;
         },
 
         bind(input) {
             currentCommand = undefined;
             branchButton.hidden = true;
             branchButton.disabled = true;
+            pushControl.hidden = true;
 
             if (!input || input.repository.provider.providerId !== 'git') return;
+
+            if (settings.commitAndPush) {
+                pushControl.hidden = false;
+                refreshPush();
+            }
 
             if (settings.shortPlaceholder) {
                 const keepMessagePlaceholderShort = () => {
