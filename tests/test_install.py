@@ -60,6 +60,8 @@ class TransformTests(unittest.TestCase):
         )
         self.assertIn("editor.inlineSuggest.enabled", js)
         self.assertIn("scm-toolkit-autocomplete", css)
+        self.assertEqual(js.count("className = 'scm-toolkit-tooltip'"), 2)
+        self.assertIn(".scm-toolkit-autocomplete:hover > .scm-toolkit-tooltip", css)
         self.assertEqual(js.count(install.START), 1)
         self.assertEqual(js.count(install.END), 1)
         self.assertEqual(css.count(install.START), 1)
