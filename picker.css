@@ -112,3 +112,37 @@
     opacity: .6;
     cursor: default;
 }
+
+.scm-view .scm-editor > .scm-toolkit-delete-branch {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 27px;
+    width: 27px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-left: 1px solid var(--vscode-widget-border, transparent);
+    border-radius: 0 3px 3px 0;
+    background: transparent;
+    color: var(--vscode-descriptionForeground);
+    cursor: pointer;
+}
+
+.scm-view .scm-editor > .scm-toolkit-delete-branch[hidden] {
+    display: none;
+}
+
+.scm-view .scm-editor > .scm-toolkit-delete-branch:hover:not(:disabled) {
+    background: var(--vscode-toolbar-hoverBackground);
+}
+
+.scm-view .scm-editor > .scm-toolkit-delete-branch:focus-visible {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+.scm-view .scm-editor > .scm-toolkit-delete-branch:disabled {
+    opacity: .6;
+    cursor: default;
+}
