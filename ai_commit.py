@@ -118,6 +118,25 @@ def feature_enabled() -> bool:
     return git_config_bool("scm-toolkit.ai-commit", True)
 
 
+def default_branch_description_enabled() -> bool:
+    return git_config_bool("scm-toolkit.ai-default-branch-description", True)
+
+
+def configured_default_branch() -> str:
+    return git_config_string("scm-toolkit.default-branch", "main")
+
+
+def current_branch() -> str:
+    return git_output("symbolic-ref", "--quiet", "--short", "HEAD").strip()
+
+
+def should_add_default_branch_description() -> bool:
+    return (
+        default_branch_description_enabled()
+        and current_branch() == configured_default_branch()
+    )
+
+
 def configured_models() -> tuple[str, str]:
     primary = os.environ.get("SCM_TOOLKIT_AI_MODEL") or git_config_string(
         "scm-toolkit.ai-commit-model", DEFAULT_MODEL
@@ -426,17 +445,33 @@ def installed_local_model_names() -> set[str]:
     return names
 
 
-def prompt_for_diff(stat: str, diff: str, file_context: str = "") -> str:
+def prompt_for_diff(
+    stat: str,
+    diff: str,
+    file_context: str = "",
+    include_description: bool = False,
+) -> str:
     sampled = sample_diff_for_prompt(diff)
     history = recent_subjects()
-    return f"""Write exactly one Git commit subject for the staged changes below.
+    if include_description:
+        task = "Write a Git commit subject and a concise description for the staged changes below."
+        shape_rules = """- first line is the subject
+- leave one blank line after the subject
+- follow with one or two complete sentences describing the substantive changes
+- explain the purpose or effect when the supplied changes make it clear
+- do not use bullets, headings, or labels in the description"""
+    else:
+        task = "Write exactly one Git commit subject for the staged changes below."
+        shape_rules = "- output only the subject line"
+
+    return f"""{task}
 
 Output rules:
-- output only the subject line
-- maximum 72 characters
-- use concise imperative wording
+{shape_rules}
+- subject maximum 72 characters
+- use concise imperative wording for the subject
 - describe the intent rather than listing files
-- no markdown, quotes, explanation, or trailing period
+- no markdown, quotes, or trailing period in the subject
 - use staged file context for binary, document, image, and rename changes
 - do not invent contents that are not represented in the supplied text
 - when the diff is sampled, infer the overall intent from all sampled sections
@@ -453,7 +488,6 @@ Staged file context:
 Staged diff:
 {sampled}
 """
-
 def sanitize_title(text: str) -> str:
     line = next((line.strip() for line in text.splitlines() if line.strip()), "")
     line = re.sub(r"^(?:[-*]\s+|`+|[\"'])", "", line)
@@ -467,6 +501,51 @@ def sanitize_title(text: str) -> str:
     return line
 
 
+def sanitize_description(text: str) -> str:
+    cleaned = re.sub(
+        r"^\s*(?:body|description)\s*:\s*",
+        "",
+        text.strip(),
+        flags=re.IGNORECASE,
+    )
+    cleaned = re.sub(r"(?m)^\s*[-*]\s+", "", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip(" \`\\\"'")
+    if not cleaned:
+        return ""
+
+    sentences = [
+        sentence.strip()
+        for sentence in re.split(r"(?<=[.!?])\s+", cleaned)
+        if sentence.strip()
+    ]
+    description = " ".join(sentences[:2]).strip()
+    if description and description[-1] not in ".!?":
+        description += "."
+
+    if len(description) > 400:
+        shortened = description[:400]
+        if " " in shortened:
+            shortened = shortened.rsplit(" ", 1)[0]
+        description = shortened.rstrip(" ,;:-.") + "."
+    return description
+
+
+def sanitize_generated_message(
+    text: str, include_description: bool = False
+) -> tuple[str, str]:
+    lines = [line.strip() for line in text.splitlines()]
+    first = next((index for index, line in enumerate(lines) if line), None)
+    if first is None:
+        return "", ""
+
+    title = sanitize_title(lines[first])
+    if not include_description:
+        return title, ""
+
+    description = sanitize_description(" ".join(lines[first + 1 :]))
+    return title, description
+
+
 def fallback_title(files: list[str]) -> str:
     if len(files) == 1:
         return sanitize_title(f"Update {os.path.basename(files[0])}")
@@ -475,7 +554,12 @@ def fallback_title(files: list[str]) -> str:
     return "Update staged changes"
 
 
-def generate_title(stat: str, diff: str, files: list[str]) -> str:
+def generate_message(
+    stat: str,
+    diff: str,
+    files: list[str],
+    include_description: bool = False,
+) -> tuple[str, str]:
     installed = installed_local_model_names()
     model, low_memory_mode = selected_model(installed)
     primary, low_memory = configured_models()
@@ -492,7 +576,7 @@ def generate_title(stat: str, diff: str, files: list[str]) -> str:
                 "using fallback title"
             )
         print(f"scm-toolkit: {detail}", file=sys.stderr)
-        return fallback_title(files)
+        return fallback_title(files), ""
 
     file_context = staged_file_context(files)
     try:
@@ -500,18 +584,26 @@ def generate_title(stat: str, diff: str, files: list[str]) -> str:
             "/api/generate",
             {
                 "model": model,
-                "prompt": prompt_for_diff(stat, diff, file_context),
+                "prompt": prompt_for_diff(
+                    stat,
+                    diff,
+                    file_context,
+                    include_description=include_description,
+                ),
                 "stream": False,
                 "options": {
                     "num_ctx": NUM_CTX,
                     "temperature": 0.2,
-                    "num_predict": 40,
+                    "num_predict": 160 if include_description else 40,
                 },
             },
         )
-        title = sanitize_title(str(response.get("response", "")))
+        title, description = sanitize_generated_message(
+            str(response.get("response", "")),
+            include_description=include_description,
+        )
         if title:
-            return title
+            return title, description
     except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
         print(
             f"scm-toolkit: local model unavailable ({exc}); using fallback title",
@@ -519,11 +611,15 @@ def generate_title(stat: str, diff: str, files: list[str]) -> str:
         )
     except Exception as exc:
         print(
-            f"scm-toolkit: title generation failed ({exc}); using fallback title",
+            f"scm-toolkit: commit generation failed ({exc}); using fallback title",
             file=sys.stderr,
         )
 
-    return fallback_title(files)
+    return fallback_title(files), ""
+
+
+def generate_title(stat: str, diff: str, files: list[str]) -> str:
+    return generate_message(stat, diff, files)[0]
 
 def main() -> None:
     global GIT_GLOBAL_ARGS
@@ -545,8 +641,16 @@ def main() -> None:
     if not stat and not diff:
         os.execv(REAL_GIT, [REAL_GIT, *argv])
 
-    title = generate_title(stat, diff, files)
-    os.execv(REAL_GIT, [REAL_GIT, *argv, "-m", title])
+    title, description = generate_message(
+        stat,
+        diff,
+        files,
+        include_description=should_add_default_branch_description(),
+    )
+    message_args = ["-m", title]
+    if description:
+        message_args.extend(["-m", description])
+    os.execv(REAL_GIT, [REAL_GIT, *argv, *message_args])
 
 
 if __name__ == "__main__":

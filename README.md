@@ -77,6 +77,7 @@ git config --global scm-toolkit.autocomplete-toggle true
 git config --global scm-toolkit.hide-outgoing-sync-count true
 git config --global scm-toolkit.blank-state-refresh true
 git config --global scm-toolkit.ai-commit true
+git config --global scm-toolkit.ai-default-branch-description true
 git config --global scm-toolkit.ai-commit-model qwen2.5-coder:7b
 git config --global scm-toolkit.ai-commit-low-memory-model qwen2.5-coder:3b
 git config --global scm-toolkit.ai-low-memory-gib 4
@@ -97,6 +98,7 @@ The equivalent `~/.gitconfig` block is:
     hide-outgoing-sync-count = true
     blank-state-refresh = true
     ai-commit = true
+    ai-default-branch-description = true
     ai-commit-model = qwen2.5-coder:7b
     ai-commit-low-memory-model = qwen2.5-coder:3b
     ai-low-memory-gib = 4
@@ -128,7 +130,7 @@ The installer places a Git wrapper at `~/.local/bin/scm-toolkit-git`. To make VS
 
 Use the absolute path shown by `python3 install.py`; do not rely on `~` expansion in the setting.
 
-When `ai-commit` is enabled, clicking VS Code's normal Commit button with a blank message summarizes the staged diff through the configured local Ollama model and commits with the generated subject. A manually entered message, amend/fixup/squash/reuse-message mode, path-limited commit, or `--all` keeps normal Git behavior.
+When `ai-commit` is enabled, clicking VS Code's normal Commit button with a blank message summarizes the staged diff through the configured local Ollama model. On the configured `default-branch` (normally `main`), `ai-default-branch-description = true` asks the model for a subject plus one or two substantive sentences describing what changed and, when clear from the diff, its purpose or effect. Other branches keep the subject-only format. A manually entered message, amend/fixup/squash/reuse-message mode, path-limited commit, or `--all` keeps normal Git behavior.
 
 **Ollama is required for this feature.** Run a local Ollama server and install the models you select before relying on AI-generated subjects. The wrapper talks only to Ollama on `127.0.0.1:11434`, bypasses proxy settings for that local request, and checks the local model inventory before generation. If the selected model or Ollama is unavailable, it uses a deterministic fallback subject. The prompt is generic and repository-scoped.
 
@@ -164,6 +166,12 @@ Disable generation without removing the wrapper:
 
 ```sh
 git config --global scm-toolkit.ai-commit false
+```
+
+Keep AI subjects but disable the extra default-branch description:
+
+```sh
+git config --global scm-toolkit.ai-default-branch-description false
 ```
 
 Disable and remove the installed picker on the next installer run:

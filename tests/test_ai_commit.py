@@ -35,6 +35,29 @@ class ConfigurationTests(unittest.TestCase):
     def test_ai_commit_can_be_disabled_globally(self, _config):
         self.assertFalse(ai_commit.feature_enabled())
 
+    @patch.object(ai_commit, "git_config_bool", return_value=False)
+    def test_default_branch_description_can_be_disabled(self, _config):
+        self.assertFalse(ai_commit.default_branch_description_enabled())
+
+    def test_description_is_limited_to_the_configured_default_branch(self):
+        with patch.object(
+            ai_commit, "default_branch_description_enabled", return_value=True
+        ), patch.object(
+            ai_commit, "configured_default_branch", return_value="main"
+        ), patch.object(
+            ai_commit, "current_branch", return_value="main"
+        ):
+            self.assertTrue(ai_commit.should_add_default_branch_description())
+
+        with patch.object(
+            ai_commit, "default_branch_description_enabled", return_value=True
+        ), patch.object(
+            ai_commit, "configured_default_branch", return_value="main"
+        ), patch.object(
+            ai_commit, "current_branch", return_value="feature/test"
+        ):
+            self.assertFalse(ai_commit.should_add_default_branch_description())
+
     def test_models_can_be_selected_from_git_config(self):
         values = {
             "scm-toolkit.ai-commit-model": "primary:test",
@@ -108,6 +131,36 @@ class TitleTests(unittest.TestCase):
         self.assertIn("Recent repository subjects:", prompt)
         self.assertIn("Output rules:", prompt)
         self.assertIn("Staged diff:", prompt)
+
+    @patch.object(ai_commit, "recent_subjects", return_value="Update parser")
+    def test_default_branch_prompt_requests_one_or_two_sentences(self, _subjects):
+        prompt = ai_commit.prompt_for_diff(
+            "1 file changed",
+            "diff --git a/a b/a",
+            include_description=True,
+        )
+        self.assertIn("one or two complete sentences", prompt)
+        self.assertIn("leave one blank line after the subject", prompt)
+
+    def test_description_sanitizer_keeps_at_most_two_sentences(self):
+        description = ai_commit.sanitize_description(
+            "Body: First substantive sentence. Second useful sentence. Third extra sentence."
+        )
+        self.assertEqual(
+            description,
+            "First substantive sentence. Second useful sentence.",
+        )
+
+    def test_generated_message_separates_subject_and_description(self):
+        title, description = ai_commit.sanitize_generated_message(
+            "Add useful behavior\n\nExplain what changed. Explain why it matters.",
+            include_description=True,
+        )
+        self.assertEqual(title, "Add useful behavior")
+        self.assertEqual(
+            description,
+            "Explain what changed. Explain why it matters.",
+        )
 
     def test_sanitize_title_limits_output(self):
         title = ai_commit.sanitize_title(

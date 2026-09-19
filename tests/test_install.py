@@ -16,6 +16,7 @@ SETTINGS = {
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
     "aiCommit": True,
+    "aiDefaultBranchDescription": True,
     "aiCommitModel": "qwen2.5-coder:7b",
     "aiCommitLowMemoryModel": "qwen2.5-coder:3b",
     "aiLowMemoryGiB": "4",
@@ -88,6 +89,7 @@ class TransformTests(unittest.TestCase):
             '"branchCleanup":true,"autocompleteToggle":true,'
             '"hideOutgoingSyncCount":true,"blankStateRefresh":true,'
             '"aiCommit":true,'
+            '"aiDefaultBranchDescription":true,'
             '"aiCommitModel":"qwen2.5-coder:7b",'
             '"aiCommitLowMemoryModel":"qwen2.5-coder:3b",'
             '"aiLowMemoryGiB":"4","aiModelPicker":true,'
