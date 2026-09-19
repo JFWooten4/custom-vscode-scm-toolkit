@@ -1,5 +1,5 @@
 // Runs inside VS Code's SCM input widget; services and observables are supplied by install.py.
-function scmToolkitCreateControls(widget, observe, commands, notifications) {
+function scmToolkitCreateControls(widget, observe, commands, notifications, settings) {
     const doc = widget.element.ownerDocument;
     const branchButton = doc.createElement('button');
     branchButton.type = 'button';
@@ -56,11 +56,15 @@ function scmToolkitCreateControls(widget, observe, commands, notifications) {
 
             if (!input || input.repository.provider.providerId !== 'git') return;
 
-            const keepMessagePlaceholderShort = () => {
-                if (input.placeholder !== 'Message') input.placeholder = 'Message';
-            };
-            keepMessagePlaceholderShort();
-            widget.repositoryDisposables.add(input.onDidChangePlaceholder(keepMessagePlaceholderShort));
+            if (settings.shortPlaceholder) {
+                const keepMessagePlaceholderShort = () => {
+                    if (input.placeholder !== 'Message') input.placeholder = 'Message';
+                };
+                keepMessagePlaceholderShort();
+                widget.repositoryDisposables.add(
+                    input.onDidChangePlaceholder(keepMessagePlaceholderShort)
+                );
+            }
 
             const provider = input.repository.provider;
             widget.repositoryDisposables.add(observe(reader => {
@@ -71,7 +75,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications) {
                 currentCommand = command;
 
                 const branch = command?.title?.replace(/\$\([^)]+\)/g, '').trim();
-                branchButton.hidden = !branch;
+                branchButton.hidden = !settings.branchPicker || !branch;
                 branchButton.disabled = pending || !command?.id;
                 branchLabel.textContent = branch ?? '';
                 branchButton.title = command?.tooltip || `Select branch: ${branch ?? ''}`;
