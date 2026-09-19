@@ -81,7 +81,7 @@ def load_settings():
 
 
 def edits(js=None):
-    command, notification, observe, dimension = "fe", "Le", "pe", "xi"
+    command, notification, configuration, observe, dimension = "fe", "Le", "Xe", "pe", "xi"
 
     if js is not None:
         ident = r"[A-Za-z_$][\\w$]*"
@@ -94,6 +94,7 @@ def edits(js=None):
 
         command = unique(r"(" + ident + r')=\\w+\\("commandService"\\)')
         notification = unique(r"(" + ident + r')=\\w+\\("notificationService"\\)')
+        configuration = unique(r"(" + ident + r')=\\w+\\("configurationService"\\)')
         observe = unique(
             r"function (" + ident + r")\\(s,o=" + ident
             + r"\\.ofCaller\\(\\)\\)\\{return new " + ident
@@ -108,7 +109,8 @@ def edits(js=None):
             "this.disposables.add(this.toolbar)}static{this.ValidationTimeouts=",
             "this.disposables.add(this.toolbar);this.scmToolkitControls="
             f"i.invokeFunction(accessor=>scmToolkitCreateControls(this,{observe},"
-            f"accessor.get({command}),accessor.get({notification}),scmToolkitSettings))}}"
+            f"accessor.get({command}),accessor.get({notification}),"
+            f"accessor.get({configuration}),scmToolkitSettings))}}"
             "static{this.ValidationTimeouts=",
         ),
         (
