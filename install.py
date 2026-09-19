@@ -175,7 +175,7 @@ def transform(js, css, remove=False, settings=None):
         START
         + "const scmToolkitSettings = "
         + json.dumps(settings, separators=(",", ":"))
-        + ";\\n"
+        + ";\n"
         + "/* edits:"
         + json.dumps(changes)
         + " */\n"
