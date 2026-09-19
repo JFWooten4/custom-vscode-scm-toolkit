@@ -8,6 +8,7 @@ Current features:
 - shorten the commit-message placeholder to `Message`
 - optionally show a commit-and-push checkbox backed by VS Code's `git.postCommitCommand`
 - optionally show a guarded local-branch cleanup button
+- optionally show a quick toggle for VS Code inline autocomplete
 - optionally hide the outgoing commit count from the built-in Sync action
 
 The patch is intentionally narrow: it does not copy or manage unrelated editor settings.
@@ -69,6 +70,7 @@ git config --global scm-toolkit.branch-picker true
 git config --global scm-toolkit.short-placeholder true
 git config --global scm-toolkit.commit-and-push true
 git config --global scm-toolkit.branch-cleanup true
+git config --global scm-toolkit.autocomplete-toggle true
 git config --global scm-toolkit.hide-outgoing-sync-count true
 git config --global scm-toolkit.default-branch main
 git config --global scm-toolkit.remote origin
@@ -82,12 +84,13 @@ The equivalent `~/.gitconfig` block is:
     short-placeholder = true
     commit-and-push = true
     branch-cleanup = true
+    autocomplete-toggle = true
     hide-outgoing-sync-count = true
     default-branch = main
     remote = origin
 ```
 
-All five feature switches default to `true`. The default protected branch is `main`, and the default remote is `origin`.
+All six feature switches default to `true`. The default protected branch is `main`, and the default remote is `origin`.
 
 After changing toolkit Git config, rerun:
 
@@ -102,6 +105,12 @@ Then reload Visual Studio Code. The installer resolves the Git-config values and
 When `commit-and-push` is enabled, the checkbox mirrors VS Code's `git.postCommitCommand` setting. Checking it sets the value to `push`; unchecking it sets the value to `none`.
 
 Disabling the toolkit feature hides the checkbox. It does not silently rewrite an existing `git.postCommitCommand` value.
+
+### Autocomplete toggle
+
+When `autocomplete-toggle` is enabled, the sparkle button appears after the other
+SCM controls. It toggles VS Code's `editor.inlineSuggest.enabled` setting. A slash
+through the sparkle means inline autocomplete is off.
 
 ### Branch cleanup
 

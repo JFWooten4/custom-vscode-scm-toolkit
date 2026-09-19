@@ -72,8 +72,13 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     deleteButton.className = 'scm-toolkit-delete-branch codicon codicon-trash';
     deleteButton.hidden = true;
 
+    const autocompleteButton = doc.createElement('button');
+    autocompleteButton.type = 'button';
+    autocompleteButton.className = 'scm-toolkit-autocomplete codicon codicon-sparkle';
+    autocompleteButton.hidden = true;
+
     widget.element.prepend(branchButton);
-    widget.element.append(pushControl, deleteButton);
+    widget.element.append(pushControl, deleteButton, autocompleteButton);
 
     let currentCommand;
     let currentBranch;
@@ -82,6 +87,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     let pending = false;
     let deletingBranch = false;
     let updatingPush = false;
+    let updatingAutocomplete = false;
 
     const refreshPush = () => {
         pushCheckbox.checked = configuration.getValue('git.postCommitCommand') === 'push';
@@ -111,6 +117,42 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     pushCheckbox.addEventListener('change', changePush);
     widget.disposables.add(configuration.onDidChangeConfiguration(event => {
         if (event.affectsConfiguration('git.postCommitCommand')) refreshPush();
+    }));
+
+    const refreshAutocomplete = () => {
+        const enabled = configuration.getValue('editor.inlineSuggest.enabled') !== false;
+        autocompleteButton.classList.toggle('scm-toolkit-autocomplete-off', !enabled);
+        autocompleteButton.setAttribute('aria-pressed', String(!enabled));
+        const description = enabled
+            ? 'Turn off inline autocomplete'
+            : 'Turn on inline autocomplete';
+        autocompleteButton.title = description;
+        autocompleteButton.setAttribute('aria-label', description);
+    };
+
+    const toggleAutocomplete = async event => {
+        event.stopPropagation();
+        if (updatingAutocomplete) return;
+
+        updatingAutocomplete = true;
+        autocompleteButton.disabled = true;
+        const enabled = configuration.getValue('editor.inlineSuggest.enabled') !== false;
+        try {
+            await configuration.updateValue('editor.inlineSuggest.enabled', !enabled);
+        } catch (error) {
+            notifications.error(error);
+        } finally {
+            updatingAutocomplete = false;
+            autocompleteButton.disabled = false;
+            refreshAutocomplete();
+        }
+    };
+
+    autocompleteButton.addEventListener('click', toggleAutocomplete);
+    widget.disposables.add(configuration.onDidChangeConfiguration(event => {
+        if (event.affectsConfiguration('editor.inlineSuggest.enabled')) {
+            refreshAutocomplete();
+        }
     }));
 
     const refreshBranchControls = () => {
@@ -231,9 +273,11 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             branchButton.removeEventListener('click', openBranchPicker);
             deleteButton.removeEventListener('click', deleteBranch);
             pushCheckbox.removeEventListener('change', changePush);
+            autocompleteButton.removeEventListener('click', toggleAutocomplete);
             branchButton.remove();
             pushControl.remove();
             deleteButton.remove();
+            autocompleteButton.remove();
         }
     });
 
@@ -248,7 +292,10 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             const deleteWidth = deleteButton.hidden
                 ? 0
                 : deleteButton.getBoundingClientRect().width;
-            return branchWidth + pushWidth + deleteWidth;
+            const autocompleteWidth = autocompleteButton.hidden
+                ? 0
+                : autocompleteButton.getBoundingClientRect().width;
+            return branchWidth + pushWidth + deleteWidth + autocompleteWidth;
         },
 
         bind(input) {
@@ -261,6 +308,8 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             pushControl.hidden = true;
             deleteButton.hidden = true;
             deleteButton.disabled = true;
+            autocompleteButton.hidden = true;
+            autocompleteButton.disabled = false;
 
             if (!input || input.repository.provider.providerId !== 'git') return;
 
@@ -268,6 +317,16 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
                 pushControl.hidden = false;
                 refreshPush();
             }
+
+            if (settings.autocompleteToggle) {
+                autocompleteButton.hidden = false;
+                refreshAutocomplete();
+            }
+
+            deleteButton.classList.toggle(
+                'scm-toolkit-has-following-control',
+                !autocompleteButton.hidden
+            );
 
             if (settings.shortPlaceholder) {
                 const keepMessagePlaceholderShort = () => {

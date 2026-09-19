@@ -16,6 +16,7 @@ DEFAULT_SETTINGS = {
     "shortPlaceholder": True,
     "commitAndPush": True,
     "branchCleanup": True,
+    "autocompleteToggle": True,
     "hideOutgoingSyncCount": True,
     "defaultBranch": "main",
     "remote": "origin",
@@ -69,6 +70,9 @@ def load_settings():
         "branchCleanup": read_git_bool(
             "scm-toolkit.branch-cleanup", DEFAULT_SETTINGS["branchCleanup"]
         ),
+        "autocompleteToggle": read_git_bool(
+            "scm-toolkit.autocomplete-toggle", DEFAULT_SETTINGS["autocompleteToggle"]
+        ),
         "hideOutgoingSyncCount": read_git_bool(
             "scm-toolkit.hide-outgoing-sync-count",
             DEFAULT_SETTINGS["hideOutgoingSyncCount"],
@@ -84,7 +88,7 @@ def edits(js=None):
     command, notification, configuration, observe, dimension = "fe", "Le", "Xe", "pe", "xi"
 
     if js is not None:
-        ident = r"[A-Za-z_$][\\w$]*"
+        ident = r"[A-Za-z_$][\w$]*"
 
         def unique(pattern):
             matches = re.findall(pattern, js)
@@ -92,16 +96,16 @@ def edits(js=None):
                 raise ValueError("Unsupported VS Code build: internal API does not match.")
             return matches[0]
 
-        command = unique(r"(" + ident + r')=\\w+\\("commandService"\\)')
-        notification = unique(r"(" + ident + r')=\\w+\\("notificationService"\\)')
-        configuration = unique(r"(" + ident + r')=\\w+\\("configurationService"\\)')
+        command = unique(r"(" + ident + r')=\w+\("commandService"\)')
+        notification = unique(r"(" + ident + r')=\w+\("notificationService"\)')
+        configuration = unique(r"(" + ident + r')=\w+\("configurationService"\)')
         observe = unique(
-            r"function (" + ident + r")\\(s,o=" + ident
-            + r"\\.ofCaller\\(\\)\\)\\{return new " + ident
-            + r"\\(new " + ident + r"\\(void 0,void 0,s\\),s,void 0,o\\)\\}"
+            r"function (" + ident + r")\(s,o=" + ident
+            + r"\.ofCaller\(\)\)\{return new " + ident
+            + r"\(new " + ident + r"\(void 0,void 0,s\),s,void 0,o\)\}"
         )
         dimension = unique(
-            r"t=new (" + ident + r")\\(this\\.element\\.clientWidth-e,o\\);if\\(t\\.width<0\\)"
+            r"t=new (" + ident + r")\(this\.element\.clientWidth-e,o\);if\(t\.width<0\)"
         )
 
     return [
