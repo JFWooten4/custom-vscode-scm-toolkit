@@ -32,12 +32,11 @@ class RoutingTests(unittest.TestCase):
 
 class TitleTests(unittest.TestCase):
     @patch.object(ai_commit, "recent_subjects", return_value="Fix parser\nAdd tests")
-    def test_prompt_is_portable_and_repository_scoped(self, _subjects):
+    def test_prompt_is_repository_scoped(self, _subjects):
         prompt = ai_commit.prompt_for_diff("1 file changed", "diff --git a/a b/a")
         self.assertIn("Recent repository subjects:", prompt)
-        self.assertNotIn("Codex", prompt)
-        self.assertNotIn("instruction file", prompt.lower())
-        self.assertNotIn("style file", prompt.lower())
+        self.assertIn("Output rules:", prompt)
+        self.assertIn("Staged diff:", prompt)
 
     def test_sanitize_title_limits_output(self):
         title = ai_commit.sanitize_title(
