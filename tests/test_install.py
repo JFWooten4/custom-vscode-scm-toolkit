@@ -34,6 +34,19 @@ def workbench_fixture():
 
 
 class TransformTests(unittest.TestCase):
+    def test_controls_use_the_vscode_input_background(self):
+        css = (install.HERE / "picker.css").read_text()
+
+        self.assertEqual(css.count("background: var(--vscode-input-background);"), 4)
+        self.assertNotIn("background: transparent;", css)
+
+    def test_branch_selector_uses_the_vscode_button_colors(self):
+        css = (install.HERE / "picker.css").read_text()
+
+        self.assertIn("background: var(--vscode-button-background);", css)
+        self.assertIn("color: var(--vscode-button-foreground);", css)
+        self.assertIn("background: var(--vscode-button-hoverBackground);", css)
+
     def test_install_injects_valid_settings_line(self):
         js, css = install.transform(workbench_fixture(), "base-css", settings=SETTINGS)
 

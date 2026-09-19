@@ -10,8 +10,8 @@
     border: 0;
     border-right: 1px solid var(--vscode-widget-border, transparent);
     border-radius: 3px 0 0 3px;
-    background: transparent;
-    color: var(--vscode-descriptionForeground);
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
     font: inherit;
     cursor: pointer;
 }
@@ -27,7 +27,7 @@
 }
 
 .scm-view .scm-editor > .scm-toolkit-branch:hover {
-    background: var(--vscode-toolbar-hoverBackground);
+    background: var(--vscode-button-hoverBackground);
 }
 
 .scm-view .scm-editor > .scm-toolkit-branch:focus-visible {
@@ -62,6 +62,7 @@
     width: 27px;
     height: 26px;
     border-left: 1px solid var(--vscode-widget-border, transparent);
+    background: var(--vscode-input-background);
     cursor: pointer;
 }
 
@@ -124,7 +125,7 @@
     border: 0;
     border-left: 1px solid var(--vscode-widget-border, transparent);
     border-radius: 0 3px 3px 0;
-    background: transparent;
+    background: var(--vscode-input-background);
     color: var(--vscode-descriptionForeground);
     cursor: pointer;
 }
@@ -163,7 +164,7 @@
     border: 0;
     border-left: 1px solid var(--vscode-widget-border, transparent);
     border-radius: 0 3px 3px 0;
-    background: transparent;
+    background: var(--vscode-input-background);
     color: var(--vscode-descriptionForeground);
     cursor: pointer;
 }
