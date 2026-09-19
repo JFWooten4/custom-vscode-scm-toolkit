@@ -1,3 +1,5 @@
+from pathlib import Path
+import tempfile
 import types
 import unittest
 from unittest.mock import patch
@@ -13,6 +15,8 @@ SETTINGS = {
     "autocompleteToggle": True,
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
+    "aiCommit": True,
+    "aiCommitModel": "qwen2.5-coder:7b",
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -56,6 +60,8 @@ class TransformTests(unittest.TestCase):
             '{"branchPicker":true,"shortPlaceholder":true,"commitAndPush":true,'
             '"branchCleanup":true,"autocompleteToggle":true,'
             '"hideOutgoingSyncCount":true,"blankStateRefresh":true,'
+            '"aiCommit":true,'
+            '"aiCommitModel":"qwen2.5-coder:7b",'
             '"defaultBranch":"main","remote":"origin"};\n',
             js,
         )
@@ -92,6 +98,28 @@ class TransformTests(unittest.TestCase):
     def test_incomplete_installation_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "Incomplete toolkit installation"):
             install.transform(workbench_fixture() + install.START, "base-css", settings=SETTINGS)
+
+
+class AiWrapperTests(unittest.TestCase):
+    def test_sync_ai_wrapper_installs_executable_copy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            destination = Path(tmp) / "bin" / "scm-toolkit-git"
+            self.assertTrue(install.sync_ai_wrapper(check=True, destination=destination))
+            self.assertFalse(destination.exists())
+
+            self.assertTrue(install.sync_ai_wrapper(destination=destination))
+            self.assertEqual(destination.read_bytes(), (install.HERE / "ai_commit.py").read_bytes())
+            self.assertTrue(destination.stat().st_mode & 0o111)
+            self.assertFalse(install.sync_ai_wrapper(check=True, destination=destination))
+
+    def test_sync_ai_wrapper_uninstall_removes_copy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            destination = Path(tmp) / "scm-toolkit-git"
+            install.sync_ai_wrapper(destination=destination)
+            self.assertTrue(install.sync_ai_wrapper(remove=True, check=True, destination=destination))
+            self.assertTrue(destination.exists())
+            install.sync_ai_wrapper(remove=True, destination=destination)
+            self.assertFalse(destination.exists())
 
 
 class GitConfigTests(unittest.TestCase):

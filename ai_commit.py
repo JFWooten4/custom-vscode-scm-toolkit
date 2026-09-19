@@ -13,7 +13,7 @@ REAL_GIT = os.environ.get("SCM_TOOLKIT_REAL_GIT", "/usr/bin/git")
 GIT_GLOBAL_ARGS: list[str] = []
 OLLAMA_BASE = "http://127.0.0.1:11434"
 OLLAMA_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-MODEL = os.environ.get("SCM_TOOLKIT_AI_MODEL", "qwen2.5-coder:7b")
+DEFAULT_MODEL = "qwen2.5-coder:7b"
 NUM_CTX = int(os.environ.get("SCM_TOOLKIT_AI_NUM_CTX", "4096"))
 MAX_DIFF_CHARS = int(os.environ.get("SCM_TOOLKIT_AI_MAX_DIFF_CHARS", "14000"))
 
@@ -48,6 +48,41 @@ def git_output(*args: str) -> str:
         text=True,
     )
     return result.stdout
+
+
+def git_config_bool(key: str, default: bool) -> bool:
+    result = subprocess.run(
+        [REAL_GIT, "config", "--global", "--type=bool", "--get", key],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return default
+    return result.stdout.strip() == "true"
+
+
+def git_config_string(key: str, default: str) -> str:
+    result = subprocess.run(
+        [REAL_GIT, "config", "--global", "--get", key],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return default
+    value = result.stdout.strip()
+    return value or default
+
+
+def feature_enabled() -> bool:
+    return git_config_bool("scm-toolkit.ai-commit", True)
+
+
+def configured_model() -> str:
+    return os.environ.get("SCM_TOOLKIT_AI_MODEL") or git_config_string(
+        "scm-toolkit.ai-commit-model", DEFAULT_MODEL
+    )
 
 
 def commit_index(argv: list[str]) -> int | None:
@@ -224,9 +259,10 @@ def fallback_title(files: list[str]) -> str:
 
 
 def generate_title(stat: str, diff: str, files: list[str]) -> str:
-    if MODEL not in installed_local_model_names():
+    model = configured_model()
+    if model not in installed_local_model_names():
         print(
-            f"scm-toolkit: {MODEL} is not installed locally; using fallback title",
+            f"scm-toolkit: {model} is not installed locally; using fallback title",
             file=sys.stderr,
         )
         return fallback_title(files)
@@ -235,7 +271,7 @@ def generate_title(stat: str, diff: str, files: list[str]) -> str:
         response = ollama_json(
             "/api/generate",
             {
-                "model": MODEL,
+                "model": model,
                 "prompt": prompt_for_diff(stat, diff),
                 "stream": False,
                 "options": {
@@ -249,17 +285,24 @@ def generate_title(stat: str, diff: str, files: list[str]) -> str:
         if title:
             return title
     except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
-        print(f"scm-toolkit: local model unavailable ({exc}); using fallback title", file=sys.stderr)
+        print(
+            f"scm-toolkit: local model unavailable ({exc}); using fallback title",
+            file=sys.stderr,
+        )
     except Exception as exc:
-        print(f"scm-toolkit: title generation failed ({exc}); using fallback title", file=sys.stderr)
+        print(
+            f"scm-toolkit: title generation failed ({exc}); using fallback title",
+            file=sys.stderr,
+        )
 
     return fallback_title(files)
-
 
 def main() -> None:
     global GIT_GLOBAL_ARGS
 
     argv = sys.argv[1:]
+    if not feature_enabled():
+        os.execv(REAL_GIT, [REAL_GIT, *argv])
     index = commit_index(argv)
     commit_args = argv[index + 1 :] if index is not None else []
     if (
