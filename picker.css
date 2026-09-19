@@ -1,0 +1,54 @@
+.scm-view .scm-editor > .scm-toolkit-branch {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 0 1 auto;
+    max-width: 28%;
+    min-width: 0;
+    height: 26px;
+    padding: 0 6px;
+    border: 0;
+    border-right: 1px solid var(--vscode-widget-border, transparent);
+    border-radius: 3px 0 0 3px;
+    background: transparent;
+    color: var(--vscode-descriptionForeground);
+    font: inherit;
+    cursor: pointer;
+}
+
+.scm-view .scm-editor > .scm-toolkit-branch[hidden] {
+    display: none;
+}
+
+.scm-toolkit-branch-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.scm-view .scm-editor > .scm-toolkit-branch:hover {
+    background: var(--vscode-toolbar-hoverBackground);
+}
+
+.scm-view .scm-editor > .scm-toolkit-branch:focus-visible {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+.scm-view .scm-editor > .scm-toolkit-branch:disabled {
+    opacity: .6;
+    cursor: default;
+}
+
+.scm-view .scm-editor:has(> .scm-toolkit-branch) > .scm-editor-container {
+    flex: 1;
+    min-width: 0;
+}
+
+.scm-view .scm-editor:has(> .scm-toolkit-branch) {
+    border-color: transparent;
+}
+
+.monaco-workbench .part.panel .scm-view .scm-editor:has(> .scm-toolkit-branch) > .scm-editor-container {
+    outline: none;
+}
