@@ -17,6 +17,9 @@ SETTINGS = {
     "blankStateRefresh": True,
     "aiCommit": True,
     "aiCommitModel": "qwen2.5-coder:7b",
+    "aiCommitLowMemoryModel": "qwen2.5-coder:3b",
+    "aiLowMemoryGiB": "4",
+    "aiModelPicker": True,
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -62,6 +65,8 @@ class TransformTests(unittest.TestCase):
             '"hideOutgoingSyncCount":true,"blankStateRefresh":true,'
             '"aiCommit":true,'
             '"aiCommitModel":"qwen2.5-coder:7b",'
+            '"aiCommitLowMemoryModel":"qwen2.5-coder:3b",'
+            '"aiLowMemoryGiB":"4","aiModelPicker":true,'
             '"defaultBranch":"main","remote":"origin"};\n',
             js,
         )
@@ -119,6 +124,41 @@ class AiWrapperTests(unittest.TestCase):
             self.assertTrue(install.sync_ai_wrapper(remove=True, check=True, destination=destination))
             self.assertTrue(destination.exists())
             install.sync_ai_wrapper(remove=True, destination=destination)
+            self.assertFalse(destination.exists())
+
+
+    def test_sync_model_picker_installs_executable_copy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            destination = Path(tmp) / "bin" / "scm-toolkit-models"
+            self.assertTrue(
+                install.sync_model_picker(
+                    enabled=True, check=True, destination=destination
+                )
+            )
+            self.assertFalse(destination.exists())
+
+            self.assertTrue(
+                install.sync_model_picker(enabled=True, destination=destination)
+            )
+            self.assertEqual(
+                destination.read_bytes(),
+                (install.HERE / "model_picker.py").read_bytes(),
+            )
+            self.assertTrue(destination.stat().st_mode & 0o111)
+
+    def test_disabling_model_picker_removes_installed_copy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            destination = Path(tmp) / "scm-toolkit-models"
+            install.sync_model_picker(enabled=True, destination=destination)
+            self.assertTrue(destination.exists())
+
+            self.assertTrue(
+                install.sync_model_picker(
+                    enabled=False, check=True, destination=destination
+                )
+            )
+            self.assertTrue(destination.exists())
+            install.sync_model_picker(enabled=False, destination=destination)
             self.assertFalse(destination.exists())
 
 

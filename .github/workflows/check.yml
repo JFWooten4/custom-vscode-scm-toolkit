@@ -20,7 +20,7 @@ jobs:
           python-version: "3.x"
 
       - name: Compile Python
-        run: python3 -m py_compile install.py tests/test_install.py
+        run: python3 -m py_compile install.py ai_commit.py model_picker.py tests/test_install.py tests/test_ai_commit.py tests/test_model_picker.py
 
       - name: Run installer tests
         run: python3 -m unittest discover -s tests -v

@@ -14,6 +14,8 @@ GIT_GLOBAL_ARGS: list[str] = []
 OLLAMA_BASE = "http://127.0.0.1:11434"
 OLLAMA_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 DEFAULT_MODEL = "qwen2.5-coder:7b"
+DEFAULT_LOW_MEMORY_MODEL = "qwen2.5-coder:3b"
+DEFAULT_LOW_MEMORY_GIB = 4.0
 NUM_CTX = int(os.environ.get("SCM_TOOLKIT_AI_NUM_CTX", "4096"))
 MAX_DIFF_CHARS = int(os.environ.get("SCM_TOOLKIT_AI_MAX_DIFF_CHARS", "14000"))
 MAX_FILE_CONTEXT_CHARS = int(
@@ -102,14 +104,80 @@ def git_config_string(key: str, default: str) -> str:
     return value or default
 
 
+def git_config_float(key: str, default: float) -> float:
+    value = git_config_string(key, "")
+    if not value:
+        return default
+    try:
+        return float(value)
+    except ValueError:
+        return default
+
+
 def feature_enabled() -> bool:
     return git_config_bool("scm-toolkit.ai-commit", True)
 
 
-def configured_model() -> str:
-    return os.environ.get("SCM_TOOLKIT_AI_MODEL") or git_config_string(
+def configured_models() -> tuple[str, str]:
+    primary = os.environ.get("SCM_TOOLKIT_AI_MODEL") or git_config_string(
         "scm-toolkit.ai-commit-model", DEFAULT_MODEL
     )
+    low_memory = os.environ.get("SCM_TOOLKIT_AI_LOW_MEMORY_MODEL") or git_config_string(
+        "scm-toolkit.ai-commit-low-memory-model", DEFAULT_LOW_MEMORY_MODEL
+    )
+    return primary, low_memory
+
+
+def low_memory_threshold_gib() -> float:
+    value = os.environ.get("SCM_TOOLKIT_AI_LOW_MEMORY_GIB")
+    if value:
+        try:
+            return float(value)
+        except ValueError:
+            pass
+    return git_config_float("scm-toolkit.ai-low-memory-gib", DEFAULT_LOW_MEMORY_GIB)
+
+
+def available_memory_bytes() -> int | None:
+    try:
+        result = subprocess.run(
+            ["/usr/bin/memory_pressure", "-Q"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+    text = result.stdout + "\n" + result.stderr
+    total_match = re.search(r"The system has\s+(\d+)", text)
+    free_match = re.search(
+        r"System-wide memory free percentage:\s*([0-9]+(?:\.[0-9]+)?)%",
+        text,
+    )
+    if not total_match or not free_match:
+        return None
+
+    total_bytes = int(total_match.group(1))
+    free_percent = float(free_match.group(1))
+    return int(total_bytes * free_percent / 100.0)
+
+
+def selected_model(installed: set[str]) -> tuple[str | None, bool]:
+    primary, low_memory = configured_models()
+    available = available_memory_bytes()
+    threshold = int(low_memory_threshold_gib() * 1024**3)
+    low_memory_mode = available is not None and available < threshold
+
+    if low_memory_mode:
+        return (low_memory if low_memory in installed else None), True
+
+    if primary in installed:
+        return primary, False
+    if low_memory in installed:
+        return low_memory, False
+    return None, False
 
 
 def commit_index(argv: list[str]) -> int | None:
@@ -345,7 +413,6 @@ def ollama_json(path: str, payload: dict | None = None, timeout: int = 120) -> d
 
 def installed_local_model_names() -> set[str]:
     try:
-        file_context = staged_file_context(files)
         response = ollama_json("/api/tags", timeout=3)
     except Exception:
         return set()
@@ -409,14 +476,25 @@ def fallback_title(files: list[str]) -> str:
 
 
 def generate_title(stat: str, diff: str, files: list[str]) -> str:
-    model = configured_model()
-    if model not in installed_local_model_names():
-        print(
-            f"scm-toolkit: {model} is not installed locally; using fallback title",
-            file=sys.stderr,
-        )
+    installed = installed_local_model_names()
+    model, low_memory_mode = selected_model(installed)
+    primary, low_memory = configured_models()
+
+    if model is None:
+        if low_memory_mode:
+            detail = (
+                f"low-memory model {low_memory} is not installed locally; "
+                "using fallback title"
+            )
+        else:
+            detail = (
+                f"configured models {primary} and {low_memory} are not installed locally; "
+                "using fallback title"
+            )
+        print(f"scm-toolkit: {detail}", file=sys.stderr)
         return fallback_title(files)
 
+    file_context = staged_file_context(files)
     try:
         response = ollama_json(
             "/api/generate",

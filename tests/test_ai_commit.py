@@ -35,10 +35,70 @@ class ConfigurationTests(unittest.TestCase):
     def test_ai_commit_can_be_disabled_globally(self, _config):
         self.assertFalse(ai_commit.feature_enabled())
 
-    @patch.object(ai_commit, "git_config_string", return_value="local-model:test")
-    def test_model_can_be_selected_from_git_config(self, _config):
-        with patch.dict(ai_commit.os.environ, {"SCM_TOOLKIT_AI_MODEL": ""}):
-            self.assertEqual(ai_commit.configured_model(), "local-model:test")
+    def test_models_can_be_selected_from_git_config(self):
+        values = {
+            "scm-toolkit.ai-commit-model": "primary:test",
+            "scm-toolkit.ai-commit-low-memory-model": "fallback:test",
+        }
+        with patch.object(
+            ai_commit,
+            "git_config_string",
+            side_effect=lambda key, default: values.get(key, default),
+        ), patch.dict(
+            ai_commit.os.environ,
+            {"SCM_TOOLKIT_AI_MODEL": "", "SCM_TOOLKIT_AI_LOW_MEMORY_MODEL": ""},
+        ):
+            self.assertEqual(
+                ai_commit.configured_models(),
+                ("primary:test", "fallback:test"),
+            )
+
+    def test_primary_model_is_used_with_memory_headroom(self):
+        with patch.object(
+            ai_commit, "configured_models", return_value=("primary:test", "fallback:test")
+        ), patch.object(
+            ai_commit, "available_memory_bytes", return_value=8 * 1024**3
+        ), patch.object(
+            ai_commit, "low_memory_threshold_gib", return_value=4
+        ):
+            self.assertEqual(
+                ai_commit.selected_model({"primary:test", "fallback:test"}),
+                ("primary:test", False),
+            )
+
+    def test_low_memory_model_is_used_below_threshold(self):
+        with patch.object(
+            ai_commit, "configured_models", return_value=("primary:test", "fallback:test")
+        ), patch.object(
+            ai_commit, "available_memory_bytes", return_value=2 * 1024**3
+        ), patch.object(
+            ai_commit, "low_memory_threshold_gib", return_value=4
+        ):
+            self.assertEqual(
+                ai_commit.selected_model({"primary:test", "fallback:test"}),
+                ("fallback:test", True),
+            )
+
+    def test_low_memory_mode_does_not_escalate_to_primary(self):
+        with patch.object(
+            ai_commit, "configured_models", return_value=("primary:test", "fallback:test")
+        ), patch.object(
+            ai_commit, "available_memory_bytes", return_value=2 * 1024**3
+        ), patch.object(
+            ai_commit, "low_memory_threshold_gib", return_value=4
+        ):
+            self.assertEqual(
+                ai_commit.selected_model({"primary:test"}),
+                (None, True),
+            )
+
+    @patch.object(
+        ai_commit,
+        "ollama_json",
+        return_value={"models": [{"name": "primary:test"}]},
+    )
+    def test_local_model_inventory_does_not_require_staged_files(self, _request):
+        self.assertEqual(ai_commit.installed_local_model_names(), {"primary:test"})
 
 
 class TitleTests(unittest.TestCase):
