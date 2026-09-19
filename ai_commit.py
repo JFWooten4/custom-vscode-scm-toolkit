@@ -16,6 +16,33 @@ OLLAMA_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 DEFAULT_MODEL = "qwen2.5-coder:7b"
 NUM_CTX = int(os.environ.get("SCM_TOOLKIT_AI_NUM_CTX", "4096"))
 MAX_DIFF_CHARS = int(os.environ.get("SCM_TOOLKIT_AI_MAX_DIFF_CHARS", "14000"))
+MAX_FILE_CONTEXT_CHARS = int(
+    os.environ.get("SCM_TOOLKIT_AI_MAX_FILE_CONTEXT_CHARS", "5000")
+)
+MAX_DIFF_SECTIONS = int(os.environ.get("SCM_TOOLKIT_AI_MAX_DIFF_SECTIONS", "20"))
+
+IMAGE_EXTENSIONS = {
+    ".avif",
+    ".bmp",
+    ".gif",
+    ".heic",
+    ".jpeg",
+    ".jpg",
+    ".png",
+    ".svg",
+    ".tif",
+    ".tiff",
+    ".webp",
+}
+DOCUMENT_EXTENSIONS = {
+    ".doc",
+    ".docx",
+    ".epub",
+    ".odt",
+    ".pages",
+    ".pdf",
+    ".rtf",
+}
 
 EXPLICIT_MESSAGE_FLAGS = {
     "-e",
@@ -177,6 +204,126 @@ def staged_diff() -> tuple[str, str, list[str]]:
     return stat, diff, files
 
 
+def path_kind(path: str) -> str | None:
+    extension = os.path.splitext(path.lower())[1]
+    if extension in IMAGE_EXTENSIONS:
+        return "image"
+    if extension in DOCUMENT_EXTENSIONS:
+        return "document"
+    return None
+
+
+def staged_file_context(files: list[str]) -> str:
+    """Describe staged paths that are not represented well by patch text."""
+    status = git_output(
+        "diff", "--cached", "--name-status", "--find-renames", "--no-ext-diff"
+    ).strip()
+    numstat = git_output(
+        "diff", "--cached", "--numstat", "--no-ext-diff"
+    ).strip()
+
+    binary_paths = set()
+    for line in numstat.splitlines():
+        fields = line.split("\t", 2)
+        if len(fields) == 3 and fields[0] == "-" and fields[1] == "-":
+            binary_paths.add(fields[2])
+
+    path_lines = [f"- {path}" for path in files[:40]]
+    if len(files) > 40:
+        path_lines.append(f"- [{len(files) - 40} additional paths omitted]")
+
+    artifact_lines = []
+    for path in files:
+        kind = path_kind(path)
+        if kind is not None:
+            suffix = " (binary)" if path in binary_paths else ""
+            artifact_lines.append(f"- {kind}: {path}{suffix}")
+        elif path in binary_paths:
+            artifact_lines.append(f"- binary file: {path}")
+
+    sections = [
+        "Paths:\n" + ("\n".join(path_lines) if path_lines else "[none]"),
+        "Status:\n" + (status or "[none]"),
+        "Line changes (-/- means binary):\n" + (numstat or "[none]"),
+    ]
+    if artifact_lines:
+        sections.append("Opaque artifact hints:\n" + "\n".join(artifact_lines[:40]))
+
+    context = "\n\n".join(sections)
+    if len(context) > MAX_FILE_CONTEXT_CHARS:
+        context = (
+            context[:MAX_FILE_CONTEXT_CHARS].rstrip()
+            + "\n[staged file context truncated]"
+        )
+    return context
+
+
+def _clip_diff_section(section: str, budget: int) -> str:
+    if len(section) <= budget:
+        return section
+
+    marker = "\n...[middle of file diff omitted]...\n"
+    if budget <= len(marker) + 80:
+        return section[:budget]
+
+    head = int((budget - len(marker)) * 0.7)
+    tail = budget - len(marker) - head
+    return section[:head] + marker + section[-tail:]
+
+
+def sample_diff_for_prompt(diff: str) -> str:
+    """Sample oversized diffs across files instead of keeping only the prefix."""
+    if len(diff) <= MAX_DIFF_CHARS:
+        return diff
+
+    starts = [match.start() for match in re.finditer(r"(?m)^diff --git ", diff)]
+    if not starts:
+        note = "\n[diff sampled to fit prompt]"
+        sampled = _clip_diff_section(diff, max(1, MAX_DIFF_CHARS - len(note)))
+        return sampled + note
+
+    sections = []
+    for index, start in enumerate(starts):
+        end = starts[index + 1] if index + 1 < len(starts) else len(diff)
+        sections.append(diff[start:end].rstrip())
+
+    if len(sections) > MAX_DIFF_SECTIONS:
+        if MAX_DIFF_SECTIONS <= 1:
+            selected_indexes = [0]
+        else:
+            selected_indexes = sorted(
+                {
+                    round(index * (len(sections) - 1) / (MAX_DIFF_SECTIONS - 1))
+                    for index in range(MAX_DIFF_SECTIONS)
+                }
+            )
+        selected = [sections[index] for index in selected_indexes]
+        omitted = len(sections) - len(selected)
+    else:
+        selected = sections
+        omitted = 0
+
+    note = "\n[diff sampled across files to fit prompt"
+    if omitted:
+        note += f"; {omitted} file sections omitted"
+    note += "]"
+
+    separator = "\n\n"
+    available = max(
+        1,
+        MAX_DIFF_CHARS - len(note) - len(separator) * (len(selected) - 1),
+    )
+    per_section = max(1, available // max(1, len(selected)))
+    sampled_sections = [
+        _clip_diff_section(section, per_section) for section in selected
+    ]
+    sampled = separator.join(sampled_sections)
+
+    limit = MAX_DIFF_CHARS - len(note)
+    if len(sampled) > limit:
+        sampled = sampled[:limit].rstrip()
+    return sampled + note
+
 def recent_subjects() -> str:
     return git_output("log", "-8", "--pretty=%s").strip()
 
@@ -198,6 +345,7 @@ def ollama_json(path: str, payload: dict | None = None, timeout: int = 120) -> d
 
 def installed_local_model_names() -> set[str]:
     try:
+        file_context = staged_file_context(files)
         response = ollama_json("/api/tags", timeout=3)
     except Exception:
         return set()
@@ -211,11 +359,8 @@ def installed_local_model_names() -> set[str]:
     return names
 
 
-def prompt_for_diff(stat: str, diff: str) -> str:
-    clipped = diff
-    if len(clipped) > MAX_DIFF_CHARS:
-        clipped = clipped[:MAX_DIFF_CHARS] + "\n[diff truncated]"
-
+def prompt_for_diff(stat: str, diff: str, file_context: str = "") -> str:
+    sampled = sample_diff_for_prompt(diff)
     history = recent_subjects()
     return f"""Write exactly one Git commit subject for the staged changes below.
 
@@ -225,6 +370,9 @@ Output rules:
 - use concise imperative wording
 - describe the intent rather than listing files
 - no markdown, quotes, explanation, or trailing period
+- use staged file context for binary, document, image, and rename changes
+- do not invent contents that are not represented in the supplied text
+- when the diff is sampled, infer the overall intent from all sampled sections
 
 Recent repository subjects:
 {history or "[none]"}
@@ -232,10 +380,12 @@ Recent repository subjects:
 Staged diff stat:
 {stat}
 
-Staged diff:
-{clipped}
-"""
+Staged file context:
+{file_context or "[none]"}
 
+Staged diff:
+{sampled}
+"""
 
 def sanitize_title(text: str) -> str:
     line = next((line.strip() for line in text.splitlines() if line.strip()), "")
@@ -272,7 +422,7 @@ def generate_title(stat: str, diff: str, files: list[str]) -> str:
             "/api/generate",
             {
                 "model": model,
-                "prompt": prompt_for_diff(stat, diff),
+                "prompt": prompt_for_diff(stat, diff, file_context),
                 "stream": False,
                 "options": {
                     "num_ctx": NUM_CTX,

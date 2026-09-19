@@ -73,5 +73,69 @@ class TitleTests(unittest.TestCase):
         )
 
 
+class ArtifactContextTests(unittest.TestCase):
+    def test_large_single_file_diff_keeps_beginning_and_tail(self):
+        diff = (
+            "diff --git a/docs/report.md b/docs/report.md\n"
+            "HEAD_SIGNAL\n"
+            + ("x" * 900)
+            + "\nTAIL_SIGNAL"
+        )
+        with patch.object(ai_commit, "MAX_DIFF_CHARS", 400):
+            sampled = ai_commit.sample_diff_for_prompt(diff)
+
+        self.assertIn("HEAD_SIGNAL", sampled)
+        self.assertIn("TAIL_SIGNAL", sampled)
+        self.assertLessEqual(len(sampled), 400)
+        self.assertIn("diff sampled", sampled)
+
+    def test_large_multifile_diff_samples_across_files(self):
+        sections = []
+        for name in ("first.md", "middle.md", "last.md"):
+            sections.append(
+                f"diff --git a/{name} b/{name}\n{name}\n" + ("z" * 700)
+            )
+
+        with patch.object(ai_commit, "MAX_DIFF_CHARS", 900), patch.object(
+            ai_commit, "MAX_DIFF_SECTIONS", 3
+        ):
+            sampled = ai_commit.sample_diff_for_prompt("\n".join(sections))
+
+        for name in ("first.md", "middle.md", "last.md"):
+            self.assertIn(name, sampled)
+        self.assertLessEqual(len(sampled), 900)
+
+    def test_file_context_marks_binary_images_and_documents(self):
+        def fake_git_output(*args):
+            if "--name-status" in args:
+                return "A\tassets/logo.png\nM\tdocs/report.pdf\nM\tREADME.md\n"
+            if "--numstat" in args:
+                return (
+                    "-\t-\tassets/logo.png\n"
+                    "-\t-\tdocs/report.pdf\n"
+                    "4\t1\tREADME.md\n"
+                )
+            self.fail(f"unexpected git call: {args}")
+
+        with patch.object(ai_commit, "git_output", side_effect=fake_git_output):
+            context = ai_commit.staged_file_context(
+                ["assets/logo.png", "docs/report.pdf", "README.md"]
+            )
+
+        self.assertIn("image: assets/logo.png (binary)", context)
+        self.assertIn("document: docs/report.pdf (binary)", context)
+        self.assertIn("README.md", context)
+
+    @patch.object(ai_commit, "recent_subjects", return_value="Update parser")
+    def test_prompt_includes_context_without_claiming_opaque_contents(self, _subjects):
+        prompt = ai_commit.prompt_for_diff(
+            "2 files changed",
+            "diff --git a/README.md b/README.md\n+text",
+            "- image: assets/logo.png (binary)",
+        )
+        self.assertIn("Staged file context:", prompt)
+        self.assertIn("do not invent contents", prompt)
+
+
 if __name__ == "__main__":
     unittest.main()
