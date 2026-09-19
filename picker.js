@@ -34,6 +34,78 @@ function scmToolkitHideOutgoingSyncCount(widget) {
     observer.observe(root, { subtree: true, childList: true, characterData: true });
 }
 
+function scmToolkitEnableBlankStateRefresh(widget, input, commands, repositoryArgument) {
+    const doc = widget.element.ownerDocument;
+    const win = doc.defaultView;
+    const provider = input.repository.provider;
+    if (!win || !repositoryArgument || typeof provider.onDidChangeResources !== 'function') return;
+
+    let timer;
+    let refreshing = false;
+    let disposed = false;
+
+    const hasChanges = () => provider.groups.some(group => group.resources.length > 0);
+
+    const clearTimer = () => {
+        if (timer === undefined) return;
+        win.clearTimeout(timer);
+        timer = undefined;
+    };
+
+    const schedule = delay => {
+        clearTimer();
+        if (disposed || hasChanges()) return;
+
+        timer = win.setTimeout(async () => {
+            timer = undefined;
+            if (disposed || hasChanges()) return;
+
+            if (doc.hidden) {
+                schedule(5000);
+                return;
+            }
+
+            refreshing = true;
+            try {
+                await commands.executeCommand('git.refresh', repositoryArgument);
+            } catch {
+                // The built-in Git extension owns refresh errors; keep blank-state polling best-effort.
+            } finally {
+                refreshing = false;
+                if (!disposed && !hasChanges()) schedule(1500);
+            }
+        }, delay);
+    };
+
+    const resourceDisposable = provider.onDidChangeResources(() => {
+        if (disposed) return;
+
+        if (hasChanges()) {
+            clearTimer();
+            return;
+        }
+
+        if (!refreshing && timer === undefined) schedule(300);
+    });
+
+    const onVisibilityChange = () => {
+        if (disposed || hasChanges() || doc.hidden) return;
+        if (!refreshing && timer === undefined) schedule(300);
+    };
+
+    doc.addEventListener('visibilitychange', onVisibilityChange);
+    schedule(300);
+
+    return {
+        dispose() {
+            disposed = true;
+            clearTimer();
+            resourceDisposable.dispose();
+            doc.removeEventListener('visibilitychange', onVisibilityChange);
+        }
+    };
+}
+
 function scmToolkitCreateControls(widget, observe, commands, notifications, configuration, settings) {
     const doc = widget.element.ownerDocument;
     if (settings.hideOutgoingSyncCount) scmToolkitHideOutgoingSyncCount(widget);
@@ -339,6 +411,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             }
 
             const provider = input.repository.provider;
+            let blankStateRefreshDisposable;
             widget.repositoryDisposables.add(observe(reader => {
                 const items = provider.statusBarCommands.read(reader) ?? [];
                 // Keep the first Git status command and its original arguments so the
@@ -346,6 +419,22 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
                 const command = items[0];
                 currentCommand = command;
                 currentRepositoryArgument = command?.arguments?.[0];
+
+                if (
+                    settings.blankStateRefresh
+                    && currentRepositoryArgument
+                    && !blankStateRefreshDisposable
+                ) {
+                    blankStateRefreshDisposable = scmToolkitEnableBlankStateRefresh(
+                        widget,
+                        input,
+                        commands,
+                        currentRepositoryArgument
+                    );
+                    if (blankStateRefreshDisposable) {
+                        widget.repositoryDisposables.add(blankStateRefreshDisposable);
+                    }
+                }
 
                 const historyProvider = provider.historyProvider.read(reader);
                 const historyItemRef = historyProvider?.historyItemRef.read(reader);

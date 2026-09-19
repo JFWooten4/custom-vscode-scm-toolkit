@@ -10,6 +10,7 @@ Current features:
 - optionally show a guarded local-branch cleanup button
 - optionally show a quick toggle for VS Code inline autocomplete
 - optionally hide the outgoing commit count from the built-in Sync action
+- optionally refresh clean/blank Git repositories more aggressively so the first new change appears in SCM quickly
 
 The patch is intentionally narrow: it does not copy or manage unrelated editor settings.
 
@@ -72,6 +73,7 @@ git config --global scm-toolkit.commit-and-push true
 git config --global scm-toolkit.branch-cleanup true
 git config --global scm-toolkit.autocomplete-toggle true
 git config --global scm-toolkit.hide-outgoing-sync-count true
+git config --global scm-toolkit.blank-state-refresh true
 git config --global scm-toolkit.default-branch main
 git config --global scm-toolkit.remote origin
 ```
@@ -86,11 +88,12 @@ The equivalent `~/.gitconfig` block is:
     branch-cleanup = true
     autocomplete-toggle = true
     hide-outgoing-sync-count = true
+    blank-state-refresh = true
     default-branch = main
     remote = origin
 ```
 
-All six feature switches default to `true`. The default protected branch is `main`, and the default remote is `origin`.
+All seven feature switches default to `true`. The default protected branch is `main`, and the default remote is `origin`.
 
 After changing toolkit Git config, rerun:
 
@@ -111,6 +114,18 @@ Disabling the toolkit feature hides the checkbox. It does not silently rewrite a
 When `autocomplete-toggle` is enabled, the sparkle button appears after the other
 SCM controls. It toggles VS Code's `editor.inlineSuggest.enabled` setting. A slash
 through the sparkle means inline autocomplete is off.
+
+### Blank-state refresh
+
+When `blank-state-refresh` is enabled, the toolkit asks VS Code's built-in Git
+extension to refresh a repository more aggressively while SCM has zero changed
+resources. It performs an initial refresh after about 300 ms, then falls back to
+roughly 1.5-second refreshes while VS Code is visible. The polling stops as soon
+as SCM reports a change and automatically resumes after the repository becomes
+clean again. Hidden windows back off instead of polling at the foreground rate.
+
+This uses VS Code's existing `git.refresh` command; the toolkit does not run its
+own Git status implementation.
 
 ### Branch cleanup
 

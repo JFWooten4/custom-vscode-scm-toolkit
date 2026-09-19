@@ -18,6 +18,7 @@ DEFAULT_SETTINGS = {
     "branchCleanup": True,
     "autocompleteToggle": True,
     "hideOutgoingSyncCount": True,
+    "blankStateRefresh": True,
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -76,6 +77,10 @@ def load_settings():
         "hideOutgoingSyncCount": read_git_bool(
             "scm-toolkit.hide-outgoing-sync-count",
             DEFAULT_SETTINGS["hideOutgoingSyncCount"],
+        ),
+        "blankStateRefresh": read_git_bool(
+            "scm-toolkit.blank-state-refresh",
+            DEFAULT_SETTINGS["blankStateRefresh"],
         ),
         "defaultBranch": read_git_string(
             "scm-toolkit.default-branch", DEFAULT_SETTINGS["defaultBranch"]
