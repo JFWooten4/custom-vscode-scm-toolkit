@@ -13,6 +13,7 @@ SETTINGS = {
     "commitAndPush": True,
     "branchCleanup": True,
     "autocompleteToggle": True,
+    "codexCoauthor": True,
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
     "aiCommit": True,
@@ -46,7 +47,7 @@ class TransformTests(unittest.TestCase):
     def test_controls_use_the_vscode_input_background(self):
         css = (install.HERE / "picker.css").read_text()
 
-        self.assertEqual(css.count("background: var(--vscode-input-background);"), 3)
+        self.assertEqual(css.count("background: var(--vscode-input-background);"), 4)
         self.assertEqual(css.count("background: transparent;"), 1)
 
     def test_branch_selector_uses_the_vscode_button_colors(self):
@@ -86,7 +87,7 @@ class TransformTests(unittest.TestCase):
         self.assertIn(
             'const scmToolkitSettings = '
             '{"branchPicker":true,"shortPlaceholder":true,"commitAndPush":true,'
-            '"branchCleanup":true,"autocompleteToggle":true,'
+            '"branchCleanup":true,"autocompleteToggle":true,"codexCoauthor":true,'
             '"hideOutgoingSyncCount":true,"blankStateRefresh":true,'
             '"aiCommit":true,'
             '"aiDefaultBranchDescription":true,'
@@ -101,6 +102,8 @@ class TransformTests(unittest.TestCase):
         self.assertIn("scm-toolkit-autocomplete", css)
         self.assertEqual(js.count("className = 'scm-toolkit-tooltip'"), 2)
         self.assertIn(".scm-toolkit-autocomplete:hover > .scm-toolkit-tooltip", css)
+        self.assertIn("Co-authored-by: Codex Web <noreply@openai.com>", js)
+        self.assertIn("commands.executeCommand('git.commit', currentRepositoryArgument)", js)
         self.assertEqual(js.count(install.START), 1)
         self.assertEqual(js.count(install.END), 1)
         self.assertEqual(css.count(install.START), 1)

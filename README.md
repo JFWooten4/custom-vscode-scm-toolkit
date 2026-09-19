@@ -9,6 +9,7 @@ Current features:
 - optionally show a commit-and-push checkbox backed by VS Code's `git.postCommitCommand`
 - optionally show a guarded local-branch cleanup button
 - optionally show a quick toggle for VS Code inline autocomplete
+- optionally show a commit button that appends the Codex Web co-author trailer
 - optionally hide the outgoing commit count from the built-in Sync action
 - optionally refresh clean/blank Git repositories more aggressively so the first new change appears in SCM quickly
 - optionally generate a commit subject locally when the normal Commit button is used with a blank message
@@ -74,6 +75,7 @@ git config --global scm-toolkit.short-placeholder true
 git config --global scm-toolkit.commit-and-push true
 git config --global scm-toolkit.branch-cleanup true
 git config --global scm-toolkit.autocomplete-toggle true
+git config --global scm-toolkit.codex-coauthor true
 git config --global scm-toolkit.hide-outgoing-sync-count true
 git config --global scm-toolkit.blank-state-refresh true
 git config --global scm-toolkit.ai-commit true
@@ -95,6 +97,7 @@ The equivalent `~/.gitconfig` block is:
     commit-and-push = true
     branch-cleanup = true
     autocomplete-toggle = true
+    codex-coauthor = true
     hide-outgoing-sync-count = true
     blank-state-refresh = true
     ai-commit = true
@@ -107,7 +110,7 @@ The equivalent `~/.gitconfig` block is:
     remote = origin
 ```
 
-All nine feature switches default to `true`. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
+All eleven feature switches default to `true`. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
 
 After changing toolkit Git config, rerun:
 
@@ -206,6 +209,20 @@ clean again. Hidden windows back off instead of polling at the foreground rate.
 
 This uses VS Code's existing `git.refresh` command; the toolkit does not run its
 own Git status implementation.
+
+### Codex co-author commit
+
+When `codex-coauthor` is enabled, an account button appears in the SCM message row.
+It appends this trailer to the current message and then runs VS Code's normal
+`git.commit` command:
+
+```text
+Co-authored-by: Codex Web <noreply@openai.com>
+```
+
+The trailer is added after a blank line and is not duplicated if it is already
+present. If the commit fails and VS Code leaves the message untouched, the toolkit
+restores the original message.
 
 ### Branch cleanup
 
