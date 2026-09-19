@@ -1,6 +1,42 @@
 // Runs inside VS Code's SCM input widget; services and observables are supplied by install.py.
+function scmToolkitHideOutgoingSyncCount(widget) {
+    const root = widget.element.closest('.scm-view');
+    const Observer = widget.element.ownerDocument.defaultView?.MutationObserver;
+    if (!root || !Observer) return;
+
+    const observedRoots = globalThis.__scmToolkitOutgoingSyncRoots ??= new WeakSet();
+    if (observedRoots.has(root)) return;
+    observedRoots.add(root);
+
+    const update = () => {
+        for (const action of root.querySelectorAll('.button-container .monaco-button')) {
+            if (!action.querySelector('.codicon-sync')) continue;
+
+            for (const upArrow of action.querySelectorAll(
+                '.monaco-button-label > .codicon-arrow-up, '
+                + '.monaco-button-label-short > .codicon-arrow-up'
+            )) {
+                const count = upArrow.previousElementSibling;
+                if (!count || count.classList.contains('codicon')) continue;
+
+                const text = count.textContent ?? '';
+                const withoutOutgoingCount = text.replace(/\s*\d+\s*$/, '').trimEnd();
+                if (withoutOutgoingCount === text) continue;
+
+                count.textContent = withoutOutgoingCount;
+                count.hidden = withoutOutgoingCount.trim() === '';
+            }
+        }
+    };
+
+    update();
+    const observer = new Observer(update);
+    observer.observe(root, { subtree: true, childList: true, characterData: true });
+}
+
 function scmToolkitCreateControls(widget, observe, commands, notifications, configuration, settings) {
     const doc = widget.element.ownerDocument;
+    if (settings.hideOutgoingSyncCount) scmToolkitHideOutgoingSyncCount(widget);
     const branchButton = doc.createElement('button');
     branchButton.type = 'button';
     branchButton.className = 'scm-toolkit-branch';
