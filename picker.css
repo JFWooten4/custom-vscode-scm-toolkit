@@ -58,11 +58,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    flex: 0 0 27px;
-    width: 27px;
-    height: 26px;
-    border-left: 1px solid var(--vscode-widget-border, transparent);
-    background: var(--vscode-input-background);
+    flex: 0 0 24px;
+    width: 24px;
+    height: 22px;
+    margin: 2px 2px 2px 0;
+    box-sizing: border-box;
+    border: 0;
+    border-radius: var(--vscode-cornerRadius-small, 4px);
+    background: transparent;
     cursor: pointer;
 }
 
@@ -124,7 +127,6 @@
     height: 26px;
     padding: 0;
     border: 0;
-    border-left: 1px solid var(--vscode-widget-border, transparent);
     border-radius: 0 3px 3px 0;
     background: var(--vscode-input-background);
     color: var(--vscode-descriptionForeground);
@@ -163,7 +165,6 @@
     height: 26px;
     padding: 0;
     border: 0;
-    border-left: 1px solid var(--vscode-widget-border, transparent);
     border-radius: 0 3px 3px 0;
     background: var(--vscode-input-background);
     color: var(--vscode-descriptionForeground);

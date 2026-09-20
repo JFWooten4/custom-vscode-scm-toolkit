@@ -45,8 +45,8 @@ class TransformTests(unittest.TestCase):
     def test_controls_use_the_vscode_input_background(self):
         css = (install.HERE / "picker.css").read_text()
 
-        self.assertEqual(css.count("background: var(--vscode-input-background);"), 4)
-        self.assertNotIn("background: transparent;", css)
+        self.assertEqual(css.count("background: var(--vscode-input-background);"), 3)
+        self.assertEqual(css.count("background: transparent;"), 1)
 
     def test_branch_selector_uses_the_vscode_button_colors(self):
         css = (install.HERE / "picker.css").read_text()
@@ -54,6 +54,30 @@ class TransformTests(unittest.TestCase):
         self.assertIn("background: var(--vscode-button-background);", css)
         self.assertIn("color: var(--vscode-button-foreground);", css)
         self.assertIn("background: var(--vscode-button-hoverBackground);", css)
+
+    def test_push_control_is_centered_without_a_divider(self):
+        css = (install.HERE / "picker.css").read_text()
+        push_css = css.split(
+            ".scm-view .scm-editor > .scm-toolkit-push {", 1
+        )[1].split(
+            ".scm-view .scm-editor > .scm-toolkit-push[hidden]", 1
+        )[0]
+
+        self.assertNotIn("border-left", push_css)
+        self.assertIn("height: 22px;", push_css)
+        self.assertIn("margin: 2px 2px 2px 0;", push_css)
+        self.assertIn("border-radius: var(--vscode-cornerRadius-small, 4px);", push_css)
+
+    def test_right_side_controls_have_no_vertical_dividers(self):
+        css = (install.HERE / "picker.css").read_text()
+
+        for selector in ("scm-toolkit-delete-branch", "scm-toolkit-autocomplete"):
+            control_css = css.split(
+                f".scm-view .scm-editor > .{selector} {{", 1
+            )[1].split(
+                f".scm-view .scm-editor > .{selector}[hidden]", 1
+            )[0]
+            self.assertNotIn("border-left", control_css)
 
     def test_install_injects_valid_settings_line(self):
         js, css = install.transform(workbench_fixture(), "base-css", settings=SETTINGS)
