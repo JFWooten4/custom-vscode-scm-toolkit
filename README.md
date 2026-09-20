@@ -10,6 +10,7 @@ Current features:
 - optionally show a guarded local-branch cleanup button
 - optionally show a quick toggle for VS Code inline autocomplete
 - optionally show a commit button that appends the Codex Web co-author trailer
+- optionally open a pull request for the current branch through a configured MCP server
 - optionally hide the outgoing commit count from the built-in Sync action
 - optionally refresh clean/blank Git repositories more aggressively so the first new change appears in SCM quickly
 - optionally generate a commit subject locally when the normal Commit button is used with a blank message
@@ -84,6 +85,9 @@ git config --global scm-toolkit.ai-commit-model qwen2.5-coder:7b
 git config --global scm-toolkit.ai-commit-low-memory-model qwen2.5-coder:3b
 git config --global scm-toolkit.ai-low-memory-gib 4
 git config --global scm-toolkit.ai-model-picker true
+git config --global scm-toolkit.mcp-pull-request true
+git config --global scm-toolkit.mcp-pr-server codex-drafter
+git config --global scm-toolkit.mcp-pr-tool github_create_pull_request
 git config --global scm-toolkit.default-branch main
 git config --global scm-toolkit.remote origin
 ```
@@ -106,11 +110,14 @@ The equivalent `~/.gitconfig` block is:
     ai-commit-low-memory-model = qwen2.5-coder:3b
     ai-low-memory-gib = 4
     ai-model-picker = true
+    mcp-pull-request = true
+    mcp-pr-server = codex-drafter
+    mcp-pr-tool = github_create_pull_request
     default-branch = main
     remote = origin
 ```
 
-All eleven feature switches default to `true`. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
+All twelve feature switches default to `true`. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
 
 After changing toolkit Git config, rerun:
 
@@ -223,6 +230,20 @@ Co-authored-by: Codex Web <noreply@openai.com>
 The trailer is added after a blank line and is not duplicated if it is already
 present. If the commit fails and VS Code leaves the message untouched, the toolkit
 restores the original message.
+
+### MCP pull requests
+
+When `mcp-pull-request` is enabled, a pull-request button appears at the end of
+the SCM message row for non-default branches. The control resolves the current
+GitHub repository from the configured `remote`, finds the MCP server named by
+`mcp-pr-server` in VS Code, starts it if necessary, and calls the tool named by
+`mcp-pr-tool`.
+
+The defaults target Codex Drafter's `github_create_pull_request` tool. The
+tool receives the current GitHub owner/repository, branch as `head`, the
+configured `default-branch` as `base`, a title derived from the branch name,
+and a minimal generated prompt/body. Authentication and transport stay owned by
+VS Code's MCP configuration rather than the SCM patch.
 
 ### Branch cleanup
 
