@@ -60,6 +60,17 @@ class TransformTests(unittest.TestCase):
         self.assertIn("margin: 2px 2px 2px 0;", push_css)
         self.assertIn("border-radius: var(--vscode-cornerRadius-small, 4px);", push_css)
 
+    def test_right_side_controls_have_no_vertical_dividers(self):
+        css = (install.HERE / "picker.css").read_text()
+
+        for selector in ("scm-toolkit-delete-branch", "scm-toolkit-autocomplete"):
+            control_css = css.split(
+                f".scm-view .scm-editor > .{selector} {{", 1
+            )[1].split(
+                f".scm-view .scm-editor > .{selector}[hidden]", 1
+            )[0]
+            self.assertNotIn("border-left", control_css)
+
     def test_install_injects_valid_settings_line(self):
         js, css = install.transform(workbench_fixture(), "base-css", settings=SETTINGS)
 
