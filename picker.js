@@ -106,6 +106,18 @@ function scmToolkitEnableBlankStateRefresh(widget, input, commands, repositoryAr
     };
 }
 
+const SCM_TOOLKIT_CODEX_COAUTHOR = 'Co-authored-by: Codex Web <noreply@openai.com>';
+
+function scmToolkitWithCodexCoauthor(message) {
+    const base = message.trimEnd();
+    if (!base) return '';
+
+    const alreadyAttributed = base.split(/\r?\n/).some(
+        line => line.trim() === SCM_TOOLKIT_CODEX_COAUTHOR
+    );
+    return alreadyAttributed ? base : `${base}\n\n${SCM_TOOLKIT_CODEX_COAUTHOR}`;
+}
+
 function scmToolkitCreateControls(widget, observe, commands, notifications, configuration, settings) {
     const doc = widget.element.ownerDocument;
     if (settings.hideOutgoingSyncCount) scmToolkitHideOutgoingSyncCount(widget);
@@ -159,17 +171,26 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     autocompleteTooltip.setAttribute('aria-hidden', 'true');
     autocompleteButton.append(autocompleteTooltip);
 
+    const codexButton = doc.createElement('button');
+    codexButton.type = 'button';
+    codexButton.className = 'scm-toolkit-codex-coauthor codicon codicon-account';
+    codexButton.hidden = true;
+    codexButton.title = 'Commit with Codex co-author';
+    codexButton.setAttribute('aria-label', 'Commit with Codex co-author');
+
     widget.element.prepend(branchButton);
-    widget.element.append(pushControl, deleteButton, autocompleteButton);
+    widget.element.append(pushControl, deleteButton, autocompleteButton, codexButton);
 
     let currentCommand;
     let currentBranch;
     let currentHistoryProvider;
     let currentRepositoryArgument;
+    let currentInput;
     let pending = false;
     let deletingBranch = false;
     let updatingPush = false;
     let updatingAutocomplete = false;
+    let committingWithCodex = false;
 
     const refreshPush = () => {
         pushCheckbox.checked = configuration.getValue('git.postCommitCommand') === 'push';
@@ -237,6 +258,52 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         }
     }));
 
+    const refreshCodexCommit = () => {
+        codexButton.disabled =
+            pending
+            || deletingBranch
+            || committingWithCodex
+            || !currentInput
+            || !currentRepositoryArgument;
+    };
+
+    const commitWithCodex = async event => {
+        event.stopPropagation();
+        if (
+            !settings.codexCoauthor
+            || !currentInput
+            || !currentRepositoryArgument
+            || pending
+            || deletingBranch
+            || committingWithCodex
+        ) {
+            return;
+        }
+
+        const originalMessage = currentInput.value ?? '';
+        if (!originalMessage.trim()) {
+            notifications.error('Enter a commit message before committing with Codex attribution.');
+            return;
+        }
+
+        const attributedMessage = scmToolkitWithCodexCoauthor(originalMessage);
+        committingWithCodex = true;
+        refreshCodexCommit();
+        currentInput.value = attributedMessage;
+
+        try {
+            await commands.executeCommand('git.commit', currentRepositoryArgument);
+        } catch (error) {
+            notifications.error(error);
+        } finally {
+            if (currentInput?.value === attributedMessage) {
+                currentInput.value = originalMessage;
+            }
+            committingWithCodex = false;
+            refreshCodexCommit();
+        }
+    };
+
     const refreshBranchControls = () => {
         branchButton.disabled = pending || deletingBranch || !currentCommand?.id;
 
@@ -266,6 +333,8 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             deleteButton.setAttribute('aria-label', description);
             deleteTooltip.textContent = description;
         }
+
+        refreshCodexCommit();
     };
 
     const openBranchPicker = async event => {
@@ -350,16 +419,19 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
 
     branchButton.addEventListener('click', openBranchPicker);
     deleteButton.addEventListener('click', deleteBranch);
+    codexButton.addEventListener('click', commitWithCodex);
     widget.disposables.add({
         dispose() {
             branchButton.removeEventListener('click', openBranchPicker);
             deleteButton.removeEventListener('click', deleteBranch);
             pushCheckbox.removeEventListener('change', changePush);
             autocompleteButton.removeEventListener('click', toggleAutocomplete);
+            codexButton.removeEventListener('click', commitWithCodex);
             branchButton.remove();
             pushControl.remove();
             deleteButton.remove();
             autocompleteButton.remove();
+            codexButton.remove();
         }
     });
 
@@ -377,7 +449,10 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             const autocompleteWidth = autocompleteButton.hidden
                 ? 0
                 : autocompleteButton.getBoundingClientRect().width;
-            return branchWidth + pushWidth + deleteWidth + autocompleteWidth;
+            const codexWidth = codexButton.hidden
+                ? 0
+                : codexButton.getBoundingClientRect().width;
+            return branchWidth + pushWidth + deleteWidth + autocompleteWidth + codexWidth;
         },
 
         bind(input) {
@@ -385,6 +460,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             currentBranch = undefined;
             currentHistoryProvider = undefined;
             currentRepositoryArgument = undefined;
+            currentInput = undefined;
             branchButton.hidden = true;
             branchButton.disabled = true;
             pushControl.hidden = true;
@@ -392,8 +468,11 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             deleteButton.disabled = true;
             autocompleteButton.hidden = true;
             autocompleteButton.disabled = false;
+            codexButton.hidden = true;
+            codexButton.disabled = true;
 
             if (!input || input.repository.provider.providerId !== 'git') return;
+            currentInput = input;
 
             if (settings.commitAndPush) {
                 pushControl.hidden = false;
@@ -405,9 +484,18 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
                 refreshAutocomplete();
             }
 
+            if (settings.codexCoauthor) {
+                codexButton.hidden = false;
+                refreshCodexCommit();
+            }
+
             deleteButton.classList.toggle(
                 'scm-toolkit-has-following-control',
-                !autocompleteButton.hidden
+                !autocompleteButton.hidden || !codexButton.hidden
+            );
+            autocompleteButton.classList.toggle(
+                'scm-toolkit-has-following-control',
+                !codexButton.hidden
             );
 
             if (settings.shortPlaceholder) {

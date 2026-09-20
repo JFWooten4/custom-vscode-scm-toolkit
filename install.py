@@ -18,6 +18,7 @@ DEFAULT_SETTINGS = {
     "commitAndPush": True,
     "branchCleanup": True,
     "autocompleteToggle": True,
+    "codexCoauthor": True,
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
     "aiCommit": True,
@@ -80,6 +81,9 @@ def load_settings():
         ),
         "autocompleteToggle": read_git_bool(
             "scm-toolkit.autocomplete-toggle", DEFAULT_SETTINGS["autocompleteToggle"]
+        ),
+        "codexCoauthor": read_git_bool(
+            "scm-toolkit.codex-coauthor", DEFAULT_SETTINGS["codexCoauthor"]
         ),
         "hideOutgoingSyncCount": read_git_bool(
             "scm-toolkit.hide-outgoing-sync-count",
