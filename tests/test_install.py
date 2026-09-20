@@ -22,6 +22,9 @@ SETTINGS = {
     "aiCommitLowMemoryModel": "qwen2.5-coder:3b",
     "aiLowMemoryGiB": "4",
     "aiModelPicker": True,
+    "mcpPullRequest": True,
+    "mcpPrServer": "codex-drafter",
+    "mcpPrTool": "github_create_pull_request",
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -33,6 +36,7 @@ def workbench_fixture():
             'cmd=svc("commandService")',
             'notify=svc("notificationService")',
             'config=svc("configurationService")',
+            'mcp=svc("IMcpService")',
             'function watch(s,o=source.ofCaller()){return new first(new second(void 0,void 0,s),s,void 0,o)}',
             'this.disposables.add(this.toolbar)}static{this.ValidationTimeouts=',
             'this.inputEditor.setModel(void 0),this.model=void 0;return}'
@@ -47,7 +51,7 @@ class TransformTests(unittest.TestCase):
     def test_controls_use_the_vscode_input_background(self):
         css = (install.HERE / "picker.css").read_text()
 
-        self.assertEqual(css.count("background: var(--vscode-input-background);"), 4)
+        self.assertEqual(css.count("background: var(--vscode-input-background);"), 5)
         self.assertEqual(css.count("background: transparent;"), 1)
 
     def test_branch_selector_uses_the_vscode_button_colors(self):
@@ -94,16 +98,24 @@ class TransformTests(unittest.TestCase):
             '"aiCommitModel":"qwen2.5-coder:7b",'
             '"aiCommitLowMemoryModel":"qwen2.5-coder:3b",'
             '"aiLowMemoryGiB":"4","aiModelPicker":true,'
+            '"mcpPullRequest":true,'
+            '"mcpPrServer":"codex-drafter","mcpPrTool":"github_create_pull_request",'
             '"defaultBranch":"main","remote":"origin"};\n',
             js,
         )
         self.assertIn("editor.inlineSuggest.enabled", js)
         self.assertIn("commands.executeCommand('git.refresh', repositoryArgument)", js)
         self.assertIn("scm-toolkit-autocomplete", css)
-        self.assertEqual(js.count("className = 'scm-toolkit-tooltip'"), 2)
+        self.assertEqual(js.count("className = 'scm-toolkit-tooltip'"), 3)
         self.assertIn(".scm-toolkit-autocomplete:hover > .scm-toolkit-tooltip", css)
         self.assertIn("Co-authored-by: Codex Web <noreply@openai.com>", js)
         self.assertIn("commands.executeCommand('git.commit', currentRepositoryArgument)", js)
+        self.assertIn("mcpService.activateCollections()", js)
+        self.assertIn("mcpService.servers.get()", js)
+        self.assertIn("server.start({ promptType: 'all-untrusted' })", js)
+        self.assertIn("const result = await tool.call({", js)
+        self.assertIn("github_create_pull_request", js)
+        self.assertIn("scm-toolkit-pull-request", css)
         self.assertEqual(js.count(install.START), 1)
         self.assertEqual(js.count(install.END), 1)
         self.assertEqual(css.count(install.START), 1)

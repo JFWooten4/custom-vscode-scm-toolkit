@@ -27,6 +27,9 @@ DEFAULT_SETTINGS = {
     "aiCommitLowMemoryModel": "qwen2.5-coder:3b",
     "aiLowMemoryGiB": "4",
     "aiModelPicker": True,
+    "mcpPullRequest": True,
+    "mcpPrServer": "codex-drafter",
+    "mcpPrTool": "github_create_pull_request",
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -113,6 +116,15 @@ def load_settings():
         "aiModelPicker": read_git_bool(
             "scm-toolkit.ai-model-picker", DEFAULT_SETTINGS["aiModelPicker"]
         ),
+        "mcpPullRequest": read_git_bool(
+            "scm-toolkit.mcp-pull-request", DEFAULT_SETTINGS["mcpPullRequest"]
+        ),
+        "mcpPrServer": read_git_string(
+            "scm-toolkit.mcp-pr-server", DEFAULT_SETTINGS["mcpPrServer"]
+        ),
+        "mcpPrTool": read_git_string(
+            "scm-toolkit.mcp-pr-tool", DEFAULT_SETTINGS["mcpPrTool"]
+        ),
         "defaultBranch": read_git_string(
             "scm-toolkit.default-branch", DEFAULT_SETTINGS["defaultBranch"]
         ),
@@ -190,7 +202,7 @@ def sync_model_picker(enabled=True, remove=False, check=False, destination=None)
 
 
 def edits(js=None):
-    command, notification, configuration, observe, dimension = "fe", "Le", "Xe", "pe", "xi"
+    command, notification, configuration, mcp, observe, dimension = "fe", "Le", "Xe", "Me", "pe", "xi"
 
     if js is not None:
         ident = r"[A-Za-z_$][\w$]*"
@@ -204,6 +216,7 @@ def edits(js=None):
         command = unique(r"(" + ident + r')=\w+\("commandService"\)')
         notification = unique(r"(" + ident + r')=\w+\("notificationService"\)')
         configuration = unique(r"(" + ident + r')=\w+\("configurationService"\)')
+        mcp = unique(r"(" + ident + r')=\w+\("IMcpService"\)')
         observe = unique(
             r"function (" + ident + r")\(s,o=" + ident
             + r"\.ofCaller\(\)\)\{return new " + ident
@@ -219,7 +232,7 @@ def edits(js=None):
             "this.disposables.add(this.toolbar);this.scmToolkitControls="
             f"i.invokeFunction(accessor=>scmToolkitCreateControls(this,{observe},"
             f"accessor.get({command}),accessor.get({notification}),"
-            f"accessor.get({configuration}),scmToolkitSettings))}}"
+            f"accessor.get({configuration}),accessor.get({mcp}),scmToolkitSettings))}}"
             "static{this.ValidationTimeouts=",
         ),
         (

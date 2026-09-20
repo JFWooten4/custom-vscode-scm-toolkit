@@ -118,7 +118,47 @@ function scmToolkitWithCodexCoauthor(message) {
     return alreadyAttributed ? base : `${base}\n\n${SCM_TOOLKIT_CODEX_COAUTHOR}`;
 }
 
-function scmToolkitCreateControls(widget, observe, commands, notifications, configuration, settings) {
+function scmToolkitParseGitHubRemote(remoteUrl) {
+    const value = String(remoteUrl ?? '').trim();
+    if (!value) return undefined;
+
+    const patterns = [
+        /^https?:\/\/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/i,
+        /^git@github\.com:([^/]+)\/([^/]+?)(?:\.git)?$/i,
+        /^ssh:\/\/git@github\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/i,
+    ];
+
+    for (const pattern of patterns) {
+        const match = value.match(pattern);
+        if (match) return { owner: match[1], repo: match[2] };
+    }
+    return undefined;
+}
+
+function scmToolkitPullRequestTitle(branch) {
+    const tail = String(branch ?? '').split('/').filter(Boolean).pop() ?? '';
+    const words = tail.replace(/[-_]+/g, ' ').trim();
+    return words ? words[0].toUpperCase() + words.slice(1) : `Open ${branch}`;
+}
+
+function scmToolkitMcpError(result) {
+    const message = result?.content?.find(
+        item => item?.type === 'text' && typeof item.text === 'string'
+    )?.text;
+    return message || 'The MCP pull-request tool returned an error.';
+}
+
+async function scmToolkitWaitForMcpTool(doc, server, toolName) {
+    const win = doc.defaultView;
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+        const tool = server.tools?.get?.().find(candidate => candidate.definition?.name === toolName);
+        if (tool) return tool;
+        await new Promise(resolve => win ? win.setTimeout(resolve, 100) : setTimeout(resolve, 100));
+    }
+    return undefined;
+}
+
+function scmToolkitCreateControls(widget, observe, commands, notifications, configuration, mcpService, settings) {
     const doc = widget.element.ownerDocument;
     if (settings.hideOutgoingSyncCount) scmToolkitHideOutgoingSyncCount(widget);
     const branchButton = doc.createElement('button');
@@ -178,8 +218,24 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     codexButton.title = 'Commit with Codex co-author';
     codexButton.setAttribute('aria-label', 'Commit with Codex co-author');
 
+    const pullRequestButton = doc.createElement('button');
+    pullRequestButton.type = 'button';
+    pullRequestButton.className = 'scm-toolkit-pull-request codicon codicon-git-pull-request';
+    pullRequestButton.hidden = true;
+
+    const pullRequestTooltip = doc.createElement('span');
+    pullRequestTooltip.className = 'scm-toolkit-tooltip';
+    pullRequestTooltip.setAttribute('aria-hidden', 'true');
+    pullRequestButton.append(pullRequestTooltip);
+
     widget.element.prepend(branchButton);
-    widget.element.append(pushControl, deleteButton, autocompleteButton, codexButton);
+    widget.element.append(
+        pushControl,
+        deleteButton,
+        autocompleteButton,
+        codexButton,
+        pullRequestButton
+    );
 
     let currentCommand;
     let currentBranch;
@@ -188,6 +244,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     let currentInput;
     let pending = false;
     let deletingBranch = false;
+    let creatingPullRequest = false;
     let updatingPush = false;
     let updatingAutocomplete = false;
     let committingWithCodex = false;
@@ -304,8 +361,120 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         }
     };
 
+    const refreshPullRequest = () => {
+        const branch = currentBranch;
+        const unavailable =
+            !settings.mcpPullRequest
+            || !branch
+            || branch === settings.defaultBranch
+            || !currentRepositoryArgument;
+
+        pullRequestButton.hidden = !settings.mcpPullRequest;
+        pullRequestButton.disabled =
+            pending || deletingBranch || creatingPullRequest || unavailable;
+
+        if (!branch) {
+            pullRequestTooltip.textContent = 'Open a pull request for the current branch';
+        } else if (branch === settings.defaultBranch) {
+            pullRequestTooltip.textContent =
+                `${settings.defaultBranch} is the pull-request base branch`;
+        } else {
+            pullRequestTooltip.textContent =
+                `Open a pull request for ${branch} with ${settings.mcpPrServer}`;
+        }
+        pullRequestButton.setAttribute('aria-label', pullRequestTooltip.textContent);
+    };
+
+    const createPullRequest = async event => {
+        event.stopPropagation();
+
+        const branch = currentBranch;
+        const repository = currentRepositoryArgument;
+        if (
+            !settings.mcpPullRequest
+            || !branch
+            || branch === settings.defaultBranch
+            || !repository
+            || pending
+            || deletingBranch
+            || creatingPullRequest
+        ) {
+            return;
+        }
+
+        const remote = repository.state?.remotes?.find(
+            candidate => candidate.name === settings.remote
+        );
+        const github = scmToolkitParseGitHubRemote(remote?.pushUrl || remote?.fetchUrl);
+        if (!github) {
+            notifications.error(
+                `Cannot create a pull request: ${settings.remote} is not a GitHub remote.`
+            );
+            return;
+        }
+
+        try {
+            await mcpService.activateCollections();
+        } catch (error) {
+            notifications.error(error);
+            return;
+        }
+
+        const wantedServer = String(settings.mcpPrServer).toLowerCase();
+        const server = mcpService.servers.get().find(candidate => {
+            const metadata = candidate.serverMetadata?.get?.();
+            return [
+                candidate.definition?.id,
+                candidate.definition?.label,
+                metadata?.serverName,
+            ].some(name => String(name ?? '').toLowerCase() === wantedServer);
+        });
+        if (!server) {
+            notifications.error(
+                `MCP server "${settings.mcpPrServer}" is not configured in VS Code.`
+            );
+            return;
+        }
+
+        creatingPullRequest = true;
+        refreshBranchControls();
+        try {
+            await server.start({ promptType: 'all-untrusted' });
+            const tool = await scmToolkitWaitForMcpTool(doc, server, settings.mcpPrTool);
+            if (!tool) {
+                throw new Error(
+                    `MCP tool "${settings.mcpPrTool}" was not found on ${settings.mcpPrServer}.`
+                );
+            }
+
+            const result = await tool.call({
+                owner: github.owner,
+                repo: github.repo,
+                title: scmToolkitPullRequestTitle(branch),
+                prompt: `Open a pull request for branch ${branch}.`,
+                body: `Opens \`${branch}\` against \`${settings.defaultBranch}\`.`,
+                head: branch,
+                base: settings.defaultBranch,
+            });
+            if (result?.isError) throw new Error(scmToolkitMcpError(result));
+
+            const url = result?.structuredContent?.url;
+            notifications.info(
+                url
+                    ? `Created pull request: ${url}`
+                    : `Created pull request for ${branch}.`
+            );
+        } catch (error) {
+            notifications.error(error);
+        } finally {
+            creatingPullRequest = false;
+            refreshBranchControls();
+        }
+    };
+
     const refreshBranchControls = () => {
-        branchButton.disabled = pending || deletingBranch || !currentCommand?.id;
+        branchButton.disabled =
+            pending || deletingBranch || creatingPullRequest || !currentCommand?.id;
 
         const unavailable =
             !settings.branchCleanup
@@ -317,6 +486,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         deleteButton.disabled =
             pending
             || deletingBranch
+            || creatingPullRequest
             || unavailable
             || currentBranch === settings.defaultBranch;
 
@@ -335,12 +505,13 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         }
 
         refreshCodexCommit();
+        refreshPullRequest();
     };
 
     const openBranchPicker = async event => {
         event.stopPropagation();
         const command = currentCommand;
-        if (!command?.id || pending || deletingBranch) return;
+        if (!command?.id || pending || deletingBranch || creatingPullRequest) return;
 
         pending = true;
         refreshBranchControls();
@@ -367,6 +538,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             || !historyProvider
             || !repositoryArgument
             || deletingBranch
+            || creatingPullRequest
             || pending
         ) {
             return;
@@ -420,6 +592,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     branchButton.addEventListener('click', openBranchPicker);
     deleteButton.addEventListener('click', deleteBranch);
     codexButton.addEventListener('click', commitWithCodex);
+    pullRequestButton.addEventListener('click', createPullRequest);
     widget.disposables.add({
         dispose() {
             branchButton.removeEventListener('click', openBranchPicker);
@@ -427,11 +600,13 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             pushCheckbox.removeEventListener('change', changePush);
             autocompleteButton.removeEventListener('click', toggleAutocomplete);
             codexButton.removeEventListener('click', commitWithCodex);
+            pullRequestButton.removeEventListener('click', createPullRequest);
             branchButton.remove();
             pushControl.remove();
             deleteButton.remove();
             autocompleteButton.remove();
             codexButton.remove();
+            pullRequestButton.remove();
         }
     });
 
@@ -452,7 +627,11 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             const codexWidth = codexButton.hidden
                 ? 0
                 : codexButton.getBoundingClientRect().width;
-            return branchWidth + pushWidth + deleteWidth + autocompleteWidth + codexWidth;
+            const pullRequestWidth = pullRequestButton.hidden
+                ? 0
+                : pullRequestButton.getBoundingClientRect().width;
+            return branchWidth + pushWidth + deleteWidth + autocompleteWidth
+                + codexWidth + pullRequestWidth;
         },
 
         bind(input) {
@@ -470,6 +649,8 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             autocompleteButton.disabled = false;
             codexButton.hidden = true;
             codexButton.disabled = true;
+            pullRequestButton.hidden = true;
+            pullRequestButton.disabled = true;
 
             if (!input || input.repository.provider.providerId !== 'git') return;
             currentInput = input;
@@ -489,13 +670,22 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
                 refreshCodexCommit();
             }
 
+            if (settings.mcpPullRequest) {
+                pullRequestButton.hidden = false;
+                refreshPullRequest();
+            }
+
             deleteButton.classList.toggle(
                 'scm-toolkit-has-following-control',
-                !autocompleteButton.hidden || !codexButton.hidden
+                !autocompleteButton.hidden || !codexButton.hidden || !pullRequestButton.hidden
             );
             autocompleteButton.classList.toggle(
                 'scm-toolkit-has-following-control',
-                !codexButton.hidden
+                !codexButton.hidden || !pullRequestButton.hidden
+            );
+            codexButton.classList.toggle(
+                'scm-toolkit-has-following-control',
+                !pullRequestButton.hidden
             );
 
             if (settings.shortPlaceholder) {
