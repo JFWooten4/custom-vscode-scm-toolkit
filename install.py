@@ -21,6 +21,7 @@ DEFAULT_SETTINGS = {
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
     "aiCommit": True,
+    "aiDefaultBranchDescription": True,
     "aiCommitModel": "qwen2.5-coder:7b",
     "aiCommitLowMemoryModel": "qwen2.5-coder:3b",
     "aiLowMemoryGiB": "4",
@@ -90,6 +91,10 @@ def load_settings():
         ),
         "aiCommit": read_git_bool(
             "scm-toolkit.ai-commit", DEFAULT_SETTINGS["aiCommit"]
+        ),
+        "aiDefaultBranchDescription": read_git_bool(
+            "scm-toolkit.ai-default-branch-description",
+            DEFAULT_SETTINGS["aiDefaultBranchDescription"],
         ),
         "aiCommitModel": read_git_string(
             "scm-toolkit.ai-commit-model", DEFAULT_SETTINGS["aiCommitModel"]
