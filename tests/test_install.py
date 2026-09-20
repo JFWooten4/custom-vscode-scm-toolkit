@@ -25,6 +25,7 @@ SETTINGS = {
     "mcpPullRequest": True,
     "mcpPrServer": "codex-drafter",
     "mcpPrTool": "github_create_pull_request",
+    "codexUsageResetCountdown": False,
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -100,6 +101,7 @@ class TransformTests(unittest.TestCase):
             '"aiLowMemoryGiB":"4","aiModelPicker":true,'
             '"mcpPullRequest":true,'
             '"mcpPrServer":"codex-drafter","mcpPrTool":"github_create_pull_request",'
+            '"codexUsageResetCountdown":false,'
             '"defaultBranch":"main","remote":"origin"};\n',
             js,
         )
@@ -218,6 +220,35 @@ class GitConfigTests(unittest.TestCase):
     def test_string_git_config_uses_value(self, run):
         run.return_value = types.SimpleNamespace(returncode=0, stdout="upstream\n", stderr="")
         self.assertEqual(install.read_git_string("scm-toolkit.remote", "origin"), "upstream")
+
+
+class CodexCountdownTests(unittest.TestCase):
+    def fixture(self):
+        return (
+            "function banner(){let V={},ne=123,We=false,Ge="
+            "ne==null?null:oE(V,ne,We),unused=true;"
+            "return (0,L4.jsx)(Y,{id:`codex.upsellBanner.general.title`,"
+            "defaultMessage:`You’re out of Codex messages`,"
+            "values:{resetDate:Ge}})}"
+        )
+
+    def test_countdown_is_off_by_default(self):
+        self.assertFalse(install.DEFAULT_SETTINGS["codexUsageResetCountdown"])
+
+    def test_codex_countdown_install_and_remove_round_trip(self):
+        original = self.fixture()
+        patched = install.transform_codex(original, enabled=True)
+
+        self.assertIn("scm-toolkit-usage-reset-countdown", patched)
+        self.assertIn('"reset-at":ne', patched)
+        self.assertEqual(patched.count(install.CODEX_START), 1)
+        self.assertEqual(install.transform_codex(patched, remove=True), original)
+
+    def test_codex_countdown_disabled_removes_existing_patch(self):
+        original = self.fixture()
+        patched = install.transform_codex(original, enabled=True)
+
+        self.assertEqual(install.transform_codex(patched, enabled=False), original)
 
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@ Current features:
 - optionally hide the outgoing commit count from the built-in Sync action
 - optionally refresh clean/blank Git repositories more aggressively so the first new change appears in SCM quickly
 - optionally generate a commit subject locally when the normal Commit button is used with a blank message
+- optionally show a live, minute-precision countdown in Codex usage-limit banners
 
 The patch is intentionally narrow: it does not copy or manage unrelated editor settings.
 
@@ -88,6 +89,7 @@ git config --global scm-toolkit.ai-model-picker true
 git config --global scm-toolkit.mcp-pull-request true
 git config --global scm-toolkit.mcp-pr-server codex-drafter
 git config --global scm-toolkit.mcp-pr-tool github_create_pull_request
+git config --global scm-toolkit.codex-usage-reset-countdown true
 git config --global scm-toolkit.default-branch main
 git config --global scm-toolkit.remote origin
 ```
@@ -113,11 +115,12 @@ The equivalent `~/.gitconfig` block is:
     mcp-pull-request = true
     mcp-pr-server = codex-drafter
     mcp-pr-tool = github_create_pull_request
+    codex-usage-reset-countdown = true
     default-branch = main
     remote = origin
 ```
 
-All twelve feature switches default to `true`. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
+The Codex usage-reset countdown defaults to `false`; the twelve SCM feature switches default to `true`. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
 
 After changing toolkit Git config, rerun:
 
@@ -192,6 +195,22 @@ python3 install.py
 ```
 
 The environment variables `SCM_TOOLKIT_AI_MODEL`, `SCM_TOOLKIT_AI_LOW_MEMORY_MODEL`, and `SCM_TOOLKIT_AI_LOW_MEMORY_GIB` can temporarily override the corresponding Git-config values.
+
+### Codex usage-reset countdown
+
+When `codex-usage-reset-countdown` is enabled, usage-limit banners in the installed
+Codex extension show the time remaining as a live countdown such as `4h 23m`. The
+display rounds to the nearest minute and refreshes as the countdown changes.
+
+To install or refresh only this optional Codex patch without touching the SCM
+workbench patch, run:
+
+```sh
+python3 install.py --codex-only
+```
+
+Codex extension updates can replace the patched webview bundle. Rerun the command
+after an extension update if the countdown disappears.
 
 ### Commit and push
 

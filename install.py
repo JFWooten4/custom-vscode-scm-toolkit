@@ -11,6 +11,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 START = '\n/* scm-toolkit:start */\n'
 END = '\n/* scm-toolkit:end */\n'
+CODEX_START = '\n/* scm-toolkit-codex-countdown:start */\n'
+CODEX_END = '\n/* scm-toolkit-codex-countdown:end */\n'
 
 DEFAULT_SETTINGS = {
     "branchPicker": True,
@@ -30,6 +32,7 @@ DEFAULT_SETTINGS = {
     "mcpPullRequest": True,
     "mcpPrServer": "codex-drafter",
     "mcpPrTool": "github_create_pull_request",
+    "codexUsageResetCountdown": False,
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -124,6 +127,10 @@ def load_settings():
         ),
         "mcpPrTool": read_git_string(
             "scm-toolkit.mcp-pr-tool", DEFAULT_SETTINGS["mcpPrTool"]
+        ),
+        "codexUsageResetCountdown": read_git_bool(
+            "scm-toolkit.codex-usage-reset-countdown",
+            DEFAULT_SETTINGS["codexUsageResetCountdown"],
         ),
         "defaultBranch": read_git_string(
             "scm-toolkit.default-branch", DEFAULT_SETTINGS["defaultBranch"]
@@ -265,6 +272,85 @@ def strip_payload(text):
     return before + after
 
 
+def strip_codex_payload(text):
+    if CODEX_START not in text:
+        return text
+    if text.count(CODEX_START) != 1 or text.count(CODEX_END) != 1:
+        raise ValueError("Unexpected Codex countdown patch markers; refusing to modify this file.")
+    before, rest = text.split(CODEX_START, 1)
+    _, after = rest.split(CODEX_END, 1)
+    return before + after
+
+
+def codex_countdown_edit(js):
+    matches = []
+    pattern = re.compile(
+        r"(?P<display>[A-Za-z_$][\w$]*)=(?P<reset>[A-Za-z_$][\w$]*)==null\?null:"
+        r"(?P<formatter>[A-Za-z_$][\w$]*)\((?P<intl>[A-Za-z_$][\w$]*),"
+        r"(?P=reset),(?P<flag>[A-Za-z_$][\w$]*)\),"
+    )
+    title = "You’re out of Codex messages"
+    for match in pattern.finditer(js):
+        if title in js[match.end() : match.end() + 40_000]:
+            matches.append(match)
+
+    if len(matches) != 1:
+        raise ValueError("Unsupported Codex extension build: reset-time anchor does not match.")
+
+    match = matches[0]
+    jsx_match = re.search(
+        r"\(0,([A-Za-z_$][\w$]*)\.jsx\)\([^,]+,\{id:"
+        r"`codex\.upsellBanner\.general\.title`,defaultMessage:"
+        r"`You’re out of Codex messages`",
+        js[match.end() : match.end() + 40_000],
+    )
+    if jsx_match is None:
+        raise ValueError("Unsupported Codex extension build: JSX anchor does not match.")
+
+    jsx = jsx_match.group(1)
+    original = match.group(0)
+    replacement = (
+        f'{match.group("display")}={match.group("reset")}==null?null:'
+        f'(0,{jsx}.jsx)(`scm-toolkit-usage-reset-countdown`,{{'
+        f'"reset-at":{match.group("reset")}'
+        '}),'
+    )
+    return original, replacement
+
+
+def transform_codex(js, enabled=False, remove=False):
+    installed = CODEX_START in js
+    if installed:
+        payload = js.split(CODEX_START, 1)[1].split(CODEX_END, 1)[0]
+        saved = re.search(r"^/\* edit:(.*?) \*/$", payload, re.MULTILINE)
+        if saved is None:
+            raise ValueError("Installed Codex countdown patch is missing its edit metadata.")
+        original, replacement = json.loads(saved.group(1))
+        js = strip_codex_payload(js)
+        if js.count(replacement) != 1:
+            raise ValueError(
+                "Installed Codex countdown patch changed; refusing to remove unrelated edits."
+            )
+        js = js.replace(replacement, original, 1)
+
+    if remove or not enabled:
+        return js
+
+    original, replacement = codex_countdown_edit(js)
+    if js.count(original) != 1:
+        raise ValueError("Unsupported Codex extension build: reset-time anchor is ambiguous.")
+    js = js.replace(original, replacement, 1)
+    return (
+        js
+        + CODEX_START
+        + "/* edit:"
+        + json.dumps([original, replacement])
+        + " */\n"
+        + (HERE / "codex-countdown.js").read_text()
+        + CODEX_END
+    )
+
+
 def transform(js, css, remove=False, settings=None):
     installed = START in js
     if installed != (START in css):
@@ -319,6 +405,40 @@ def application_paths(app_path):
     ]
 
 
+def codex_bundle_path(extension_path=None):
+    if extension_path is None:
+        extensions = Path.home() / ".vscode/extensions"
+        candidates = sorted(extensions.glob("openai.chatgpt-*"), reverse=True)
+    else:
+        candidates = [extension_path]
+
+    for candidate in candidates:
+        assets = candidate / "webview/assets"
+        if not assets.is_dir():
+            continue
+        patched = [
+            path
+            for path in assets.glob("app-initial-*.js")
+            if CODEX_START in path.read_text()
+        ]
+        if len(patched) == 1:
+            return patched[0]
+        matches = []
+        for path in assets.glob("app-initial-*.js"):
+            text = path.read_text()
+            if "You’re out of Codex messages" not in text:
+                continue
+            try:
+                codex_countdown_edit(text)
+            except ValueError:
+                continue
+            matches.append(path)
+        if len(matches) == 1:
+            return matches[0]
+
+    return None
+
+
 def write_pair(paths, new_contents, old_contents):
     written = []
     try:
@@ -344,23 +464,62 @@ def main():
     )
     parser.add_argument("--uninstall", action="store_true", help="Remove the toolkit patch")
     parser.add_argument("--check", action="store_true", help="Validate without writing")
+    parser.add_argument(
+        "--codex-only",
+        action="store_true",
+        help="Only install or remove the optional Codex usage-reset countdown",
+    )
+    parser.add_argument(
+        "--codex-extension",
+        type=Path,
+        help="Path to an OpenAI Codex VS Code extension directory",
+    )
     args = parser.parse_args()
 
     settings = load_settings()
-    version, paths = application_paths(args.app)
+    version, workbench_paths = application_paths(args.app)
+    paths = [] if args.codex_only else workbench_paths
     old = [path.read_text() for path in paths]
-    new = transform(*old, remove=args.uninstall, settings=settings)
+    new = (
+        []
+        if args.codex_only
+        else list(transform(*old, remove=args.uninstall, settings=settings))
+    )
     wrapper_path = ai_wrapper_path()
-    wrapper_changed = sync_ai_wrapper(
-        remove=args.uninstall, check=True, destination=wrapper_path
+    wrapper_changed = (
+        False
+        if args.codex_only
+        else sync_ai_wrapper(
+            remove=args.uninstall, check=True, destination=wrapper_path
+        )
     )
     model_picker_path = ai_model_picker_path()
-    model_picker_changed = sync_model_picker(
-        enabled=settings["aiModelPicker"],
-        remove=args.uninstall,
-        check=True,
-        destination=model_picker_path,
+    model_picker_changed = (
+        False
+        if args.codex_only
+        else sync_model_picker(
+            enabled=settings["aiModelPicker"],
+            remove=args.uninstall,
+            check=True,
+            destination=model_picker_path,
+        )
     )
+
+    codex_path = codex_bundle_path(args.codex_extension)
+    should_find_codex = settings["codexUsageResetCountdown"] or args.uninstall
+    if codex_path is None and should_find_codex:
+        raise ValueError("OpenAI Codex extension webview bundle was not found or is unsupported.")
+    if codex_path is not None:
+        paths.append(codex_path)
+        codex_old = codex_path.read_text()
+        old.append(codex_old)
+        new.append(
+            transform_codex(
+                codex_old,
+                enabled=settings["codexUsageResetCountdown"],
+                remove=args.uninstall,
+            )
+        )
 
     if old == list(new) and not wrapper_changed and not model_picker_changed:
         action = "not installed" if args.uninstall else "already up to date"
@@ -372,24 +531,30 @@ def main():
             if old != [path.read_text() for path in paths]:
                 raise RuntimeError("VS Code changed during validation; retry the command.")
             write_pair(paths, new, old)
-        sync_ai_wrapper(remove=args.uninstall, destination=wrapper_path)
-        sync_model_picker(
-            enabled=settings["aiModelPicker"],
-            remove=args.uninstall,
-            destination=model_picker_path,
-        )
+        if not args.codex_only:
+            sync_ai_wrapper(remove=args.uninstall, destination=wrapper_path)
+            sync_model_picker(
+                enabled=settings["aiModelPicker"],
+                remove=args.uninstall,
+                destination=model_picker_path,
+            )
 
     action = "Validated" if args.check else "Removed" if args.uninstall else "Installed"
-    print(f"{action} SCM toolkit for VS Code {version}. Reload VS Code to apply the change.")
-    if args.uninstall:
-        print("Clear VS Code git.path if it still points to the removed SCM toolkit wrapper.")
-    else:
-        print(f"AI commit wrapper: {wrapper_path}")
-        if settings["aiModelPicker"]:
-            print(f"AI model picker: {model_picker_path}")
+    target = "Codex countdown" if args.codex_only else "SCM toolkit"
+    print(f"{action} {target} for VS Code {version}. Reload VS Code to apply the change.")
+    if not args.codex_only:
+        if args.uninstall:
+            print("Clear VS Code git.path if it still points to the removed SCM toolkit wrapper.")
         else:
-            print("AI model picker: disabled by scm-toolkit.ai-model-picker")
-        print("Set VS Code git.path to that absolute path and git.useEditorAsCommitInput to true.")
+            print(f"AI commit wrapper: {wrapper_path}")
+            if settings["aiModelPicker"]:
+                print(f"AI model picker: {model_picker_path}")
+            else:
+                print("AI model picker: disabled by scm-toolkit.ai-model-picker")
+            print(
+                "Set VS Code git.path to that absolute path and "
+                "git.useEditorAsCommitInput to true."
+            )
 
 
 if __name__ == "__main__":
