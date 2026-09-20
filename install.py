@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -19,6 +20,8 @@ DEFAULT_SETTINGS = {
     "autocompleteToggle": True,
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
+    "aiCommit": True,
+    "aiCommitModel": "qwen2.5-coder:7b",
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -82,11 +85,50 @@ def load_settings():
             "scm-toolkit.blank-state-refresh",
             DEFAULT_SETTINGS["blankStateRefresh"],
         ),
+        "aiCommit": read_git_bool(
+            "scm-toolkit.ai-commit", DEFAULT_SETTINGS["aiCommit"]
+        ),
+        "aiCommitModel": read_git_string(
+            "scm-toolkit.ai-commit-model", DEFAULT_SETTINGS["aiCommitModel"]
+        ),
         "defaultBranch": read_git_string(
             "scm-toolkit.default-branch", DEFAULT_SETTINGS["defaultBranch"]
         ),
         "remote": read_git_string("scm-toolkit.remote", DEFAULT_SETTINGS["remote"]),
     }
+
+
+def ai_wrapper_path():
+    configured = os.environ.get(
+        "SCM_TOOLKIT_AI_WRAPPER_PATH", "~/.local/bin/scm-toolkit-git"
+    )
+    return Path(configured).expanduser()
+
+
+def sync_ai_wrapper(remove=False, check=False, destination=None):
+    destination = Path(destination) if destination is not None else ai_wrapper_path()
+    source = HERE / "ai_commit.py"
+
+    if remove:
+        changed = destination.exists() or destination.is_symlink()
+        if changed and not check:
+            destination.unlink()
+        return changed
+
+    if destination.is_symlink():
+        raise RuntimeError(f"Refusing to overwrite symlinked AI wrapper: {destination}")
+
+    expected = source.read_bytes()
+    current = destination.read_bytes() if destination.exists() else None
+    executable = destination.exists() and bool(destination.stat().st_mode & 0o111)
+    changed = current != expected or not executable
+
+    if changed and not check:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(expected)
+        destination.chmod(0o755)
+
+    return changed
 
 
 def edits(js=None):
@@ -233,22 +275,34 @@ def main():
     parser.add_argument("--check", action="store_true", help="Validate without writing")
     args = parser.parse_args()
 
+    settings = load_settings()
     version, paths = application_paths(args.app)
     old = [path.read_text() for path in paths]
-    new = transform(*old, remove=args.uninstall)
+    new = transform(*old, remove=args.uninstall, settings=settings)
+    wrapper_path = ai_wrapper_path()
+    wrapper_changed = sync_ai_wrapper(
+        remove=args.uninstall, check=True, destination=wrapper_path
+    )
 
-    if old == list(new):
+    if old == list(new) and not wrapper_changed:
         action = "not installed" if args.uninstall else "already up to date"
         print(f"SCM toolkit is {action} for VS Code {version}.")
         return
 
     if not args.check:
-        if old != [path.read_text() for path in paths]:
-            raise RuntimeError("VS Code changed during validation; retry the command.")
-        write_pair(paths, new, old)
+        if old != list(new):
+            if old != [path.read_text() for path in paths]:
+                raise RuntimeError("VS Code changed during validation; retry the command.")
+            write_pair(paths, new, old)
+        sync_ai_wrapper(remove=args.uninstall, destination=wrapper_path)
 
     action = "Validated" if args.check else "Removed" if args.uninstall else "Installed"
     print(f"{action} SCM toolkit for VS Code {version}. Reload VS Code to apply the change.")
+    if args.uninstall:
+        print("Clear VS Code git.path if it still points to the removed SCM toolkit wrapper.")
+    else:
+        print(f"AI commit wrapper: {wrapper_path}")
+        print("Set VS Code git.path to that absolute path and git.useEditorAsCommitInput to true.")
 
 
 if __name__ == "__main__":

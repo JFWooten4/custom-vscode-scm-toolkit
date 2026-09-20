@@ -30,6 +30,17 @@ class RoutingTests(unittest.TestCase):
         self.assertTrue(ai_commit.uses_staged_index(["--quiet"]))
 
 
+class ConfigurationTests(unittest.TestCase):
+    @patch.object(ai_commit, "git_config_bool", return_value=False)
+    def test_ai_commit_can_be_disabled_globally(self, _config):
+        self.assertFalse(ai_commit.feature_enabled())
+
+    @patch.object(ai_commit, "git_config_string", return_value="local-model:test")
+    def test_model_can_be_selected_from_git_config(self, _config):
+        with patch.dict(ai_commit.os.environ, {"SCM_TOOLKIT_AI_MODEL": ""}):
+            self.assertEqual(ai_commit.configured_model(), "local-model:test")
+
+
 class TitleTests(unittest.TestCase):
     @patch.object(ai_commit, "recent_subjects", return_value="Fix parser\nAdd tests")
     def test_prompt_is_repository_scoped(self, _subjects):

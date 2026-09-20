@@ -11,6 +11,7 @@ Current features:
 - optionally show a quick toggle for VS Code inline autocomplete
 - optionally hide the outgoing commit count from the built-in Sync action
 - optionally refresh clean/blank Git repositories more aggressively so the first new change appears in SCM quickly
+- optionally generate a commit subject locally when the normal Commit button is used with a blank message
 
 The patch is intentionally narrow: it does not copy or manage unrelated editor settings.
 
@@ -20,6 +21,7 @@ The patch is intentionally narrow: it does not copy or manage unrelated editor s
 - Visual Studio Code using the standard application-bundle layout
 - Python 3
 - Git, if you want to configure feature flags through global Git config
+- Ollama, if you want local AI commit-title generation
 
 The installer modifies the installed VS Code workbench files. VS Code updates can replace those files, so rerun the installer after an update if the patch disappears. VS Code may also show an installation-integrity warning after its application files are modified.
 
@@ -74,6 +76,8 @@ git config --global scm-toolkit.branch-cleanup true
 git config --global scm-toolkit.autocomplete-toggle true
 git config --global scm-toolkit.hide-outgoing-sync-count true
 git config --global scm-toolkit.blank-state-refresh true
+git config --global scm-toolkit.ai-commit true
+git config --global scm-toolkit.ai-commit-model qwen2.5-coder:7b
 git config --global scm-toolkit.default-branch main
 git config --global scm-toolkit.remote origin
 ```
@@ -89,11 +93,13 @@ The equivalent `~/.gitconfig` block is:
     autocomplete-toggle = true
     hide-outgoing-sync-count = true
     blank-state-refresh = true
+    ai-commit = true
+    ai-commit-model = qwen2.5-coder:7b
     default-branch = main
     remote = origin
 ```
 
-All seven feature switches default to `true`. The default protected branch is `main`, and the default remote is `origin`.
+All eight feature switches default to `true`. The default AI model is `qwen2.5-coder:7b`, the default protected branch is `main`, and the default remote is `origin`.
 
 After changing toolkit Git config, rerun:
 
@@ -102,6 +108,31 @@ python3 install.py
 ```
 
 Then reload Visual Studio Code. The installer resolves the Git-config values and embeds that configuration into the installed patch.
+
+### AI commit titles
+
+The installer places a Git wrapper at `~/.local/bin/scm-toolkit-git`. To make VS Code use it, set these User Settings and reload VS Code:
+
+```json
+{
+    "git.path": "/absolute/path/to/.local/bin/scm-toolkit-git",
+    "git.useEditorAsCommitInput": true
+}
+```
+
+Use the absolute path shown by `python3 install.py`; do not rely on `~` expansion in the setting.
+
+When `ai-commit` is enabled, clicking VS Code's normal Commit button with a blank message summarizes the staged diff through the configured local Ollama model and commits with the generated subject. A manually entered message, amend/fixup/squash/reuse-message mode, path-limited commit, or `--all` keeps normal Git behavior.
+
+The wrapper talks only to Ollama on `127.0.0.1:11434`, bypasses proxy settings for that local request, and checks the local model inventory before generation. If the model or Ollama is unavailable, it uses a deterministic fallback subject. The prompt is generic and repository-scoped.
+
+Disable generation without removing the wrapper:
+
+```sh
+git config --global scm-toolkit.ai-commit false
+```
+
+Choose another locally installed model with `scm-toolkit.ai-commit-model` or the `SCM_TOOLKIT_AI_MODEL` environment variable.
 
 ### Commit and push
 
@@ -144,7 +175,9 @@ This does not delete the remote branch.
 
 ## Uninstall
 
-Remove the patch:
+Before uninstalling, clear VS Code's `git.path` setting if it points to the toolkit wrapper.
+
+Remove the patch and the installed wrapper:
 
 ```sh
 python3 install.py --uninstall
