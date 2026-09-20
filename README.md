@@ -21,7 +21,7 @@ The patch is intentionally narrow: it does not copy or manage unrelated editor s
 - Visual Studio Code using the standard application-bundle layout
 - Python 3
 - Git, if you want to configure feature flags through global Git config
-- Ollama, if you want local AI commit-title generation
+- Ollama is required for local AI commit-title generation; the rest of the toolkit can be used without it
 
 The installer modifies the installed VS Code workbench files. VS Code updates can replace those files, so rerun the installer after an update if the patch disappears. VS Code may also show an installation-integrity warning after its application files are modified.
 
@@ -78,6 +78,9 @@ git config --global scm-toolkit.hide-outgoing-sync-count true
 git config --global scm-toolkit.blank-state-refresh true
 git config --global scm-toolkit.ai-commit true
 git config --global scm-toolkit.ai-commit-model qwen2.5-coder:7b
+git config --global scm-toolkit.ai-commit-low-memory-model qwen2.5-coder:3b
+git config --global scm-toolkit.ai-low-memory-gib 4
+git config --global scm-toolkit.ai-model-picker true
 git config --global scm-toolkit.default-branch main
 git config --global scm-toolkit.remote origin
 ```
@@ -95,11 +98,14 @@ The equivalent `~/.gitconfig` block is:
     blank-state-refresh = true
     ai-commit = true
     ai-commit-model = qwen2.5-coder:7b
+    ai-commit-low-memory-model = qwen2.5-coder:3b
+    ai-low-memory-gib = 4
+    ai-model-picker = true
     default-branch = main
     remote = origin
 ```
 
-All eight feature switches default to `true`. The default AI model is `qwen2.5-coder:7b`, the default protected branch is `main`, and the default remote is `origin`.
+All nine feature switches default to `true`. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
 
 After changing toolkit Git config, rerun:
 
@@ -124,7 +130,35 @@ Use the absolute path shown by `python3 install.py`; do not rely on `~` expansio
 
 When `ai-commit` is enabled, clicking VS Code's normal Commit button with a blank message summarizes the staged diff through the configured local Ollama model and commits with the generated subject. A manually entered message, amend/fixup/squash/reuse-message mode, path-limited commit, or `--all` keeps normal Git behavior.
 
-The wrapper talks only to Ollama on `127.0.0.1:11434`, bypasses proxy settings for that local request, and checks the local model inventory before generation. If the model or Ollama is unavailable, it uses a deterministic fallback subject. The prompt is generic and repository-scoped.
+**Ollama is required for this feature.** Run a local Ollama server and install the models you select before relying on AI-generated subjects. The wrapper talks only to Ollama on `127.0.0.1:11434`, bypasses proxy settings for that local request, and checks the local model inventory before generation. If the selected model or Ollama is unavailable, it uses a deterministic fallback subject. The prompt is generic and repository-scoped.
+
+The wrapper supports two independently configurable models:
+
+- `ai-commit-model` is the normal/default model
+- `ai-commit-low-memory-model` is used when macOS reports less available memory than `ai-low-memory-gib`
+
+The low-memory path never escalates to the larger primary model when the fallback is missing. During normal-memory operation, the smaller model may be used if the primary model is not installed.
+
+### AI model picker
+
+When `ai-model-picker` is enabled, the installer adds a small native macOS picker:
+
+```sh
+~/.local/bin/scm-toolkit-models
+```
+
+The picker shows the current selections, locally installed Ollama models, and common Qwen2.5-Coder sizes, then writes the chosen normal and low-memory models to the `[scm-toolkit]` section of `~/.gitconfig`. It does not modify unrelated Git or VS Code settings.
+
+The recommendations are heuristics based on total system memory:
+
+| System memory | Suggested normal model | Suggested low-memory model |
+| --- | --- | --- |
+| under 12 GiB | `qwen2.5-coder:3b` | `qwen2.5-coder:1.5b` |
+| 12–23 GiB | `qwen2.5-coder:7b` | `qwen2.5-coder:3b` |
+| 24–47 GiB | `qwen2.5-coder:14b` | `qwen2.5-coder:7b` |
+| 48 GiB or more | `qwen2.5-coder:32b` | `qwen2.5-coder:14b` |
+
+These are starting points rather than memory guarantees. Ollama publishes Qwen2.5-Coder variants at 0.5B, 1.5B, 3B, 7B, 14B, and 32B: https://ollama.com/library/qwen2.5-coder
 
 Disable generation without removing the wrapper:
 
@@ -132,7 +166,14 @@ Disable generation without removing the wrapper:
 git config --global scm-toolkit.ai-commit false
 ```
 
-Choose another locally installed model with `scm-toolkit.ai-commit-model` or the `SCM_TOOLKIT_AI_MODEL` environment variable.
+Disable and remove the installed picker on the next installer run:
+
+```sh
+git config --global scm-toolkit.ai-model-picker false
+python3 install.py
+```
+
+The environment variables `SCM_TOOLKIT_AI_MODEL`, `SCM_TOOLKIT_AI_LOW_MEMORY_MODEL`, and `SCM_TOOLKIT_AI_LOW_MEMORY_GIB` can temporarily override the corresponding Git-config values.
 
 ### Commit and push
 

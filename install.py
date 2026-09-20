@@ -22,6 +22,9 @@ DEFAULT_SETTINGS = {
     "blankStateRefresh": True,
     "aiCommit": True,
     "aiCommitModel": "qwen2.5-coder:7b",
+    "aiCommitLowMemoryModel": "qwen2.5-coder:3b",
+    "aiLowMemoryGiB": "4",
+    "aiModelPicker": True,
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -91,6 +94,16 @@ def load_settings():
         "aiCommitModel": read_git_string(
             "scm-toolkit.ai-commit-model", DEFAULT_SETTINGS["aiCommitModel"]
         ),
+        "aiCommitLowMemoryModel": read_git_string(
+            "scm-toolkit.ai-commit-low-memory-model",
+            DEFAULT_SETTINGS["aiCommitLowMemoryModel"],
+        ),
+        "aiLowMemoryGiB": read_git_string(
+            "scm-toolkit.ai-low-memory-gib", DEFAULT_SETTINGS["aiLowMemoryGiB"]
+        ),
+        "aiModelPicker": read_git_bool(
+            "scm-toolkit.ai-model-picker", DEFAULT_SETTINGS["aiModelPicker"]
+        ),
         "defaultBranch": read_git_string(
             "scm-toolkit.default-branch", DEFAULT_SETTINGS["defaultBranch"]
         ),
@@ -117,6 +130,42 @@ def sync_ai_wrapper(remove=False, check=False, destination=None):
 
     if destination.is_symlink():
         raise RuntimeError(f"Refusing to overwrite symlinked AI wrapper: {destination}")
+
+    expected = source.read_bytes()
+    current = destination.read_bytes() if destination.exists() else None
+    executable = destination.exists() and bool(destination.stat().st_mode & 0o111)
+    changed = current != expected or not executable
+
+    if changed and not check:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(expected)
+        destination.chmod(0o755)
+
+    return changed
+
+
+def ai_model_picker_path():
+    configured = os.environ.get(
+        "SCM_TOOLKIT_MODEL_PICKER_PATH", "~/.local/bin/scm-toolkit-models"
+    )
+    return Path(configured).expanduser()
+
+
+def sync_model_picker(enabled=True, remove=False, check=False, destination=None):
+    destination = (
+        Path(destination) if destination is not None else ai_model_picker_path()
+    )
+    source = HERE / "model_picker.py"
+    should_remove = remove or not enabled
+
+    if should_remove:
+        changed = destination.exists() or destination.is_symlink()
+        if changed and not check:
+            destination.unlink()
+        return changed
+
+    if destination.is_symlink():
+        raise RuntimeError(f"Refusing to overwrite symlinked model picker: {destination}")
 
     expected = source.read_bytes()
     current = destination.read_bytes() if destination.exists() else None
@@ -283,8 +332,15 @@ def main():
     wrapper_changed = sync_ai_wrapper(
         remove=args.uninstall, check=True, destination=wrapper_path
     )
+    model_picker_path = ai_model_picker_path()
+    model_picker_changed = sync_model_picker(
+        enabled=settings["aiModelPicker"],
+        remove=args.uninstall,
+        check=True,
+        destination=model_picker_path,
+    )
 
-    if old == list(new) and not wrapper_changed:
+    if old == list(new) and not wrapper_changed and not model_picker_changed:
         action = "not installed" if args.uninstall else "already up to date"
         print(f"SCM toolkit is {action} for VS Code {version}.")
         return
@@ -295,6 +351,11 @@ def main():
                 raise RuntimeError("VS Code changed during validation; retry the command.")
             write_pair(paths, new, old)
         sync_ai_wrapper(remove=args.uninstall, destination=wrapper_path)
+        sync_model_picker(
+            enabled=settings["aiModelPicker"],
+            remove=args.uninstall,
+            destination=model_picker_path,
+        )
 
     action = "Validated" if args.check else "Removed" if args.uninstall else "Installed"
     print(f"{action} SCM toolkit for VS Code {version}. Reload VS Code to apply the change.")
@@ -302,6 +363,10 @@ def main():
         print("Clear VS Code git.path if it still points to the removed SCM toolkit wrapper.")
     else:
         print(f"AI commit wrapper: {wrapper_path}")
+        if settings["aiModelPicker"]:
+            print(f"AI model picker: {model_picker_path}")
+        else:
+            print("AI model picker: disabled by scm-toolkit.ai-model-picker")
         print("Set VS Code git.path to that absolute path and git.useEditorAsCommitInput to true.")
 
 
