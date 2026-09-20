@@ -12,6 +12,7 @@ SETTINGS = {
     "branchCleanup": True,
     "autocompleteToggle": True,
     "hideOutgoingSyncCount": True,
+    "blankStateRefresh": True,
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -54,11 +55,12 @@ class TransformTests(unittest.TestCase):
             'const scmToolkitSettings = '
             '{"branchPicker":true,"shortPlaceholder":true,"commitAndPush":true,'
             '"branchCleanup":true,"autocompleteToggle":true,'
-            '"hideOutgoingSyncCount":true,'
+            '"hideOutgoingSyncCount":true,"blankStateRefresh":true,'
             '"defaultBranch":"main","remote":"origin"};\n',
             js,
         )
         self.assertIn("editor.inlineSuggest.enabled", js)
+        self.assertIn("commands.executeCommand('git.refresh', repositoryArgument)", js)
         self.assertIn("scm-toolkit-autocomplete", css)
         self.assertEqual(js.count("className = 'scm-toolkit-tooltip'"), 2)
         self.assertIn(".scm-toolkit-autocomplete:hover > .scm-toolkit-tooltip", css)
