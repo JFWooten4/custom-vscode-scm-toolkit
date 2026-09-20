@@ -40,6 +40,43 @@
     cursor: default;
 }
 
+:root.scm-toolkit-unfilled-buttons .scm-view .scm-editor > .scm-toolkit-branch {
+    box-sizing: border-box;
+    border: 1px solid var(--vscode-button-border, var(--vscode-widget-border));
+    background: transparent;
+    color: var(--vscode-foreground);
+}
+
+:root.scm-toolkit-unfilled-buttons .scm-view .scm-editor > .scm-toolkit-branch:hover {
+    background: var(--vscode-toolbar-hoverBackground);
+}
+
+:root.scm-toolkit-unfilled-buttons .scm-view .button-container > .monaco-button {
+    border: 1px solid var(--vscode-button-border, var(--vscode-widget-border));
+    background: transparent !important;
+    color: var(--vscode-foreground) !important;
+}
+
+:root.scm-toolkit-unfilled-buttons .scm-view .button-container > .monaco-button-dropdown {
+    border: 1px solid var(--vscode-button-border, var(--vscode-widget-border));
+    border-radius: var(--vscode-cornerRadius-small, 4px);
+}
+
+:root.scm-toolkit-unfilled-buttons .scm-view .button-container > .monaco-button-dropdown > .monaco-button {
+    border: 0;
+    background: transparent !important;
+    color: var(--vscode-foreground) !important;
+}
+
+:root.scm-toolkit-unfilled-buttons .scm-view .button-container > .monaco-button-dropdown > .monaco-dropdown-button {
+    border-left: 1px solid var(--vscode-button-border, var(--vscode-widget-border));
+}
+
+:root.scm-toolkit-unfilled-buttons .scm-view .button-container > .monaco-button:hover,
+:root.scm-toolkit-unfilled-buttons .scm-view .button-container > .monaco-button-dropdown > .monaco-button:hover {
+    background: var(--vscode-toolbar-hoverBackground) !important;
+}
+
 .scm-view .scm-editor:has(> .scm-toolkit-branch) > .scm-editor-container {
     flex: 1;
     min-width: 0;

@@ -17,6 +17,7 @@ CODEX_END = '\n/* scm-toolkit-codex-countdown:end */\n'
 DEFAULT_SETTINGS = {
     "branchPicker": True,
     "shortPlaceholder": True,
+    "filledButtons": False,
     "commitAndPush": True,
     "branchCleanup": True,
     "autocompleteToggle": True,
@@ -78,6 +79,9 @@ def load_settings():
         "branchPicker": read_git_bool("scm-toolkit.branch-picker", DEFAULT_SETTINGS["branchPicker"]),
         "shortPlaceholder": read_git_bool(
             "scm-toolkit.short-placeholder", DEFAULT_SETTINGS["shortPlaceholder"]
+        ),
+        "filledButtons": read_git_bool(
+            "scm-toolkit.filled-buttons", DEFAULT_SETTINGS["filledButtons"]
         ),
         "commitAndPush": read_git_bool(
             "scm-toolkit.commit-and-push", DEFAULT_SETTINGS["commitAndPush"]

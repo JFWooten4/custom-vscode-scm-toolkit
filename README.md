@@ -5,6 +5,7 @@ A small source-control UI patch for Visual Studio Code. It keeps the built-in Gi
 Current features:
 
 - show the current branch inside the SCM message box and open VS Code's normal branch picker from it
+- switch the branch selector and native Commit button between outlined and accent-filled styles
 - shorten the commit-message placeholder to `Message`
 - optionally show a commit-and-push checkbox backed by VS Code's `git.postCommitCommand`
 - optionally show a guarded local-branch cleanup button
@@ -74,6 +75,7 @@ Set options with `git config --global`:
 ```sh
 git config --global scm-toolkit.branch-picker true
 git config --global scm-toolkit.short-placeholder true
+git config --global scm-toolkit.filled-buttons false
 git config --global scm-toolkit.commit-and-push true
 git config --global scm-toolkit.branch-cleanup true
 git config --global scm-toolkit.autocomplete-toggle true
@@ -100,6 +102,7 @@ The equivalent `~/.gitconfig` block is:
 [scm-toolkit]
     branch-picker = true
     short-placeholder = true
+    filled-buttons = false
     commit-and-push = true
     branch-cleanup = true
     autocomplete-toggle = true
@@ -120,7 +123,7 @@ The equivalent `~/.gitconfig` block is:
     remote = origin
 ```
 
-The Codex usage-reset countdown defaults to `false`; the twelve SCM feature switches default to `true`. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
+The filled-button style and Codex usage-reset countdown default to `false`; the other twelve SCM feature switches default to `true`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
 
 After changing toolkit Git config, rerun:
 
