@@ -472,6 +472,11 @@ def main():
     parser.add_argument("--uninstall", action="store_true", help="Remove the toolkit patch")
     parser.add_argument("--check", action="store_true", help="Validate without writing")
     parser.add_argument(
+        "--configure",
+        action="store_true",
+        help="Configure in a local browser before installing",
+    )
+    parser.add_argument(
         "--codex-only",
         action="store_true",
         help="Only install or remove the optional Codex usage-reset countdown",
@@ -483,7 +488,17 @@ def main():
     )
     args = parser.parse_args()
 
+    if args.configure and (args.uninstall or args.check or args.codex_only):
+        parser.error("--configure cannot be combined with --uninstall, --check, or --codex-only")
+
     settings = load_settings()
+    if args.configure:
+        from configurator import run_configurator
+
+        if not run_configurator(settings, action_label="Save and install"):
+            print("Installation cancelled; no toolkit settings were changed.")
+            return
+        settings = load_settings()
     version, workbench_paths = application_paths(args.app)
     paths = [] if args.codex_only else workbench_paths
     old = [path.read_text() for path in paths]
