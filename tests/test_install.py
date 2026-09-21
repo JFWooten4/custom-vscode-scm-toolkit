@@ -54,7 +54,7 @@ class TransformTests(unittest.TestCase):
         css = (install.HERE / "picker.css").read_text()
 
         self.assertEqual(css.count("background: var(--vscode-input-background);"), 5)
-        self.assertEqual(css.count("background: transparent;"), 2)
+        self.assertEqual(css.count("background: transparent;"), 1)
 
     def test_branch_selector_uses_the_vscode_button_colors(self):
         css = (install.HERE / "picker.css").read_text()
@@ -64,9 +64,8 @@ class TransformTests(unittest.TestCase):
         self.assertIn("background: var(--vscode-button-hoverBackground);", css)
 
     def test_unfilled_buttons_match_their_background_with_a_border(self):
-        css = (install.HERE / "picker.css").read_text()
+        css = (install.HERE / "outlined_buttons.css").read_text()
 
-        self.assertIn(":root.scm-toolkit-unfilled-buttons", css)
         self.assertIn(
             ".scm-view .button-container > .monaco-button-dropdown", css
         )
@@ -74,7 +73,22 @@ class TransformTests(unittest.TestCase):
             "border: 1px solid var(--vscode-button-border, var(--vscode-widget-border));",
             css,
         )
+        self.assertEqual(css.count("--vscode-button-background: transparent;"), 2)
         self.assertIn("background: transparent !important;", css)
+
+    def test_filled_button_setting_controls_outlined_stylesheet(self):
+        _, outlined_css = install.transform(
+            workbench_fixture(), "base-css", settings=SETTINGS
+        )
+        _, filled_css = install.transform(
+            workbench_fixture(),
+            "base-css",
+            settings=dict(SETTINGS, filledButtons=True),
+        )
+
+        selector = ".scm-view .button-container > .monaco-button-dropdown"
+        self.assertIn(selector, outlined_css)
+        self.assertNotIn(selector, filled_css)
 
     def test_push_control_is_centered_without_a_divider(self):
         css = (install.HERE / "picker.css").read_text()
@@ -121,7 +135,6 @@ class TransformTests(unittest.TestCase):
             js,
         )
         self.assertIn("editor.inlineSuggest.enabled", js)
-        self.assertIn("'scm-toolkit-unfilled-buttons'", js)
         self.assertIn("commands.executeCommand('git.refresh', repositoryArgument)", js)
         self.assertIn("scm-toolkit-autocomplete", css)
         self.assertEqual(js.count("className = 'scm-toolkit-tooltip'"), 3)

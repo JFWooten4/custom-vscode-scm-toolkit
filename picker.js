@@ -160,10 +160,6 @@ async function scmToolkitWaitForMcpTool(doc, server, toolName) {
 
 function scmToolkitCreateControls(widget, observe, commands, notifications, configuration, mcpService, settings) {
     const doc = widget.element.ownerDocument;
-    doc.documentElement.classList.toggle(
-        'scm-toolkit-unfilled-buttons',
-        !settings.filledButtons
-    );
     if (settings.hideOutgoingSyncCount) scmToolkitHideOutgoingSyncCount(widget);
     const branchButton = doc.createElement('button');
     branchButton.type = 'button';

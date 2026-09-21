@@ -394,7 +394,10 @@ def transform(js, css, remove=False, settings=None):
         + (HERE / "picker.js").read_text()
         + END
     )
-    css += START + (HERE / "picker.css").read_text() + END
+    toolkit_css = (HERE / "picker.css").read_text()
+    if not settings["filledButtons"]:
+        toolkit_css += "\n" + (HERE / "outlined_buttons.css").read_text()
+    css += START + toolkit_css + END
     return js, css
 
 
