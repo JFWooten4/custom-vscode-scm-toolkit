@@ -17,6 +17,7 @@ CODEX_END = '\n/* scm-toolkit-codex-countdown:end */\n'
 DEFAULT_SETTINGS = {
     "branchPicker": True,
     "shortPlaceholder": True,
+    "filledButtons": False,
     "commitAndPush": True,
     "branchCleanup": True,
     "autocompleteToggle": True,
@@ -78,6 +79,9 @@ def load_settings():
         "branchPicker": read_git_bool("scm-toolkit.branch-picker", DEFAULT_SETTINGS["branchPicker"]),
         "shortPlaceholder": read_git_bool(
             "scm-toolkit.short-placeholder", DEFAULT_SETTINGS["shortPlaceholder"]
+        ),
+        "filledButtons": read_git_bool(
+            "scm-toolkit.filled-buttons", DEFAULT_SETTINGS["filledButtons"]
         ),
         "commitAndPush": read_git_bool(
             "scm-toolkit.commit-and-push", DEFAULT_SETTINGS["commitAndPush"]
@@ -390,7 +394,10 @@ def transform(js, css, remove=False, settings=None):
         + (HERE / "picker.js").read_text()
         + END
     )
-    css += START + (HERE / "picker.css").read_text() + END
+    toolkit_css = (HERE / "picker.css").read_text()
+    if not settings["filledButtons"]:
+        toolkit_css += "\n" + (HERE / "outlined_buttons.css").read_text()
+    css += START + toolkit_css + END
     return js, css
 
 

@@ -10,6 +10,7 @@ import install
 SETTINGS = {
     "branchPicker": True,
     "shortPlaceholder": True,
+    "filledButtons": False,
     "commitAndPush": True,
     "branchCleanup": True,
     "autocompleteToggle": True,
@@ -62,6 +63,33 @@ class TransformTests(unittest.TestCase):
         self.assertIn("color: var(--vscode-button-foreground);", css)
         self.assertIn("background: var(--vscode-button-hoverBackground);", css)
 
+    def test_unfilled_buttons_match_their_background_with_a_border(self):
+        css = (install.HERE / "outlined_buttons.css").read_text()
+
+        self.assertIn(
+            ".scm-view .button-container > .monaco-button-dropdown", css
+        )
+        self.assertIn(
+            "border: 1px solid var(--vscode-button-border, var(--vscode-widget-border));",
+            css,
+        )
+        self.assertEqual(css.count("--vscode-button-background: transparent;"), 2)
+        self.assertIn("background: transparent !important;", css)
+
+    def test_filled_button_setting_controls_outlined_stylesheet(self):
+        _, outlined_css = install.transform(
+            workbench_fixture(), "base-css", settings=SETTINGS
+        )
+        _, filled_css = install.transform(
+            workbench_fixture(),
+            "base-css",
+            settings=dict(SETTINGS, filledButtons=True),
+        )
+
+        selector = ".scm-view .button-container > .monaco-button-dropdown"
+        self.assertIn(selector, outlined_css)
+        self.assertNotIn(selector, filled_css)
+
     def test_push_control_is_centered_without_a_divider(self):
         css = (install.HERE / "picker.css").read_text()
         push_css = css.split(
@@ -91,7 +119,8 @@ class TransformTests(unittest.TestCase):
 
         self.assertIn(
             'const scmToolkitSettings = '
-            '{"branchPicker":true,"shortPlaceholder":true,"commitAndPush":true,'
+            '{"branchPicker":true,"shortPlaceholder":true,"filledButtons":false,'
+            '"commitAndPush":true,'
             '"branchCleanup":true,"autocompleteToggle":true,"codexCoauthor":true,'
             '"hideOutgoingSyncCount":true,"blankStateRefresh":true,'
             '"aiCommit":true,'
