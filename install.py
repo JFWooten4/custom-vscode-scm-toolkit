@@ -227,9 +227,9 @@ def browser_chatgpt_home_edits(js):
 
     segment = js[anchor_index : anchor_index + 4000]
     pattern = re.compile(
-        r"(?P<prefix>[A-Za-z_$][\\w$]*\\.getOrCreateLazy\\(\\{id:"
-        r"[A-Za-z_$][\\w$]*\\.id,\\.\\.\\.(?P<options>[A-Za-z_$][\\w$]*)"
-        r"\\?\\.viewState)(?P<suffix>\\}\\))"
+        r"(?P<prefix>[A-Za-z_$][\w$]*\.getOrCreateLazy\(\{id:"
+        r"[A-Za-z_$][\w$]*\.id,\.\.\.(?P<options>[A-Za-z_$][\w$]*)"
+        r"\?\.viewState)(?P<suffix>\}\))"
     )
     matches = list(pattern.finditer(segment))
     if len(matches) != 1:
