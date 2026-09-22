@@ -17,6 +17,7 @@ SETTINGS = {
     "codexCoauthor": True,
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
+    "cmdClickCloseOthers": False,
     "aiCommit": True,
     "aiDefaultBranchDescription": True,
     "aiCommitModel": "qwen2.5-coder:7b",
@@ -45,6 +46,8 @@ def workbench_fixture():
             'let e=o.repository.provider.inputBoxTextModel;',
             'this.toolbar.setInput(o),this.model={input:o,textModel:e}}get selections()',
             't=new size(this.element.clientWidth-e,o);if(t.width<0)',
+            'keys.event(e=>this.setAltPressed(e.altKey));',
+            'listen(mouse=>{this.setAltPressed(mouse.altKey)},true);',
         ]
     )
 
@@ -123,7 +126,7 @@ class TransformTests(unittest.TestCase):
             '"commitAndPush":true,'
             '"branchCleanup":true,"autocompleteToggle":true,"codexCoauthor":true,'
             '"hideOutgoingSyncCount":true,"blankStateRefresh":true,'
-            '"aiCommit":true,'
+            '"cmdClickCloseOthers":false,"aiCommit":true,'
             '"aiDefaultBranchDescription":true,'
             '"aiCommitModel":"qwen2.5-coder:7b",'
             '"aiCommitLowMemoryModel":"qwen2.5-coder:3b",'
@@ -151,6 +154,32 @@ class TransformTests(unittest.TestCase):
         self.assertEqual(js.count(install.END), 1)
         self.assertEqual(css.count(install.START), 1)
         self.assertEqual(css.count(install.END), 1)
+
+    def test_cmd_click_close_others_is_off_by_default(self):
+        self.assertFalse(install.DEFAULT_SETTINGS["cmdClickCloseOthers"])
+
+    def test_cmd_click_close_others_extends_native_modifier(self):
+        enabled = dict(SETTINGS, cmdClickCloseOthers=True)
+        js, _ = install.transform(workbench_fixture(), "base-css", settings=enabled)
+
+        self.assertIn(
+            "this.setAltPressed(e.altKey||scmToolkitSettings.cmdClickCloseOthers&&e.metaKey)",
+            js,
+        )
+        self.assertIn(
+            "this.setAltPressed(mouse.altKey||scmToolkitSettings.cmdClickCloseOthers&&mouse.metaKey)",
+            js,
+        )
+
+    def test_cmd_click_close_others_round_trip(self):
+        original_js = workbench_fixture()
+        original_css = "base-css"
+        enabled = dict(SETTINGS, cmdClickCloseOthers=True)
+
+        patched = install.transform(original_js, original_css, settings=enabled)
+        restored = install.transform(*patched, remove=True, settings=enabled)
+
+        self.assertEqual(restored, (original_js, original_css))
 
     def test_install_and_remove_round_trip(self):
         original_js = workbench_fixture()
