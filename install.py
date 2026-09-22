@@ -6,6 +6,7 @@ import json
 import os
 import re
 import subprocess
+import workspace_search
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -511,6 +512,14 @@ def main():
             destination=model_picker_path,
         )
     )
+    workspace_search_changed = (
+        False
+        if args.codex_only
+        else workspace_search.sync_extension(
+            remove=args.uninstall,
+            check=True,
+        )
+    )
 
     codex_path = codex_bundle_path(args.codex_extension)
     should_find_codex = settings["codexUsageResetCountdown"] or args.uninstall
@@ -528,7 +537,12 @@ def main():
             )
         )
 
-    if old == list(new) and not wrapper_changed and not model_picker_changed:
+    if (
+        old == list(new)
+        and not wrapper_changed
+        and not model_picker_changed
+        and not workspace_search_changed
+    ):
         action = "not installed" if args.uninstall else "already up to date"
         print(f"SCM toolkit is {action} for VS Code {version}.")
         return
@@ -545,6 +559,7 @@ def main():
                 remove=args.uninstall,
                 destination=model_picker_path,
             )
+            workspace_search.sync_extension(remove=args.uninstall)
 
     action = "Validated" if args.check else "Removed" if args.uninstall else "Installed"
     target = "Codex countdown" if args.codex_only else "SCM toolkit"
@@ -558,6 +573,7 @@ def main():
                 print(f"AI model picker: {model_picker_path}")
             else:
                 print("AI model picker: disabled by scm-toolkit.ai-model-picker")
+            print(f"Workspace Search extension: {workspace_search.extension_destination()}")
             print(
                 "Set VS Code git.path to that absolute path and "
                 "git.useEditorAsCommitInput to true."
