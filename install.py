@@ -227,7 +227,7 @@ def unpack_edit(edit):
 
 def edits(js=None, settings=None):
     command, notification, configuration, mcp, observe, dimension = "fe", "Le", "Xe", "Me", "pe", "xi"
-    ident = r"[A-Za-z_$][\\w$]*"
+    ident = r"[A-Za-z_$][\w$]*"
 
     if js is not None:
         def unique(pattern):
@@ -236,17 +236,17 @@ def edits(js=None, settings=None):
                 raise ValueError("Unsupported VS Code build: internal API does not match.")
             return matches[0]
 
-        command = unique(r"(" + ident + r')=\\w+\\("commandService"\\)')
-        notification = unique(r"(" + ident + r')=\\w+\\("notificationService"\\)')
-        configuration = unique(r"(" + ident + r')=\\w+\\("configurationService"\\)')
-        mcp = unique(r"(" + ident + r')=\\w+\\("IMcpService"\\)')
+        command = unique(r"(" + ident + r')=\w+\("commandService"\)')
+        notification = unique(r"(" + ident + r')=\w+\("notificationService"\)')
+        configuration = unique(r"(" + ident + r')=\w+\("configurationService"\)')
+        mcp = unique(r"(" + ident + r')=\w+\("IMcpService"\)')
         observe = unique(
-            r"function (" + ident + r")\\(s,o=" + ident
-            + r"\\.ofCaller\\(\\)\\)\\{return new " + ident
-            + r"\\(new " + ident + r"\\(void 0,void 0,s\\),s,void 0,o\\)\\}"
+            r"function (" + ident + r")\(s,o=" + ident
+            + r"\.ofCaller\(\)\)\{return new " + ident
+            + r"\(new " + ident + r"\(void 0,void 0,s\),s,void 0,o\)\}"
         )
         dimension = unique(
-            r"t=new (" + ident + r")\\(this\\.element\\.clientWidth-e,o\\);if\\(t\\.width<0\\)"
+            r"t=new (" + ident + r")\(this\.element\.clientWidth-e,o\);if\(t\.width<0\)"
         )
 
     changes = [
@@ -279,7 +279,7 @@ def edits(js=None, settings=None):
 
     if js is not None and settings and settings.get("cmdClickCloseOthers"):
         modifier_pattern = re.compile(
-            r"this\\.setAltPressed\\((" + ident + r")\\.altKey\\)"
+            r"this\.setAltPressed\((" + ident + r")\.altKey\)"
         )
         events = modifier_pattern.findall(js)
         if len(events) != 2:
