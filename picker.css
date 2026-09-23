@@ -317,3 +317,9 @@
     visibility: visible;
     transition-delay: .4s;
 }
+
+
+.scm-toolkit-refreshing > .monaco-progress-container,
+.scm-toolkit-refreshing .monaco-progress-container {
+    display: none !important;
+}

@@ -24,6 +24,7 @@ DEFAULT_SETTINGS = {
     "codexCoauthor": True,
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
+    "autoPullClean": True,
     "aiCommit": True,
     "aiDefaultBranchDescription": True,
     "aiCommitModel": "qwen2.5-coder:7b",
@@ -102,6 +103,10 @@ def load_settings():
         "blankStateRefresh": read_git_bool(
             "scm-toolkit.blank-state-refresh",
             DEFAULT_SETTINGS["blankStateRefresh"],
+        ),
+        "autoPullClean": read_git_bool(
+            "scm-toolkit.auto-pull-clean",
+            DEFAULT_SETTINGS["autoPullClean"],
         ),
         "aiCommit": read_git_bool(
             "scm-toolkit.ai-commit", DEFAULT_SETTINGS["aiCommit"]

@@ -17,6 +17,7 @@ SETTINGS = {
     "codexCoauthor": True,
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
+    "autoPullClean": True,
     "aiCommit": True,
     "aiDefaultBranchDescription": True,
     "aiCommitModel": "qwen2.5-coder:7b",
@@ -123,7 +124,7 @@ class TransformTests(unittest.TestCase):
             '"commitAndPush":true,'
             '"branchCleanup":true,"autocompleteToggle":true,"codexCoauthor":true,'
             '"hideOutgoingSyncCount":true,"blankStateRefresh":true,'
-            '"aiCommit":true,'
+            '"autoPullClean":true,"aiCommit":true,'
             '"aiDefaultBranchDescription":true,'
             '"aiCommitModel":"qwen2.5-coder:7b",'
             '"aiCommitLowMemoryModel":"qwen2.5-coder:3b",'
@@ -136,7 +137,12 @@ class TransformTests(unittest.TestCase):
         )
         self.assertIn("editor.inlineSuggest.enabled", js)
         self.assertIn("commands.executeCommand('git.refresh', repositoryArgument)", js)
+        self.assertIn("classList.add('scm-toolkit-refreshing')", js)
+        self.assertIn("historyItemRemoteRef.get()", js)
+        self.assertIn("resolveHistoryItemRefsCommonAncestor", js)
+        self.assertIn("commands.executeCommand('git.pull', repositoryArgument)", js)
         self.assertIn("scm-toolkit-autocomplete", css)
+        self.assertIn(".scm-toolkit-refreshing > .monaco-progress-container", css)
         self.assertEqual(js.count("className = 'scm-toolkit-tooltip'"), 3)
         self.assertIn(".scm-toolkit-autocomplete:hover > .scm-toolkit-tooltip", css)
         self.assertIn("Co-authored-by: Codex Web <noreply@openai.com>", js)
