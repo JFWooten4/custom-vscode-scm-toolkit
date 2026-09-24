@@ -16,6 +16,7 @@ CODEX_END = '\n/* scm-toolkit-codex-countdown:end */\n'
 
 DEFAULT_SETTINGS = {
     "branchPicker": True,
+    "ponyBranch": True,
     "shortPlaceholder": True,
     "filledButtons": False,
     "commitAndPush": True,
@@ -77,6 +78,7 @@ def read_git_string(key, default):
 def load_settings():
     return {
         "branchPicker": read_git_bool("scm-toolkit.branch-picker", DEFAULT_SETTINGS["branchPicker"]),
+        "ponyBranch": read_git_bool("scm-toolkit.pony-branch", DEFAULT_SETTINGS["ponyBranch"]),
         "shortPlaceholder": read_git_bool(
             "scm-toolkit.short-placeholder", DEFAULT_SETTINGS["shortPlaceholder"]
         ),
