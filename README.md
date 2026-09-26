@@ -14,6 +14,7 @@ Current features:
 - optionally open a pull request for the current branch through a configured MCP server
 - optionally hide the outgoing commit count from the built-in Sync action
 - optionally refresh clean/blank Git repositories more aggressively so the first new change appears in SCM quickly
+- search the active workspace semantically from a `Workspace Search` view directly inside Source Control, backed only by local Ollama
 - optionally use ⌘-click on an editor tab's close button to keep that tab and close the others in its group
 - optionally use ChatGPT as the home page for blank Integrated Browser tabs
 - optionally generate a commit subject locally when the normal Commit button is used with a blank message
@@ -27,7 +28,7 @@ The patch is intentionally narrow: it does not copy or manage unrelated editor s
 - Visual Studio Code using the standard application-bundle layout
 - Python 3
 - Git, if you want to configure feature flags through global Git config
-- Ollama is required for local AI commit-title generation; the rest of the toolkit can be used without it
+- Ollama is required for local AI commit-title generation and semantic Workspace Search; exact Workspace Search still works if embeddings are unavailable
 
 The installer modifies the installed VS Code workbench files. VS Code updates can replace those files, so rerun the installer after an update if the patch disappears. VS Code may also show an installation-integrity warning after its application files are modified.
 
@@ -156,6 +157,33 @@ python3 install.py
 ```
 
 Then reload Visual Studio Code. The installer resolves the Git-config values and embeds that configuration into the installed patch.
+
+### Workspace Search
+
+The normal installer also installs a small companion VS Code extension into `~/.vscode/extensions`. After reloading VS Code, Source Control contains a **Workspace Search** section with an in-sidebar query box, Hybrid/Semantic/Exact modes, ranked snippets, click-to-open results, and an optional **Ask Ollama** action. It does not open Open WebUI or a separate browser window.
+
+Install the default local embedding model once:
+
+```sh
+ollama pull qwen3-embedding:0.6b
+```
+
+Workspace Search indexes text and code directly, uses macOS `textutil` for Word/RTF/ODT files, tries `pdftotext` for PDFs when available, and falls back to Spotlight text metadata for PDFs and iWork documents. The index lives in VS Code extension storage and changed files are re-indexed incrementally. Git metadata, dependency folders, build output, virtual environments, and coverage output are excluded by default.
+
+Hybrid search combines semantic similarity with exact term/path matching. If Ollama or the embedding model is unavailable, Hybrid falls back to exact ranking instead of failing.
+
+The default **Ask Ollama** model is automatic: it first reuses a currently loaded non-embedding Ollama model, preferring the largest loaded model, then falls back to `scm-toolkit.ai-commit-model`. Set `scmToolkit.workspaceSearch.chatModel` in VS Code settings only when you want to force a different model. The embedding model is separately configurable as `scmToolkit.workspaceSearch.embeddingModel`.
+
+The companion extension only accepts loopback Ollama URLs (`127.0.0.1`, `localhost`, or `::1`). You can also install or remove just this companion extension with `python3 workspace_search.py` or `python3 workspace_search.py --uninstall`.
+
+
+#### Historical work index
+
+The active workspace is only the first corpus this search needs to cover. A more substantive persistent index should eventually span prior research, comment letters, examination responses, drafts, and other related repositories or files so earlier work can be referenced quickly even when the exact wording is forgotten.
+
+A concrete example is the September 2026 lookup for earlier discussion of transitioning away from custodial retirement holdings, the Spain and India direct-holding examples, and the related SEC examination response. Finding those passages required crossing separate stores and took roughly three minutes. That retrieval should instead be a near-immediate semantic lookup that returns the relevant passage together with durable provenance such as repository, file, commit, page, and line.
+
+That broader corpus implies future work beyond active-workspace embeddings: configurable indexed roots or collections, durable cross-workspace metadata, incremental refresh across those sources, and stable source references suitable for citing prior work directly.
 
 ### AI commit titles
 
