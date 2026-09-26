@@ -7,13 +7,16 @@ Current features:
 - show the current branch inside the SCM message box and open VS Code's normal branch picker from it
 - switch the branch selector and native Commit button between outlined and accent-filled styles
 - shorten the commit-message placeholder to `Message`
-- optionally show a commit-and-push checkbox backed by VS Code's `git.postCommitCommand`
+- optionally show a commit-and-push checkbox that dispatches the push without holding commit completion
 - optionally show a guarded local-branch cleanup button
 - optionally show a quick toggle for VS Code inline autocomplete
 - optionally show a commit button that appends the Codex Web co-author trailer
 - optionally open a pull request for the current branch through a configured MCP server
 - optionally hide the outgoing commit count from the built-in Sync action
 - optionally refresh clean/blank Git repositories more aggressively so the first new change appears in SCM quickly
+- search the active workspace semantically from a `Workspace Search` view directly inside Source Control, backed only by local Ollama
+- optionally use ⌘-click on an editor tab's close button to keep that tab and close the others in its group
+- optionally use ChatGPT as the home page for blank Integrated Browser tabs
 - optionally generate a commit subject locally when the normal Commit button is used with a blank message
 - optionally show a live, minute-precision countdown in Codex usage-limit banners
 - optionally hide Codex promotional cards such as the Fast mode upsell
@@ -26,7 +29,7 @@ The patch is intentionally narrow: it does not copy or manage unrelated editor s
 - Visual Studio Code using the standard application-bundle layout
 - Python 3
 - Git, if you want to configure feature flags through global Git config
-- Ollama is required for local AI commit-title generation; the rest of the toolkit can be used without it
+- Ollama is required for local AI commit-title generation and semantic Workspace Search; exact Workspace Search still works if embeddings are unavailable
 
 The installer modifies the installed VS Code workbench files. VS Code updates can replace those files, so rerun the installer after an update if the patch disappears. VS Code may also show an installation-integrity warning after its application files are modified.
 
@@ -51,6 +54,12 @@ Install the patch:
 python3 install.py
 ```
 
+To review the settings in a local browser before installing, run:
+
+```sh
+python3 install.py --configure
+```
+
 Then reload or restart Visual Studio Code.
 
 The default application path is:
@@ -71,6 +80,18 @@ If macOS blocks the write, allow the terminal or Python process you are using un
 
 Toolkit settings live in your global Git config under the `scm-toolkit` section. This keeps feature settings in the normal `~/.gitconfig` file and leaves room for new options later.
 
+### Local web configurator
+
+Run the configurator without installing anything:
+
+```sh
+python3 configure.py
+```
+
+It opens an app-like settings page in the default browser, prefilled with the current Git configuration. The page includes every toolkit switch plus the Ollama model choices and low-memory threshold. If Ollama is running on `127.0.0.1:11434`, locally installed models appear as suggestions; model tags can still be entered manually when it is offline.
+
+The configurator uses only the Python standard library, binds to a random loopback port, requires a one-time URL token, and sends no settings off the computer. Its UI is cross-platform; the workbench installer remains macOS-specific because it currently targets the Visual Studio Code application-bundle layout.
+
 Set options with `git config --global`:
 
 ```sh
@@ -83,6 +104,8 @@ git config --global scm-toolkit.autocomplete-toggle true
 git config --global scm-toolkit.codex-coauthor true
 git config --global scm-toolkit.hide-outgoing-sync-count true
 git config --global scm-toolkit.blank-state-refresh true
+git config --global scm-toolkit.cmd-click-close-others false
+git config --global scm-toolkit.browser-chatgpt-home true
 git config --global scm-toolkit.ai-commit true
 git config --global scm-toolkit.ai-default-branch-description true
 git config --global scm-toolkit.ai-commit-model qwen2.5-coder:7b
@@ -111,6 +134,8 @@ The equivalent `~/.gitconfig` block is:
     codex-coauthor = true
     hide-outgoing-sync-count = true
     blank-state-refresh = true
+    cmd-click-close-others = false
+    browser-chatgpt-home = true
     ai-commit = true
     ai-default-branch-description = true
     ai-commit-model = qwen2.5-coder:7b
@@ -126,7 +151,7 @@ The equivalent `~/.gitconfig` block is:
     remote = origin
 ```
 
-The filled-button style, Codex usage-reset countdown, and Codex promotion hiding default to `false`; the other twelve SCM feature switches default to `true`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
+The filled-button style, Cmd-click close-others gesture, Codex usage-reset countdown, Codex promotion hiding, and ChatGPT browser homepage default to `false`; the other boolean SCM feature switches default to `true`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
 
 After changing toolkit Git config, rerun:
 
@@ -135,6 +160,33 @@ python3 install.py
 ```
 
 Then reload Visual Studio Code. The installer resolves the Git-config values and embeds that configuration into the installed patch.
+
+### Workspace Search
+
+The normal installer also installs a small companion VS Code extension into `~/.vscode/extensions`. After reloading VS Code, Source Control contains a **Workspace Search** section with an in-sidebar query box, Hybrid/Semantic/Exact modes, ranked snippets, click-to-open results, and an optional **Ask Ollama** action. It does not open Open WebUI or a separate browser window.
+
+Install the default local embedding model once:
+
+```sh
+ollama pull qwen3-embedding:0.6b
+```
+
+Workspace Search indexes text and code directly, uses macOS `textutil` for Word/RTF/ODT files, tries `pdftotext` for PDFs when available, and falls back to Spotlight text metadata for PDFs and iWork documents. The index lives in VS Code extension storage and changed files are re-indexed incrementally. Git metadata, dependency folders, build output, virtual environments, and coverage output are excluded by default.
+
+Hybrid search combines semantic similarity with exact term/path matching. If Ollama or the embedding model is unavailable, Hybrid falls back to exact ranking instead of failing.
+
+The default **Ask Ollama** model is automatic: it first reuses a currently loaded non-embedding Ollama model, preferring the largest loaded model, then falls back to `scm-toolkit.ai-commit-model`. Set `scmToolkit.workspaceSearch.chatModel` in VS Code settings only when you want to force a different model. The embedding model is separately configurable as `scmToolkit.workspaceSearch.embeddingModel`.
+
+The companion extension only accepts loopback Ollama URLs (`127.0.0.1`, `localhost`, or `::1`). You can also install or remove just this companion extension with `python3 workspace_search.py` or `python3 workspace_search.py --uninstall`.
+
+
+#### Historical work index
+
+The active workspace is only the first corpus this search needs to cover. A more substantive persistent index should eventually span prior research, comment letters, examination responses, drafts, and other related repositories or files so earlier work can be referenced quickly even when the exact wording is forgotten.
+
+A concrete example is the September 2026 lookup for earlier discussion of transitioning away from custodial retirement holdings, the Spain and India direct-holding examples, and the related SEC examination response. Finding those passages required crossing separate stores and took roughly three minutes. That retrieval should instead be a near-immediate semantic lookup that returns the relevant passage together with durable provenance such as repository, file, commit, page, and line.
+
+That broader corpus implies future work beyond active-workspace embeddings: configurable indexed roots or collections, durable cross-workspace metadata, incremental refresh across those sources, and stable source references suitable for citing prior work directly.
 
 ### AI commit titles
 
@@ -233,6 +285,8 @@ used by the usage-reset countdown.
 
 When `commit-and-push` is enabled, the checkbox mirrors VS Code's `git.postCommitCommand` setting. Checking it sets the value to `push`; unchecking it sets the value to `none`.
 
+For push mode, the toolkit suppresses VS Code's awaited post-commit push, completes the commit first, then dispatches `repository.push()` without awaiting it. This releases the commit UI immediately instead of waiting for remote confirmation or performing a separate origin-verification step. Push failures are still surfaced asynchronously as notifications.
+
 Disabling the toolkit feature hides the checkbox. It does not silently rewrite an existing `git.postCommitCommand` value.
 
 ### Autocomplete toggle
@@ -252,6 +306,24 @@ clean again. Hidden windows back off instead of polling at the foreground rate.
 
 This uses VS Code's existing `git.refresh` command; the toolkit does not run its
 own Git status implementation.
+
+### Cmd-click close others
+
+When `cmd-click-close-others` is enabled, holding ⌘ while clicking an editor tab's X
+uses VS Code's built-in **Close Others** action for that tab. The clicked tab stays
+open while VS Code closes the other editors in that group using its normal behavior
+for selected editors, sticky/pinned tabs, and dirty-close prompts.
+
+The installer extends the modifier state VS Code already uses for its native
+close-others tab action. Normal clicks and normal ⌘-click tab selection are otherwise
+left to VS Code.
+
+### Integrated Browser ChatGPT home
+
+When `browser-chatgpt-home` is enabled, a blank Integrated Browser tab starts at
+`https://chatgpt.com/`. Explicit URLs continue to win, so commands and extensions
+that open a specific page are unchanged. The toggle is applied by the installer,
+so rerun `python3 install.py` and reload VS Code after changing it.
 
 ### Codex co-author commit
 

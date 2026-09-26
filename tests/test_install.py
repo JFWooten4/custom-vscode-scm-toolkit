@@ -17,6 +17,8 @@ SETTINGS = {
     "codexCoauthor": True,
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
+    "cmdClickCloseOthers": False,
+    "browserChatgptHome": False,
     "aiCommit": True,
     "aiDefaultBranchDescription": True,
     "aiCommitModel": "qwen2.5-coder:7b",
@@ -46,7 +48,16 @@ def workbench_fixture():
             'let e=o.repository.provider.inputBoxTextModel;',
             'this.toolbar.setInput(o),this.model={input:o,textModel:e}}get selections()',
             't=new size(this.element.clientWidth-e,o);if(t.width<0)',
+            'keys.event(e=>this.setAltPressed(e.altKey));',
+            'listen(mouse=>{this.setAltPressed(mouse.altKey)},true);',
         ]
+    )
+
+
+def browser_resolver_fixture():
+    return (
+        'throw new Error(`Invalid browser view resource: ${resource}`);'
+        'browserViews.getOrCreateLazy({id:parsed.id,...options?.viewState})'
     )
 
 
@@ -55,7 +66,7 @@ class TransformTests(unittest.TestCase):
         css = (install.HERE / "picker.css").read_text()
 
         self.assertEqual(css.count("background: var(--vscode-input-background);"), 5)
-        self.assertEqual(css.count("background: transparent;"), 1)
+        self.assertEqual(css.count("background: transparent;"), 2)
 
     def test_branch_selector_uses_the_vscode_button_colors(self):
         css = (install.HERE / "picker.css").read_text()
@@ -115,6 +126,21 @@ class TransformTests(unittest.TestCase):
             )[0]
             self.assertNotIn("border-left", control_css)
 
+    def test_sync_control_uses_studio_toolbar_style(self):
+        css = (install.HERE / "picker.css").read_text()
+        sync_css = css.split(
+            ".scm-view .scm-editor > .scm-toolkit-sync-branch {", 1
+        )[1].split(
+            ".scm-view .scm-editor > .scm-toolkit-sync-branch[hidden]", 1
+        )[0]
+
+        self.assertIn("background: transparent;", sync_css)
+        self.assertIn("color: var(--vscode-descriptionForeground);", sync_css)
+        self.assertIn(
+            ".scm-view .scm-editor > .scm-toolkit-sync-branch:hover:not(:disabled)",
+            css,
+        )
+
     def test_install_injects_valid_settings_line(self):
         js, css = install.transform(workbench_fixture(), "base-css", settings=SETTINGS)
 
@@ -124,6 +150,8 @@ class TransformTests(unittest.TestCase):
             '"commitAndPush":true,'
             '"branchCleanup":true,"autocompleteToggle":true,"codexCoauthor":true,'
             '"hideOutgoingSyncCount":true,"blankStateRefresh":true,'
+            '"cmdClickCloseOthers":false,'
+            '"browserChatgptHome":false,'
             '"aiCommit":true,'
             '"aiDefaultBranchDescription":true,'
             '"aiCommitModel":"qwen2.5-coder:7b",'
@@ -142,16 +170,80 @@ class TransformTests(unittest.TestCase):
         self.assertIn(".scm-toolkit-autocomplete:hover > .scm-toolkit-tooltip", css)
         self.assertIn("Co-authored-by: Codex Web <noreply@openai.com>", js)
         self.assertIn("commands.executeCommand('git.commit', currentRepositoryArgument)", js)
+        self.assertIn("scmToolkitReleaseCommitBeforePush(", js)
+        self.assertIn("postCommitCommand: null", js)
+        self.assertIn(".then(() => originalPush.call(repository))", js)
         self.assertIn("mcpService.activateCollections()", js)
         self.assertIn("mcpService.servers.get()", js)
         self.assertIn("server.start({ promptType: 'all-untrusted' })", js)
         self.assertIn("const result = await tool.call({", js)
         self.assertIn("github_create_pull_request", js)
         self.assertIn("scm-toolkit-pull-request", css)
+        self.assertIn("scm-toolkit-sync-branch", css)
+        self.assertIn("input.value = '🔄 Sync brach to main';", js)
+        self.assertIn("await repository.fetch({ remote: settings.remote });", js)
+        self.assertIn(
+            "await repository.merge(`${settings.remote}/${settings.defaultBranch}`);",
+            js,
+        )
+        self.assertNotIn("resolveMergeConflicts", js)
         self.assertEqual(js.count(install.START), 1)
         self.assertEqual(js.count(install.END), 1)
         self.assertEqual(css.count(install.START), 1)
         self.assertEqual(css.count(install.END), 1)
+
+    def test_cmd_click_close_others_is_off_by_default(self):
+        self.assertFalse(install.DEFAULT_SETTINGS["cmdClickCloseOthers"])
+
+    def test_cmd_click_close_others_extends_native_modifier(self):
+        enabled = dict(SETTINGS, cmdClickCloseOthers=True)
+        js, _ = install.transform(workbench_fixture(), "base-css", settings=enabled)
+
+        self.assertIn(
+            "this.setAltPressed(e.altKey||scmToolkitSettings.cmdClickCloseOthers&&e.metaKey)",
+            js,
+        )
+        self.assertIn(
+            "this.setAltPressed(mouse.altKey||scmToolkitSettings.cmdClickCloseOthers&&mouse.metaKey)",
+            js,
+        )
+
+    def test_cmd_click_close_others_round_trip(self):
+        original_js = workbench_fixture()
+        original_css = "base-css"
+        enabled = dict(SETTINGS, cmdClickCloseOthers=True)
+
+        patched = install.transform(original_js, original_css, settings=enabled)
+        restored = install.transform(*patched, remove=True, settings=enabled)
+
+        self.assertEqual(restored, (original_js, original_css))
+
+    def test_chatgpt_browser_home_is_opt_in(self):
+        self.assertFalse(install.DEFAULT_SETTINGS["browserChatgptHome"])
+
+        js, _ = install.transform(
+            workbench_fixture(), "base-css", settings=SETTINGS
+        )
+
+        self.assertNotIn('"https://chatgpt.com/"', js)
+
+    def test_chatgpt_browser_home_patches_blank_browser_tabs(self):
+        original_js = workbench_fixture() + browser_resolver_fixture()
+        enabled = dict(SETTINGS, browserChatgptHome=True)
+
+        patched_js, patched_css = install.transform(
+            original_js, "base-css", settings=enabled
+        )
+
+        self.assertIn(
+            'browserViews.getOrCreateLazy({id:parsed.id,...options?.viewState,'
+            'url:options?.viewState?.url??"https://chatgpt.com/"})',
+            patched_js,
+        )
+        restored = install.transform(
+            patched_js, patched_css, remove=True, settings=enabled
+        )
+        self.assertEqual(restored, (original_js, "base-css"))
 
     def test_install_and_remove_round_trip(self):
         original_js = workbench_fixture()

@@ -6,6 +6,7 @@ import json
 import os
 import re
 import subprocess
+import workspace_search
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -26,6 +27,8 @@ DEFAULT_SETTINGS = {
     "codexCoauthor": True,
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
+    "cmdClickCloseOthers": False,
+    "browserChatgptHome": False,
     "aiCommit": True,
     "aiDefaultBranchDescription": True,
     "aiCommitModel": "qwen2.5-coder:7b",
@@ -105,6 +108,14 @@ def load_settings():
         "blankStateRefresh": read_git_bool(
             "scm-toolkit.blank-state-refresh",
             DEFAULT_SETTINGS["blankStateRefresh"],
+        ),
+        "cmdClickCloseOthers": read_git_bool(
+            "scm-toolkit.cmd-click-close-others",
+            DEFAULT_SETTINGS["cmdClickCloseOthers"],
+        ),
+        "browserChatgptHome": read_git_bool(
+            "scm-toolkit.browser-chatgpt-home",
+            DEFAULT_SETTINGS["browserChatgptHome"],
         ),
         "aiCommit": read_git_bool(
             "scm-toolkit.ai-commit", DEFAULT_SETTINGS["aiCommit"]
@@ -219,12 +230,48 @@ def sync_model_picker(enabled=True, remove=False, check=False, destination=None)
     return changed
 
 
-def edits(js=None):
+def unpack_edit(edit):
+    if len(edit) == 2:
+        original, replacement = edit
+        return original, replacement, 1
+    original, replacement, expected_count = edit
+    return original, replacement, expected_count
+
+
+def browser_chatgpt_home_edits(js):
+    anchor = "Invalid browser view resource:"
+    anchor_index = js.find(anchor)
+    if anchor_index < 0:
+        raise ValueError(
+            "Unsupported VS Code build: Integrated Browser resolver anchor does not match."
+        )
+
+    segment = js[anchor_index : anchor_index + 4000]
+    pattern = re.compile(
+        r"(?P<prefix>[A-Za-z_$][\w$]*\.getOrCreateLazy\(\{id:"
+        r"[A-Za-z_$][\w$]*\.id,\.\.\.(?P<options>[A-Za-z_$][\w$]*)"
+        r"\?\.viewState)(?P<suffix>\}\))"
+    )
+    matches = list(pattern.finditer(segment))
+    if len(matches) != 1:
+        raise ValueError(
+            "Unsupported VS Code build: Integrated Browser resolver does not match."
+        )
+
+    match = matches[0]
+    original = match.group(0)
+    replacement = (
+        f'{match.group("prefix")},url:{match.group("options")}?.viewState?.url'
+        f'??"https://chatgpt.com/"{match.group("suffix")}'
+    )
+    return [(original, replacement)]
+
+
+def edits(js=None, settings=None):
     command, notification, configuration, mcp, observe, dimension = "fe", "Le", "Xe", "Me", "pe", "xi"
+    ident = r"[A-Za-z_$][\w$]*"
 
     if js is not None:
-        ident = r"[A-Za-z_$][\w$]*"
-
         def unique(pattern):
             matches = re.findall(pattern, js)
             if len(matches) != 1:
@@ -244,7 +291,7 @@ def edits(js=None):
             r"t=new (" + ident + r")\(this\.element\.clientWidth-e,o\);if\(t\.width<0\)"
         )
 
-    return [
+    changes = [
         (
             "this.disposables.add(this.toolbar)}static{this.ValidationTimeouts=",
             "this.disposables.add(this.toolbar);this.scmToolkitControls="
@@ -271,6 +318,35 @@ def edits(js=None):
             "(this.scmToolkitControls?.width()??0),o);if(t.width<0)",
         ),
     ]
+    if js is not None and settings and settings.get("browserChatgptHome"):
+        changes.extend(browser_chatgpt_home_edits(js))
+
+    if js is not None and settings and settings.get("cmdClickCloseOthers"):
+        modifier_pattern = re.compile(
+            r"this\.setAltPressed\((" + ident + r")\.altKey\)"
+        )
+        events = modifier_pattern.findall(js)
+        if len(events) != 2:
+            raise ValueError(
+                "Unsupported VS Code build: tab close-others modifier anchor does not match."
+            )
+
+        modifier_edits = {}
+        for event in events:
+            original = f"this.setAltPressed({event}.altKey)"
+            replacement = (
+                f"this.setAltPressed({event}.altKey||"
+                f"scmToolkitSettings.cmdClickCloseOthers&&{event}.metaKey)"
+            )
+            key = (original, replacement)
+            modifier_edits[key] = modifier_edits.get(key, 0) + 1
+
+        changes.extend(
+            (original, replacement, count)
+            for (original, replacement), count in modifier_edits.items()
+        )
+
+    return changes
 
 
 def strip_payload(text):
@@ -392,23 +468,25 @@ def transform(js, css, remove=False, settings=None):
         previous = json.loads(saved.group(1)) if saved else edits()
         js, css = strip_payload(js), strip_payload(css)
 
-        for original, replacement in previous:
-            if js.count(replacement) != 1:
+        for edit in previous:
+            original, replacement, expected_count = unpack_edit(edit)
+            if js.count(replacement) != expected_count:
                 raise ValueError(
                     "Installed toolkit patch changed; refusing to remove unrelated edits."
                 )
-            js = js.replace(replacement, original, 1)
+            js = js.replace(replacement, original, expected_count)
 
     if remove:
         return js, css
 
-    changes = edits(js)
-    for original, replacement in changes:
-        if js.count(original) != 1:
-            raise ValueError("Unsupported VS Code build: SCM widget anchor does not match.")
-        js = js.replace(original, replacement, 1)
-
     settings = load_settings() if settings is None else settings
+    changes = edits(js, settings=settings)
+    for edit in changes:
+        original, replacement, expected_count = unpack_edit(edit)
+        if js.count(original) != expected_count:
+            raise ValueError("Unsupported VS Code build: SCM widget anchor does not match.")
+        js = js.replace(original, replacement, expected_count)
+
     js += (
         START
         + "const scmToolkitSettings = "
@@ -507,6 +585,11 @@ def main():
     parser.add_argument("--uninstall", action="store_true", help="Remove the toolkit patch")
     parser.add_argument("--check", action="store_true", help="Validate without writing")
     parser.add_argument(
+        "--configure",
+        action="store_true",
+        help="Configure in a local browser before installing",
+    )
+    parser.add_argument(
         "--codex-only",
         action="store_true",
         help="Only install or remove optional Codex webview customizations",
@@ -518,7 +601,17 @@ def main():
     )
     args = parser.parse_args()
 
+    if args.configure and (args.uninstall or args.check or args.codex_only):
+        parser.error("--configure cannot be combined with --uninstall, --check, or --codex-only")
+
     settings = load_settings()
+    if args.configure:
+        from configurator import run_configurator
+
+        if not run_configurator(settings, action_label="Save and install"):
+            print("Installation cancelled; no toolkit settings were changed.")
+            return
+        settings = load_settings()
     version, workbench_paths = application_paths(args.app)
     paths = [] if args.codex_only else workbench_paths
     old = [path.read_text() for path in paths]
@@ -546,6 +639,14 @@ def main():
             destination=model_picker_path,
         )
     )
+    workspace_search_changed = (
+        False
+        if args.codex_only
+        else workspace_search.sync_extension(
+            remove=args.uninstall,
+            check=True,
+        )
+    )
 
     codex_path = codex_bundle_path(args.codex_extension)
     should_find_codex = (
@@ -568,7 +669,12 @@ def main():
             )
         )
 
-    if old == list(new) and not wrapper_changed and not model_picker_changed:
+    if (
+        old == list(new)
+        and not wrapper_changed
+        and not model_picker_changed
+        and not workspace_search_changed
+    ):
         action = "not installed" if args.uninstall else "already up to date"
         print(f"SCM toolkit is {action} for VS Code {version}.")
         return
@@ -585,6 +691,7 @@ def main():
                 remove=args.uninstall,
                 destination=model_picker_path,
             )
+            workspace_search.sync_extension(remove=args.uninstall)
 
     action = "Validated" if args.check else "Removed" if args.uninstall else "Installed"
     target = "Codex customizations" if args.codex_only else "SCM toolkit"
@@ -598,6 +705,7 @@ def main():
                 print(f"AI model picker: {model_picker_path}")
             else:
                 print("AI model picker: disabled by scm-toolkit.ai-model-picker")
+            print(f"Workspace Search extension: {workspace_search.extension_destination()}")
             print(
                 "Set VS Code git.path to that absolute path and "
                 "git.useEditorAsCommitInput to true."

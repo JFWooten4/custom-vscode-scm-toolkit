@@ -20,10 +20,18 @@ jobs:
           python-version: "3.x"
 
       - name: Compile Python
-        run: python3 -m py_compile install.py ai_commit.py model_picker.py tests/test_install.py tests/test_ai_commit.py tests/test_model_picker.py
+        run: python3 -m py_compile install.py ai_commit.py model_picker.py workspace_search.py tests/test_install.py tests/test_ai_commit.py tests/test_model_picker.py tests/test_workspace_search.py
 
       - name: Run installer tests
         run: python3 -m unittest discover -s tests -v
 
       - name: Check injected JavaScript syntax
-        run: node --check picker.js
+        run: |
+          node --check picker.js
+          node --check workspace-search-extension/core.js
+          node --check workspace-search-extension/ollama.js
+          node --check workspace-search-extension/extract.js
+          node --check workspace-search-extension/search_index.js
+          node --check workspace-search-extension/view.js
+          node --check workspace-search-extension/extension.js
+          node tests/test_workspace_search_core.js
