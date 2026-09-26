@@ -25,6 +25,7 @@ DEFAULT_SETTINGS = {
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
     "cmdClickCloseOthers": False,
+    "browserChatgptHome": False,
     "aiCommit": True,
     "aiDefaultBranchDescription": True,
     "aiCommitModel": "qwen2.5-coder:7b",
@@ -107,6 +108,10 @@ def load_settings():
         "cmdClickCloseOthers": read_git_bool(
             "scm-toolkit.cmd-click-close-others",
             DEFAULT_SETTINGS["cmdClickCloseOthers"],
+        ),
+        "browserChatgptHome": read_git_bool(
+            "scm-toolkit.browser-chatgpt-home",
+            DEFAULT_SETTINGS["browserChatgptHome"],
         ),
         "aiCommit": read_git_bool(
             "scm-toolkit.ai-commit", DEFAULT_SETTINGS["aiCommit"]
@@ -225,6 +230,35 @@ def unpack_edit(edit):
     return original, replacement, expected_count
 
 
+def browser_chatgpt_home_edits(js):
+    anchor = "Invalid browser view resource:"
+    anchor_index = js.find(anchor)
+    if anchor_index < 0:
+        raise ValueError(
+            "Unsupported VS Code build: Integrated Browser resolver anchor does not match."
+        )
+
+    segment = js[anchor_index : anchor_index + 4000]
+    pattern = re.compile(
+        r"(?P<prefix>[A-Za-z_$][\w$]*\.getOrCreateLazy\(\{id:"
+        r"[A-Za-z_$][\w$]*\.id,\.\.\.(?P<options>[A-Za-z_$][\w$]*)"
+        r"\?\.viewState)(?P<suffix>\}\))"
+    )
+    matches = list(pattern.finditer(segment))
+    if len(matches) != 1:
+        raise ValueError(
+            "Unsupported VS Code build: Integrated Browser resolver does not match."
+        )
+
+    match = matches[0]
+    original = match.group(0)
+    replacement = (
+        f'{match.group("prefix")},url:{match.group("options")}?.viewState?.url'
+        f'??"https://chatgpt.com/"{match.group("suffix")}'
+    )
+    return [(original, replacement)]
+
+
 def edits(js=None, settings=None):
     command, notification, configuration, mcp, observe, dimension = "fe", "Le", "Xe", "Me", "pe", "xi"
     ident = r"[A-Za-z_$][\w$]*"
@@ -276,6 +310,8 @@ def edits(js=None, settings=None):
             "(this.scmToolkitControls?.width()??0),o);if(t.width<0)",
         ),
     ]
+    if js is not None and settings and settings.get("browserChatgptHome"):
+        changes.extend(browser_chatgpt_home_edits(js))
 
     if js is not None and settings and settings.get("cmdClickCloseOthers"):
         modifier_pattern = re.compile(
@@ -513,6 +549,11 @@ def main():
     parser.add_argument("--uninstall", action="store_true", help="Remove the toolkit patch")
     parser.add_argument("--check", action="store_true", help="Validate without writing")
     parser.add_argument(
+        "--configure",
+        action="store_true",
+        help="Configure in a local browser before installing",
+    )
+    parser.add_argument(
         "--codex-only",
         action="store_true",
         help="Only install or remove the optional Codex usage-reset countdown",
@@ -524,7 +565,17 @@ def main():
     )
     args = parser.parse_args()
 
+    if args.configure and (args.uninstall or args.check or args.codex_only):
+        parser.error("--configure cannot be combined with --uninstall, --check, or --codex-only")
+
     settings = load_settings()
+    if args.configure:
+        from configurator import run_configurator
+
+        if not run_configurator(settings, action_label="Save and install"):
+            print("Installation cancelled; no toolkit settings were changed.")
+            return
+        settings = load_settings()
     version, workbench_paths = application_paths(args.app)
     paths = [] if args.codex_only else workbench_paths
     old = [path.read_text() for path in paths]
