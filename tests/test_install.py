@@ -29,6 +29,7 @@ SETTINGS = {
     "mcpPrServer": "codex-drafter",
     "mcpPrTool": "github_create_pull_request",
     "codexUsageResetCountdown": False,
+    "codexHidePromotions": False,
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -158,7 +159,7 @@ class TransformTests(unittest.TestCase):
             '"aiLowMemoryGiB":"4","aiModelPicker":true,'
             '"mcpPullRequest":true,'
             '"mcpPrServer":"codex-drafter","mcpPrTool":"github_create_pull_request",'
-            '"codexUsageResetCountdown":false,'
+            '"codexUsageResetCountdown":false,"codexHidePromotions":false,'
             '"defaultBranch":"main","remote":"origin"};\n',
             js,
         )
@@ -370,6 +371,37 @@ class CodexCountdownTests(unittest.TestCase):
         patched = install.transform_codex(original, enabled=True)
 
         self.assertEqual(install.transform_codex(patched, enabled=False), original)
+
+
+class CodexPromotionTests(unittest.TestCase):
+    def test_promotion_hiding_is_off_by_default(self):
+        self.assertFalse(install.DEFAULT_SETTINGS["codexHidePromotions"])
+
+    def test_codex_promotion_install_and_remove_round_trip(self):
+        original = "const promo=`Enable Fast mode`;const action=`Enable now`;"
+        patched = install.transform_codex(original, hide_promotions=True)
+
+        self.assertIn("scm-toolkit-codex-promotions:start", patched)
+        self.assertIn("Enable Fast mode", patched)
+        self.assertIn("Enable now", patched)
+        self.assertEqual(install.transform_codex(patched, remove=True), original)
+
+    def test_promotions_and_countdown_can_coexist(self):
+        original = CodexCountdownTests().fixture()
+        patched = install.transform_codex(
+            original, enabled=True, hide_promotions=True
+        )
+
+        self.assertIn("scm-toolkit-usage-reset-countdown", patched)
+        self.assertIn("scm-toolkit-codex-promotions:start", patched)
+        self.assertEqual(install.transform_codex(patched, remove=True), original)
+
+    def test_bundle_match_accepts_fast_mode_promotion(self):
+        self.assertTrue(
+            install.codex_bundle_matches(
+                "const title=`Enable Fast mode`;const action=`Enable now`;"
+            )
+        )
 
 
 if __name__ == "__main__":

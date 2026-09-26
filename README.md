@@ -19,6 +19,7 @@ Current features:
 - optionally use ChatGPT as the home page for blank Integrated Browser tabs
 - optionally generate a commit subject locally when the normal Commit button is used with a blank message
 - optionally show a live, minute-precision countdown in Codex usage-limit banners
+- optionally hide Codex promotional cards such as the Fast mode upsell
 
 The patch is intentionally narrow: it does not copy or manage unrelated editor settings.
 
@@ -115,6 +116,7 @@ git config --global scm-toolkit.mcp-pull-request true
 git config --global scm-toolkit.mcp-pr-server codex-drafter
 git config --global scm-toolkit.mcp-pr-tool github_create_pull_request
 git config --global scm-toolkit.codex-usage-reset-countdown true
+git config --global scm-toolkit.codex-hide-promotions true
 git config --global scm-toolkit.default-branch main
 git config --global scm-toolkit.remote origin
 ```
@@ -144,11 +146,12 @@ The equivalent `~/.gitconfig` block is:
     mcp-pr-server = codex-drafter
     mcp-pr-tool = github_create_pull_request
     codex-usage-reset-countdown = true
+    codex-hide-promotions = true
     default-branch = main
     remote = origin
 ```
 
-The filled-button style, Cmd-click close-others gesture, Codex usage-reset countdown, and ChatGPT browser homepage default to `false`; the other boolean SCM feature switches default to `true`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
+The filled-button style, Cmd-click close-others gesture, Codex usage-reset countdown, Codex promotion hiding, and ChatGPT browser homepage default to `false`; the other boolean SCM feature switches default to `true`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
 
 After changing toolkit Git config, rerun:
 
@@ -266,6 +269,17 @@ python3 install.py --codex-only
 
 Codex extension updates can replace the patched webview bundle. Rerun the command
 after an extension update if the countdown disappears.
+
+### Codex promotion hiding
+
+When `codex-hide-promotions` is enabled, the Codex webview suppresses targeted
+promotional cards such as the `Enable Fast mode` / `Enable now` upsell. The
+filter matches both the promotion title and its action before hiding the nearest
+card, so ordinary Codex warnings, errors, and usage-limit messages are left
+alone.
+
+This option can be installed or refreshed with the same `--codex-only` command
+used by the usage-reset countdown.
 
 ### Commit and push
 

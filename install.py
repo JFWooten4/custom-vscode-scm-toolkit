@@ -14,6 +14,8 @@ START = '\n/* scm-toolkit:start */\n'
 END = '\n/* scm-toolkit:end */\n'
 CODEX_START = '\n/* scm-toolkit-codex-countdown:start */\n'
 CODEX_END = '\n/* scm-toolkit-codex-countdown:end */\n'
+CODEX_PROMOTIONS_START = '\n/* scm-toolkit-codex-promotions:start */\n'
+CODEX_PROMOTIONS_END = '\n/* scm-toolkit-codex-promotions:end */\n'
 
 DEFAULT_SETTINGS = {
     "branchPicker": True,
@@ -37,6 +39,7 @@ DEFAULT_SETTINGS = {
     "mcpPrServer": "codex-drafter",
     "mcpPrTool": "github_create_pull_request",
     "codexUsageResetCountdown": False,
+    "codexHidePromotions": False,
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -146,6 +149,10 @@ def load_settings():
         "codexUsageResetCountdown": read_git_bool(
             "scm-toolkit.codex-usage-reset-countdown",
             DEFAULT_SETTINGS["codexUsageResetCountdown"],
+        ),
+        "codexHidePromotions": read_git_bool(
+            "scm-toolkit.codex-hide-promotions",
+            DEFAULT_SETTINGS["codexHidePromotions"],
         ),
         "defaultBranch": read_git_string(
             "scm-toolkit.default-branch", DEFAULT_SETTINGS["defaultBranch"]
@@ -362,6 +369,16 @@ def strip_codex_payload(text):
     return before + after
 
 
+def strip_codex_promotions_payload(text):
+    if CODEX_PROMOTIONS_START not in text:
+        return text
+    if text.count(CODEX_PROMOTIONS_START) != 1 or text.count(CODEX_PROMOTIONS_END) != 1:
+        raise ValueError("Unexpected Codex promotion patch markers; refusing to modify this file.")
+    before, rest = text.split(CODEX_PROMOTIONS_START, 1)
+    _, after = rest.split(CODEX_PROMOTIONS_END, 1)
+    return before + after
+
+
 def codex_countdown_edit(js):
     matches = []
     pattern = re.compile(
@@ -398,7 +415,10 @@ def codex_countdown_edit(js):
     return original, replacement
 
 
-def transform_codex(js, enabled=False, remove=False):
+def transform_codex(js, enabled=False, hide_promotions=False, remove=False):
+    if CODEX_PROMOTIONS_START in js:
+        js = strip_codex_promotions_payload(js)
+
     installed = CODEX_START in js
     if installed:
         payload = js.split(CODEX_START, 1)[1].split(CODEX_END, 1)[0]
@@ -413,23 +433,29 @@ def transform_codex(js, enabled=False, remove=False):
             )
         js = js.replace(replacement, original, 1)
 
-    if remove or not enabled:
-        return js
+    if not remove and enabled:
+        original, replacement = codex_countdown_edit(js)
+        if js.count(original) != 1:
+            raise ValueError("Unsupported Codex extension build: reset-time anchor is ambiguous.")
+        js = js.replace(original, replacement, 1)
+        js = (
+            js
+            + CODEX_START
+            + "/* edit:"
+            + json.dumps([original, replacement])
+            + " */\n"
+            + (HERE / "codex-countdown.js").read_text()
+            + CODEX_END
+        )
 
-    original, replacement = codex_countdown_edit(js)
-    if js.count(original) != 1:
-        raise ValueError("Unsupported Codex extension build: reset-time anchor is ambiguous.")
-    js = js.replace(original, replacement, 1)
-    return (
-        js
-        + CODEX_START
-        + "/* edit:"
-        + json.dumps([original, replacement])
-        + " */\n"
-        + (HERE / "codex-countdown.js").read_text()
-        + CODEX_END
-    )
+    if not remove and hide_promotions:
+        js += (
+            CODEX_PROMOTIONS_START
+            + (HERE / "codex-hide-promotions.js").read_text()
+            + CODEX_PROMOTIONS_END
+        )
 
+    return js
 
 def transform(js, css, remove=False, settings=None):
     installed = START in js
@@ -490,6 +516,21 @@ def application_paths(app_path):
     ]
 
 
+def codex_bundle_matches(text):
+    if CODEX_START in text or CODEX_PROMOTIONS_START in text:
+        return True
+
+    if "You’re out of Codex messages" in text:
+        try:
+            codex_countdown_edit(text)
+        except ValueError:
+            pass
+        else:
+            return True
+
+    return "Enable Fast mode" in text
+
+
 def codex_bundle_path(extension_path=None):
     if extension_path is None:
         extensions = Path.home() / ".vscode/extensions"
@@ -501,28 +542,22 @@ def codex_bundle_path(extension_path=None):
         assets = candidate / "webview/assets"
         if not assets.is_dir():
             continue
-        patched = [
-            path
-            for path in assets.glob("app-initial-*.js")
-            if CODEX_START in path.read_text()
-        ]
-        if len(patched) == 1:
-            return patched[0]
-        matches = []
+        patched = []
         for path in assets.glob("app-initial-*.js"):
             text = path.read_text()
-            if "You’re out of Codex messages" not in text:
-                continue
-            try:
-                codex_countdown_edit(text)
-            except ValueError:
-                continue
-            matches.append(path)
+            if CODEX_START in text or CODEX_PROMOTIONS_START in text:
+                patched.append(path)
+        if len(patched) == 1:
+            return patched[0]
+
+        matches = []
+        for path in assets.glob("app-initial-*.js"):
+            if codex_bundle_matches(path.read_text()):
+                matches.append(path)
         if len(matches) == 1:
             return matches[0]
 
     return None
-
 
 def write_pair(paths, new_contents, old_contents):
     written = []
@@ -557,7 +592,7 @@ def main():
     parser.add_argument(
         "--codex-only",
         action="store_true",
-        help="Only install or remove the optional Codex usage-reset countdown",
+        help="Only install or remove optional Codex webview customizations",
     )
     parser.add_argument(
         "--codex-extension",
@@ -614,7 +649,11 @@ def main():
     )
 
     codex_path = codex_bundle_path(args.codex_extension)
-    should_find_codex = settings["codexUsageResetCountdown"] or args.uninstall
+    should_find_codex = (
+        settings["codexUsageResetCountdown"]
+        or settings["codexHidePromotions"]
+        or args.uninstall
+    )
     if codex_path is None and should_find_codex:
         raise ValueError("OpenAI Codex extension webview bundle was not found or is unsupported.")
     if codex_path is not None:
@@ -625,6 +664,7 @@ def main():
             transform_codex(
                 codex_old,
                 enabled=settings["codexUsageResetCountdown"],
+                hide_promotions=settings["codexHidePromotions"],
                 remove=args.uninstall,
             )
         )
@@ -654,7 +694,7 @@ def main():
             workspace_search.sync_extension(remove=args.uninstall)
 
     action = "Validated" if args.check else "Removed" if args.uninstall else "Installed"
-    target = "Codex countdown" if args.codex_only else "SCM toolkit"
+    target = "Codex customizations" if args.codex_only else "SCM toolkit"
     print(f"{action} {target} for VS Code {version}. Reload VS Code to apply the change.")
     if not args.codex_only:
         if args.uninstall:
