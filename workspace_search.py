@@ -27,20 +27,28 @@ def extension_destination(extensions_dir: Path | None = None) -> Path:
     return root / f"jfwooten4.scm-toolkit-workspace-search-{extension_version()}"
 
 
-def source_files() -> list[Path]:
-    return sorted(path for path in SOURCE.rglob("*") if path.is_file())
+def source_files() -> dict[Path, Path]:
+    files = {
+        path.relative_to(SOURCE): path
+        for path in SOURCE.rglob("*")
+        if path.is_file()
+    }
+    files[Path("configurator.py")] = HERE / "configurator.py"
+    files[Path("toolkit_settings.py")] = HERE / "toolkit_settings.py"
+    return dict(sorted(files.items()))
 
 
 def destination_matches(destination: Path) -> bool:
     if not destination.is_dir():
         return False
-    expected = {path.relative_to(SOURCE) for path in source_files()}
+    sources = source_files()
+    expected = set(sources)
     actual = {path.relative_to(destination) for path in destination.rglob("*") if path.is_file()}
     if expected != actual:
         return False
     return all(
-        (SOURCE / relative).read_bytes() == (destination / relative).read_bytes()
-        for relative in expected
+        source.read_bytes() == (destination / relative).read_bytes()
+        for relative, source in sources.items()
     )
 
 
@@ -80,6 +88,10 @@ def sync_extension(*, remove: bool = False, check: bool = False, extensions_dir:
     if temp.exists():
         shutil.rmtree(temp)
     shutil.copytree(SOURCE, temp)
+    for relative, source in source_files().items():
+        if relative.parent != Path('.'):
+            (temp / relative.parent).mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, temp / relative)
     if destination.exists():
         if destination.is_symlink():
             destination.unlink()

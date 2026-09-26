@@ -405,3 +405,36 @@
     visibility: visible;
     transition-delay: .4s;
 }
+
+.scm-view .scm-editor > .scm-toolkit-pony-branch.scm-toolkit-has-following-control {
+    border-radius: 0;
+}
+
+.scm-view .scm-editor > .scm-toolkit-settings {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 27px;
+    width: 27px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 0 3px 3px 0;
+    background: transparent;
+    color: var(--vscode-descriptionForeground);
+    cursor: pointer;
+}
+
+.scm-view .scm-editor > .scm-toolkit-settings[hidden] {
+    display: none;
+}
+
+.scm-view .scm-editor > .scm-toolkit-settings:hover {
+    background: var(--vscode-toolbar-hoverBackground);
+}
+
+.scm-view .scm-editor > .scm-toolkit-settings:focus-visible {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}

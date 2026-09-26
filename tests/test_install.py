@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import patch
 
 import install
+import toolkit_settings
 
 
 SETTINGS = {
@@ -69,7 +70,7 @@ class TransformTests(unittest.TestCase):
         css = (install.HERE / "picker.css").read_text()
 
         self.assertEqual(css.count("background: var(--vscode-input-background);"), 5)
-        self.assertEqual(css.count("background: transparent;"), 3)
+        self.assertEqual(css.count("background: transparent;"), 4)
 
     def test_branch_selector_uses_the_vscode_button_colors(self):
         css = (install.HERE / "picker.css").read_text()
@@ -203,6 +204,9 @@ class TransformTests(unittest.TestCase):
         self.assertIn("commands.executeCommand('git.sync', repository)", js)
         self.assertIn("repository.branch(branchName, true, 'HEAD')", js)
         self.assertIn("scm-toolkit-sync-branch", css)
+        self.assertIn("scm-toolkit-settings codicon codicon-gear", js)
+        self.assertIn("commands.executeCommand('scmToolkit.openSettings')", js)
+        self.assertIn("scm-toolkit-settings", css)
         self.assertIn("input.value = '🔄 Sync brach to main';", js)
         self.assertIn("await repository.fetch({ remote: settings.remote });", js)
         self.assertIn(
@@ -351,12 +355,18 @@ class AiWrapperTests(unittest.TestCase):
 
 
 class GitConfigTests(unittest.TestCase):
-    @patch("install.subprocess.run")
+    def test_every_default_has_a_git_config_key(self):
+        self.assertEqual(
+            set(toolkit_settings.DEFAULT_SETTINGS),
+            set(toolkit_settings.SETTING_KEYS),
+        )
+
+    @patch("toolkit_settings.subprocess.run")
     def test_boolean_git_config_uses_parsed_value(self, run):
         run.return_value = types.SimpleNamespace(returncode=0, stdout="true\n", stderr="")
         self.assertTrue(install.read_git_bool("scm-toolkit.branch-picker", False))
 
-    @patch("install.subprocess.run")
+    @patch("toolkit_settings.subprocess.run")
     def test_missing_boolean_git_config_uses_default(self, run):
         run.return_value = types.SimpleNamespace(returncode=1, stdout="", stderr="")
         self.assertTrue(install.read_git_bool("scm-toolkit.branch-picker", True))
@@ -364,7 +374,7 @@ class GitConfigTests(unittest.TestCase):
     def test_manual_commit_spellcheck_defaults_on(self):
         self.assertTrue(install.DEFAULT_SETTINGS["spellcheckManualCommit"])
 
-    @patch("install.subprocess.run")
+    @patch("toolkit_settings.subprocess.run")
     def test_string_git_config_uses_value(self, run):
         run.return_value = types.SimpleNamespace(returncode=0, stdout="upstream\n", stderr="")
         self.assertEqual(install.read_git_string("scm-toolkit.remote", "origin"), "upstream")

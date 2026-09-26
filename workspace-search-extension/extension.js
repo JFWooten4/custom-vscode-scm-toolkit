@@ -1,11 +1,43 @@
 'use strict';
 
 const vscode = require('vscode');
+const { spawn } = require('child_process');
 const { SearchIndex } = require('./search_index');
 const { WorkspaceSearchViewProvider } = require('./view');
 
 const VIEW_ID = 'scmToolkit.workspaceSearch';
 const CONFIG_ROOT = 'scmToolkit.workspaceSearch';
+let configuratorProcess;
+
+function openSettings(context) {
+  if (configuratorProcess && configuratorProcess.exitCode === null) {
+    vscode.window.showInformationMessage('SCM Toolkit settings are already open.');
+    return;
+  }
+
+  const script = vscode.Uri.joinPath(context.extensionUri, 'configurator.py').fsPath;
+  const python = process.platform === 'win32' ? 'python' : 'python3';
+  let stderr = '';
+  const child = spawn(python, [script], {
+    cwd: context.extensionPath,
+    stdio: ['ignore', 'ignore', 'pipe']
+  });
+  configuratorProcess = child;
+  child.stderr.setEncoding('utf8');
+  child.stderr.on('data', chunk => { stderr += chunk; });
+  child.on('error', error => {
+    configuratorProcess = undefined;
+    vscode.window.showErrorMessage(`Unable to open SCM Toolkit settings: ${error.message}`);
+  });
+  child.on('exit', code => {
+    configuratorProcess = undefined;
+    if (code && code !== 0) {
+      vscode.window.showErrorMessage(
+        `SCM Toolkit settings exited with code ${code}${stderr.trim() ? `: ${stderr.trim()}` : '.'}`
+      );
+    }
+  });
+}
 
 function settings() {
   const cfg = vscode.workspace.getConfiguration(CONFIG_ROOT);
@@ -27,6 +59,9 @@ async function activate(context) {
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(VIEW_ID, provider, { webviewOptions: { retainContextWhenHidden: true } })
   );
+  context.subscriptions.push(vscode.commands.registerCommand('scmToolkit.openSettings', () => {
+    openSettings(context);
+  }));
 
   const watcher = vscode.workspace.createFileSystemWatcher('**/*');
   context.subscriptions.push(

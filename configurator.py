@@ -14,6 +14,7 @@ import urllib.request
 import webbrowser
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from toolkit_settings import load_settings
 
 
 OLLAMA_URL = "http://127.0.0.1:11434"
@@ -281,3 +282,7 @@ def run_configurator(current: dict[str, object], action_label: str = "Save confi
     finally:
         server.server_close()
     return outcome["saved"] is True
+
+
+if __name__ == "__main__":
+    run_configurator(load_settings())

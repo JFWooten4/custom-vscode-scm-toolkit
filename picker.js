@@ -453,6 +453,13 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     ponyBranchTooltip.setAttribute('aria-hidden', 'true');
     ponyBranchButton.append(ponyBranchTooltip);
 
+    const settingsButton = doc.createElement('button');
+    settingsButton.type = 'button';
+    settingsButton.className = 'scm-toolkit-settings codicon codicon-gear';
+    settingsButton.hidden = true;
+    settingsButton.title = 'Open SCM Toolkit settings';
+    settingsButton.setAttribute('aria-label', 'Open SCM Toolkit settings');
+
     widget.element.prepend(branchButton);
     widget.element.append(
         pushControl,
@@ -461,7 +468,8 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         autocompleteButton,
         codexButton,
         pullRequestButton,
-        ponyBranchButton
+        ponyBranchButton,
+        settingsButton
     );
 
     let currentCommand;
@@ -961,12 +969,22 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         }
     };
 
+    const openSettings = async event => {
+        event.stopPropagation();
+        try {
+            await commands.executeCommand('scmToolkit.openSettings');
+        } catch (error) {
+            notifications.error(error);
+        }
+    };
+
     branchButton.addEventListener('click', openBranchPicker);
     syncButton.addEventListener('click', syncBranch);
     deleteButton.addEventListener('click', deleteBranch);
     codexButton.addEventListener('click', commitWithCodex);
     pullRequestButton.addEventListener('click', createPullRequest);
     ponyBranchButton.addEventListener('click', createPonyBranch);
+    settingsButton.addEventListener('click', openSettings);
     widget.disposables.add({
         dispose() {
             branchButton.removeEventListener('click', openBranchPicker);
@@ -977,6 +995,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             codexButton.removeEventListener('click', commitWithCodex);
             pullRequestButton.removeEventListener('click', createPullRequest);
             ponyBranchButton.removeEventListener('click', createPonyBranch);
+            settingsButton.removeEventListener('click', openSettings);
             branchButton.remove();
             pushControl.remove();
             syncButton.remove();
@@ -985,6 +1004,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             codexButton.remove();
             pullRequestButton.remove();
             ponyBranchButton.remove();
+            settingsButton.remove();
         }
     });
 
@@ -1014,8 +1034,11 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             const ponyBranchWidth = ponyBranchButton.hidden
                 ? 0
                 : ponyBranchButton.getBoundingClientRect().width;
+            const settingsWidth = settingsButton.hidden
+                ? 0
+                : settingsButton.getBoundingClientRect().width;
             return branchWidth + pushWidth + syncWidth + deleteWidth + autocompleteWidth
-                + codexWidth + pullRequestWidth + ponyBranchWidth;
+                + codexWidth + pullRequestWidth + ponyBranchWidth + settingsWidth;
         },
 
         bind(input) {
@@ -1040,9 +1063,11 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             pullRequestButton.disabled = true;
             ponyBranchButton.hidden = true;
             ponyBranchButton.disabled = true;
+            settingsButton.hidden = true;
 
             if (!input || input.repository.provider.providerId !== 'git') return;
             currentInput = input;
+            settingsButton.hidden = false;
             const provider = input.repository.provider;
             currentCommitCommand = provider.acceptInputCommand;
 
@@ -1074,23 +1099,29 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             syncButton.classList.toggle(
                 'scm-toolkit-has-following-control',
                 !deleteButton.hidden || !autocompleteButton.hidden || !codexButton.hidden
-                    || !pullRequestButton.hidden || !ponyBranchButton.hidden
+                    || !pullRequestButton.hidden || !ponyBranchButton.hidden || !settingsButton.hidden
             );
             deleteButton.classList.toggle(
                 'scm-toolkit-has-following-control',
-                !autocompleteButton.hidden || !codexButton.hidden || !pullRequestButton.hidden || !ponyBranchButton.hidden
+                !autocompleteButton.hidden || !codexButton.hidden || !pullRequestButton.hidden
+                    || !ponyBranchButton.hidden || !settingsButton.hidden
             );
             autocompleteButton.classList.toggle(
                 'scm-toolkit-has-following-control',
                 !codexButton.hidden || !pullRequestButton.hidden || !ponyBranchButton.hidden
+                    || !settingsButton.hidden
             );
             codexButton.classList.toggle(
                 'scm-toolkit-has-following-control',
-                !pullRequestButton.hidden || !ponyBranchButton.hidden
+                !pullRequestButton.hidden || !ponyBranchButton.hidden || !settingsButton.hidden
             );
             pullRequestButton.classList.toggle(
                 'scm-toolkit-has-following-control',
-                !ponyBranchButton.hidden
+                !ponyBranchButton.hidden || !settingsButton.hidden
+            );
+            ponyBranchButton.classList.toggle(
+                'scm-toolkit-has-following-control',
+                !settingsButton.hidden
             );
 
             if (settings.shortPlaceholder) {
