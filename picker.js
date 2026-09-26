@@ -229,6 +229,76 @@ async function scmToolkitWaitForMcpTool(doc, server, toolName) {
     return undefined;
 }
 
+const SCM_TOOLKIT_PONY_BRANCH_NAMES = [
+    // G4 canon
+    'twilight-sparkle', 'rainbow-dash', 'pinkie-pie', 'rarity', 'applejack',
+    'fluttershy', 'starlight-glimmer', 'trixie-lulamoon', 'sunset-shimmer',
+    'princess-celestia', 'princess-luna', 'princess-cadance', 'shining-armor',
+    'flurry-heart', 'apple-bloom', 'sweetie-belle', 'scootaloo', 'big-macintosh',
+    'granny-smith', 'braeburn', 'sugar-belle', 'cheerilee', 'derpy-hooves',
+    'doctor-hooves', 'lyra-heartstrings', 'bon-bon', 'vinyl-scratch',
+    'octavia-melody', 'minuette', 'moondancer', 'lemon-hearts', 'twinkleshine',
+    'coco-pommel', 'maud-pie', 'limestone-pie', 'marble-pie', 'tree-hugger',
+    'coloratura', 'sassy-saddles', 'sunburst', 'tempest-shadow', 'night-glider',
+    'party-favor', 'double-diamond', 'soarin', 'spitfire', 'fleetfoot',
+    'lightning-dust', 'thunderlane', 'cloudchaser', 'flitter', 'vapor-trail',
+    'sky-stinger', 'misty-fly', 'bulk-biceps', 'fancy-pants', 'fleur-de-lis',
+    'prince-blueblood', 'diamond-tiara', 'silver-spoon', 'babs-seed', 'twist',
+    'pipsqueak', 'featherweight', 'tender-taps', 'zephyr-breeze',
+    'saffron-masala', 'zesty-gourmand', 'quibble-pants', 'daring-do',
+    'mayor-mare', 'photo-finish', 'hoity-toity', 'sapphire-shores',
+    'prim-hemline', 'filthy-rich', 'spoiled-rich', 'cheese-sandwich',
+    'troubleshoes', 'burnt-oak', 'pear-butter', 'bright-mac', 'grand-pear',
+    'igneous-rock-pie', 'cloudy-quartz', 'chancellor-neighsay', 'mudbriar',
+    'mage-meadowbrook', 'somnambula', 'mistmane', 'rockhoof', 'flash-magnus',
+    'starswirl-the-bearded', 'flash-sentry', 'suri-polomare', 'cinnamon-chai',
+    'lotus-blossom', 'aloe', 'noteworthy', 'carrot-top', 'amethyst-star',
+    'cloud-kicker', 'berry-punch', 'rose', 'lily-valley', 'daisy',
+    'strawberry-sunrise', 'toola-roola', 'starsong',
+
+    // Tamers12345 continuity and variants
+    'flawless-sparklemoon', 'apple-bottom', 'apple-split', 'care-package',
+    'jinx', 'clean-sweep', 'future-soarin', 'friendship', 'arinos',
+    'dazzle-feather', 'skye-silver', 'parcelcore', 'professor-kirin',
+    'bobby-moonbeam', 'professor-majorchord', 'astro-novalite',
+
+    // Fanmade characters used by PrinceWhateverer songs
+    'sweetie-bot', 'retro-city', 'felix', 'normal-oc', 'bad-oc',
+
+    // Well-known fandom OCs and fan characters
+    'apogee', 'snowdrop', 'nyx', 'fluffle-puff', 'button-mash', 'celestai',
+    'turing-test', 'flower', 'cleverpony', 'gears', 'applebloom-bot',
+    'scoota-bot', 'flawless',
+
+    // Fallout: Equestria and major side-story continuities
+    'littlepip', 'velvet-remedy', 'calamity', 'homage', 'steelhooves',
+    'red-eye', 'xenith', 'blackjack', 'p-21', 'morning-glory', 'rampage',
+    'lacunae', 'scotch-tape', 'boo', 'stygius', 'goldenblood', 'psychoshy',
+    'bottlecap', 'puppysmiles', 'better-days', 'hired-gun', 'silver-storm',
+    'curly-fries', 'murky-number-seven', 'brimstone-blitz', 'coral-eve',
+    'glimmerlight', 'protege', 'wicked-slit', 'sundial', 'caduceus',
+    'cayenne', 'silver-heart', 'harmony', 'atom-smasher', 'aurora-borealis',
+    'backlash', 'brass-tacks', 'cherry-smiles', 'crossed-wires',
+    'cinder-trails', 'cobalt', 'airborne', 'amber-glow', 'aqua-breeze',
+    'arc-light', 'aroma', 'arsenal'
+];
+
+function scmToolkitPickPonyBranchName(refs, remote) {
+    const localPrefix = 'refs/heads/';
+    const remotePrefix = `refs/remotes/${remote}/`;
+    const used = new Set();
+
+    for (const ref of refs) {
+        const id = String(ref?.id ?? '');
+        if (id.startsWith(localPrefix)) used.add(id.slice(localPrefix.length));
+        if (id.startsWith(remotePrefix)) used.add(id.slice(remotePrefix.length));
+    }
+
+    const available = SCM_TOOLKIT_PONY_BRANCH_NAMES.filter(name => !used.has(name));
+    if (available.length === 0) return undefined;
+    return available[Math.floor(Math.random() * available.length)];
+}
+
 function scmToolkitReleaseCommitBeforePush(repository, configuration, notifications) {
     if (
         !repository
@@ -373,6 +443,16 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     pullRequestTooltip.setAttribute('aria-hidden', 'true');
     pullRequestButton.append(pullRequestTooltip);
 
+    const ponyBranchButton = doc.createElement('button');
+    ponyBranchButton.type = 'button';
+    ponyBranchButton.className = 'scm-toolkit-pony-branch codicon codicon-git-branch-create';
+    ponyBranchButton.hidden = true;
+
+    const ponyBranchTooltip = doc.createElement('span');
+    ponyBranchTooltip.className = 'scm-toolkit-tooltip';
+    ponyBranchTooltip.setAttribute('aria-hidden', 'true');
+    ponyBranchButton.append(ponyBranchTooltip);
+
     widget.element.prepend(branchButton);
     widget.element.append(
         pushControl,
@@ -380,7 +460,8 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         deleteButton,
         autocompleteButton,
         codexButton,
-        pullRequestButton
+        pullRequestButton,
+        ponyBranchButton
     );
 
     let currentCommand;
@@ -391,6 +472,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     let pending = false;
     let deletingBranch = false;
     let creatingPullRequest = false;
+    let creatingPonyBranch = false;
     let updatingPush = false;
     let updatingAutocomplete = false;
     let committingWithCodex = false;
@@ -517,7 +599,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
 
         pullRequestButton.hidden = !settings.mcpPullRequest;
         pullRequestButton.disabled =
-            pending || deletingBranch || creatingPullRequest || unavailable;
+            pending || deletingBranch || creatingPullRequest || creatingPonyBranch || unavailable;
 
         if (!branch) {
             pullRequestTooltip.textContent = 'Open a pull request for the current branch';
@@ -544,6 +626,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             || pending
             || deletingBranch
             || creatingPullRequest
+            || creatingPonyBranch
         ) {
             return;
         }
@@ -618,6 +701,75 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         }
     };
 
+    const refreshPonyBranch = () => {
+        const unavailable = !settings.ponyBranch || !currentRepositoryArgument || !currentHistoryProvider;
+        ponyBranchButton.hidden = !settings.ponyBranch;
+        ponyBranchButton.disabled =
+            pending
+            || deletingBranch
+            || creatingPullRequest
+            || creatingPonyBranch
+            || unavailable;
+
+        const description =
+            `Sync ${settings.defaultBranch} with ${settings.remote} and create a random pony branch`;
+        ponyBranchButton.setAttribute('aria-label', description);
+        ponyBranchTooltip.textContent = description;
+    };
+
+    const createPonyBranch = async event => {
+        event.stopPropagation();
+
+        const repository = currentRepositoryArgument;
+        const historyProvider = currentHistoryProvider;
+        if (
+            !settings.ponyBranch
+            || !repository
+            || !historyProvider
+            || pending
+            || deletingBranch
+            || creatingPullRequest
+            || creatingPonyBranch
+        ) {
+            return;
+        }
+
+        creatingPonyBranch = true;
+        pushCheckbox.disabled = true;
+        refreshBranchControls();
+
+        try {
+            await commands.executeCommand('git.checkout', repository, settings.defaultBranch);
+            await commands.executeCommand('git.sync', repository);
+
+            const refs = await historyProvider.provideHistoryItemRefs([
+                'refs/heads',
+                `refs/remotes/${settings.remote}`,
+            ]);
+            const branchName = scmToolkitPickPonyBranchName(
+                Array.isArray(refs) ? refs : [],
+                settings.remote
+            );
+            if (!branchName) {
+                notifications.error('All configured pony branch names are already in use.');
+                return;
+            }
+
+            if (typeof repository.branch !== 'function') {
+                throw new Error('The current VS Code Git repository cannot create branches directly.');
+            }
+
+            await repository.branch(branchName, true, 'HEAD');
+            notifications.info(`Created and switched to ${branchName}.`);
+        } catch (error) {
+            notifications.error(error);
+        } finally {
+            creatingPonyBranch = false;
+            pushCheckbox.disabled = updatingPush;
+            refreshBranchControls();
+        }
+    };
+
     const refreshSyncBranch = () => {
         const branch = currentBranch;
         const repository = currentRepositoryArgument;
@@ -626,6 +778,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             pending
             || deletingBranch
             || creatingPullRequest
+            || creatingPonyBranch
             || !repository
             || typeof repository.fetch !== 'function'
             || typeof repository.merge !== 'function'
@@ -654,6 +807,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             || pending
             || deletingBranch
             || creatingPullRequest
+            || creatingPonyBranch
         ) {
             return;
         }
@@ -684,7 +838,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
 
     const refreshBranchControls = () => {
         branchButton.disabled =
-            pending || deletingBranch || creatingPullRequest || !currentCommand?.id;
+            pending || deletingBranch || creatingPullRequest || creatingPonyBranch || !currentCommand?.id;
 
         const unavailable =
             !settings.branchCleanup
@@ -697,6 +851,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             pending
             || deletingBranch
             || creatingPullRequest
+            || creatingPonyBranch
             || unavailable
             || currentBranch === settings.defaultBranch;
 
@@ -717,12 +872,13 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         refreshSyncBranch();
         refreshCodexCommit();
         refreshPullRequest();
+        refreshPonyBranch();
     };
 
     const openBranchPicker = async event => {
         event.stopPropagation();
         const command = currentCommand;
-        if (!command?.id || pending || deletingBranch || creatingPullRequest) return;
+        if (!command?.id || pending || deletingBranch || creatingPullRequest || creatingPonyBranch) return;
 
         pending = true;
         refreshBranchControls();
@@ -750,6 +906,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             || !repositoryArgument
             || deletingBranch
             || creatingPullRequest
+            || creatingPonyBranch
             || pending
         ) {
             return;
@@ -805,6 +962,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     deleteButton.addEventListener('click', deleteBranch);
     codexButton.addEventListener('click', commitWithCodex);
     pullRequestButton.addEventListener('click', createPullRequest);
+    ponyBranchButton.addEventListener('click', createPonyBranch);
     widget.disposables.add({
         dispose() {
             branchButton.removeEventListener('click', openBranchPicker);
@@ -814,6 +972,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             autocompleteButton.removeEventListener('click', toggleAutocomplete);
             codexButton.removeEventListener('click', commitWithCodex);
             pullRequestButton.removeEventListener('click', createPullRequest);
+            ponyBranchButton.removeEventListener('click', createPonyBranch);
             branchButton.remove();
             pushControl.remove();
             syncButton.remove();
@@ -821,6 +980,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             autocompleteButton.remove();
             codexButton.remove();
             pullRequestButton.remove();
+            ponyBranchButton.remove();
         }
     });
 
@@ -847,8 +1007,11 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             const pullRequestWidth = pullRequestButton.hidden
                 ? 0
                 : pullRequestButton.getBoundingClientRect().width;
+            const ponyBranchWidth = ponyBranchButton.hidden
+                ? 0
+                : ponyBranchButton.getBoundingClientRect().width;
             return branchWidth + pushWidth + syncWidth + deleteWidth + autocompleteWidth
-                + codexWidth + pullRequestWidth;
+                + codexWidth + pullRequestWidth + ponyBranchWidth;
         },
 
         bind(input) {
@@ -870,6 +1033,8 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             codexButton.disabled = true;
             pullRequestButton.hidden = true;
             pullRequestButton.disabled = true;
+            ponyBranchButton.hidden = true;
+            ponyBranchButton.disabled = true;
 
             if (!input || input.repository.provider.providerId !== 'git') return;
             currentInput = input;
@@ -894,21 +1059,31 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
                 refreshPullRequest();
             }
 
+            if (settings.ponyBranch) {
+                ponyBranchButton.hidden = false;
+                refreshPonyBranch();
+            }
+
             syncButton.classList.toggle(
                 'scm-toolkit-has-following-control',
-                !deleteButton.hidden || !autocompleteButton.hidden || !codexButton.hidden || !pullRequestButton.hidden
+                !deleteButton.hidden || !autocompleteButton.hidden || !codexButton.hidden
+                    || !pullRequestButton.hidden || !ponyBranchButton.hidden
             );
             deleteButton.classList.toggle(
                 'scm-toolkit-has-following-control',
-                !autocompleteButton.hidden || !codexButton.hidden || !pullRequestButton.hidden
+                !autocompleteButton.hidden || !codexButton.hidden || !pullRequestButton.hidden || !ponyBranchButton.hidden
             );
             autocompleteButton.classList.toggle(
                 'scm-toolkit-has-following-control',
-                !codexButton.hidden || !pullRequestButton.hidden
+                !codexButton.hidden || !pullRequestButton.hidden || !ponyBranchButton.hidden
             );
             codexButton.classList.toggle(
                 'scm-toolkit-has-following-control',
-                !pullRequestButton.hidden
+                !pullRequestButton.hidden || !ponyBranchButton.hidden
+            );
+            pullRequestButton.classList.toggle(
+                'scm-toolkit-has-following-control',
+                !ponyBranchButton.hidden
             );
 
             if (settings.shortPlaceholder) {

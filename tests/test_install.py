@@ -9,6 +9,7 @@ import install
 
 SETTINGS = {
     "branchPicker": True,
+    "ponyBranch": True,
     "shortPlaceholder": True,
     "filledButtons": False,
     "commitAndPush": True,
@@ -68,7 +69,7 @@ class TransformTests(unittest.TestCase):
         css = (install.HERE / "picker.css").read_text()
 
         self.assertEqual(css.count("background: var(--vscode-input-background);"), 5)
-        self.assertEqual(css.count("background: transparent;"), 2)
+        self.assertEqual(css.count("background: transparent;"), 3)
 
     def test_branch_selector_uses_the_vscode_button_colors(self):
         css = (install.HERE / "picker.css").read_text()
@@ -148,7 +149,7 @@ class TransformTests(unittest.TestCase):
 
         self.assertIn(
             'const scmToolkitSettings = '
-            '{"branchPicker":true,"shortPlaceholder":true,"filledButtons":false,'
+            '{"branchPicker":true,"ponyBranch":true,"shortPlaceholder":true,"filledButtons":false,'
             '"commitAndPush":true,'
             '"branchCleanup":true,"autocompleteToggle":true,"codexCoauthor":true,'
             '"hideOutgoingSyncCount":true,"blankStateRefresh":true,'
@@ -175,7 +176,7 @@ class TransformTests(unittest.TestCase):
         self.assertIn("commands.executeCommand('git.pull', repositoryArgument)", js)
         self.assertIn("scm-toolkit-autocomplete", css)
         self.assertIn(".scm-toolkit-refreshing > .monaco-progress-container", css)
-        self.assertEqual(js.count("className = 'scm-toolkit-tooltip'"), 3)
+        self.assertEqual(js.count("className = 'scm-toolkit-tooltip'"), 4)
         self.assertIn(".scm-toolkit-autocomplete:hover > .scm-toolkit-tooltip", css)
         self.assertIn("Co-authored-by: Codex Web <noreply@openai.com>", js)
         self.assertIn("commands.executeCommand('git.commit', currentRepositoryArgument)", js)
@@ -188,6 +189,16 @@ class TransformTests(unittest.TestCase):
         self.assertIn("const result = await tool.call({", js)
         self.assertIn("github_create_pull_request", js)
         self.assertIn("scm-toolkit-pull-request", css)
+        self.assertIn("scm-toolkit-pony-branch", css)
+        self.assertIn("SCM_TOOLKIT_PONY_BRANCH_NAMES", js)
+        self.assertIn("'flawless-sparklemoon'", js)
+        self.assertIn("'apogee'", js)
+        self.assertIn("'sweetie-bot'", js)
+        self.assertIn("'retro-city'", js)
+        self.assertIn("'blackjack'", js)
+        self.assertIn("'murky-number-seven'", js)
+        self.assertIn("commands.executeCommand('git.sync', repository)", js)
+        self.assertIn("repository.branch(branchName, true, 'HEAD')", js)
         self.assertIn("scm-toolkit-sync-branch", css)
         self.assertIn("input.value = '🔄 Sync brach to main';", js)
         self.assertIn("await repository.fetch({ remote: settings.remote });", js)

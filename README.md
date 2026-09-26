@@ -9,6 +9,7 @@ Current features:
 - shorten the commit-message placeholder to `Message`
 - optionally show a commit-and-push checkbox that dispatches the push without holding commit completion
 - optionally show a guarded local-branch cleanup button
+- optionally create a freshly synced branch from `main` with a random G4/fandom pony name
 - optionally show a quick toggle for VS Code inline autocomplete
 - optionally show a commit button that appends the Codex Web co-author trailer
 - optionally open a pull request for the current branch through a configured MCP server
@@ -97,6 +98,7 @@ Set options with `git config --global`:
 
 ```sh
 git config --global scm-toolkit.branch-picker true
+git config --global scm-toolkit.pony-branch true
 git config --global scm-toolkit.short-placeholder true
 git config --global scm-toolkit.filled-buttons false
 git config --global scm-toolkit.commit-and-push true
@@ -129,6 +131,7 @@ The equivalent `~/.gitconfig` block is:
 ```gitconfig
 [scm-toolkit]
     branch-picker = true
+    pony-branch = true
     short-placeholder = true
     filled-buttons = false
     commit-and-push = true
@@ -385,6 +388,26 @@ tool receives the current GitHub owner/repository, branch as `head`, the
 configured `default-branch` as `base`, a title derived from the branch name,
 and a minimal generated prompt/body. Authentication and transport stay owned by
 VS Code's MCP configuration rather than the SCM patch.
+
+### Pony branch
+
+When `pony-branch` is enabled, a branch-create button appears at the far right of
+the SCM message row. It checks out the configured `default-branch` (normally
+`main`), runs VS Code's normal Git sync action so that branch is synchronized
+with its upstream remote, then creates and checks out a new branch directly from
+the synchronized HEAD.
+
+The branch name is chosen randomly from a built-in, branch-safe pool of G4 pony
+names and fandom characters. The pool includes Tamers12345 continuity names,
+fanmade characters featured in PrinceWhateverer songs, well-known community OCs,
+and Fallout: Equestria characters and major side-story variants. Existing local
+and configured-remote branch names are excluded before the random choice.
+
+Disable the button without changing the rest of the toolkit:
+
+```sh
+git config --global scm-toolkit.pony-branch false
+```
 
 ### Branch cleanup
 
