@@ -34,7 +34,51 @@ function scmToolkitHideOutgoingSyncCount(widget) {
     observer.observe(root, { subtree: true, childList: true, characterData: true });
 }
 
-function scmToolkitEnableBlankStateRefresh(widget, input, commands, repositoryArgument) {
+async function scmToolkitPullCleanRepository(provider, commands, repositoryArgument) {
+    const hasChanges = () => provider.groups.some(group => group.resources.length > 0);
+    if (hasChanges()) return false;
+
+    const historyProvider = provider.historyProvider.get();
+    const localRef = historyProvider?.historyItemRef.get();
+    const remoteRef = historyProvider?.historyItemRemoteRef.get();
+    if (
+        !historyProvider
+        || !localRef?.id
+        || !localRef.revision
+        || !remoteRef?.id
+        || !remoteRef.revision
+        || localRef.revision === remoteRef.revision
+    ) {
+        return false;
+    }
+
+    const ancestor = await historyProvider.resolveHistoryItemRefsCommonAncestor([
+        localRef.id,
+        remoteRef.id
+    ]);
+    if (ancestor !== localRef.revision || hasChanges()) return false;
+
+    const currentLocalRef = historyProvider.historyItemRef.get();
+    const currentRemoteRef = historyProvider.historyItemRemoteRef.get();
+    if (
+        currentLocalRef?.revision !== localRef.revision
+        || currentRemoteRef?.revision !== remoteRef.revision
+        || hasChanges()
+    ) {
+        return false;
+    }
+
+    await commands.executeCommand('git.pull', repositoryArgument);
+    return true;
+}
+
+function scmToolkitEnableBlankStateRefresh(
+    widget,
+    input,
+    commands,
+    repositoryArgument,
+    autoPullClean
+) {
     const doc = widget.element.ownerDocument;
     const win = doc.defaultView;
     const provider = input.repository.provider;
@@ -43,6 +87,8 @@ function scmToolkitEnableBlankStateRefresh(widget, input, commands, repositoryAr
     let timer;
     let refreshing = false;
     let disposed = false;
+    let lastAutoPullState;
+    const progressRoot = widget.element.closest('.scm-view')?.parentElement;
 
     const hasChanges = () => provider.groups.some(group => group.resources.length > 0);
 
@@ -50,6 +96,27 @@ function scmToolkitEnableBlankStateRefresh(widget, input, commands, repositoryAr
         if (timer === undefined) return;
         win.clearTimeout(timer);
         timer = undefined;
+    };
+
+    const maybeAutoPull = async () => {
+        if (!autoPullClean || hasChanges()) return;
+
+        const historyProvider = provider.historyProvider.get();
+        const localRef = historyProvider?.historyItemRef.get();
+        const remoteRef = historyProvider?.historyItemRemoteRef.get();
+        if (!localRef?.revision || !remoteRef?.revision || localRef.revision === remoteRef.revision) {
+            return;
+        }
+
+        const state = `${localRef.revision}:${remoteRef.revision}`;
+        if (state === lastAutoPullState) return;
+        lastAutoPullState = state;
+
+        try {
+            await scmToolkitPullCleanRepository(provider, commands, repositoryArgument);
+        } catch {
+            // Keep automatic pulls best-effort; the built-in Git extension owns Git errors.
+        }
     };
 
     const schedule = delay => {
@@ -66,11 +133,14 @@ function scmToolkitEnableBlankStateRefresh(widget, input, commands, repositoryAr
             }
 
             refreshing = true;
+            progressRoot?.classList.add('scm-toolkit-refreshing');
             try {
                 await commands.executeCommand('git.refresh', repositoryArgument);
+                await maybeAutoPull();
             } catch {
                 // The built-in Git extension owns refresh errors; keep blank-state polling best-effort.
             } finally {
+                progressRoot?.classList.remove('scm-toolkit-refreshing');
                 refreshing = false;
                 if (!disposed && !hasChanges()) schedule(1500);
             }
@@ -100,6 +170,7 @@ function scmToolkitEnableBlankStateRefresh(widget, input, commands, repositoryAr
         dispose() {
             disposed = true;
             clearTimer();
+            progressRoot?.classList.remove('scm-toolkit-refreshing');
             resourceDisposable.dispose();
             doc.removeEventListener('visibilitychange', onVisibilityChange);
         }
@@ -158,6 +229,75 @@ async function scmToolkitWaitForMcpTool(doc, server, toolName) {
     return undefined;
 }
 
+function scmToolkitReleaseCommitBeforePush(repository, configuration, notifications) {
+    if (
+        !repository
+        || typeof repository.commit !== 'function'
+        || typeof repository.push !== 'function'
+    ) {
+        return;
+    }
+
+    const wrappedRepositories =
+        globalThis.__scmToolkitAsyncPushRepositories ??= new WeakMap();
+    let state = wrappedRepositories.get(repository);
+
+    if (!state) {
+        const originalCommit = repository.commit;
+        const originalPush = repository.push;
+
+        const wrappedCommit = async function(message, options) {
+            const requestedPostCommitCommand = options?.postCommitCommand;
+            const configuredPostCommitCommand =
+                configuration.getValue('git.postCommitCommand');
+            const shouldReleasePush =
+                requestedPostCommitCommand === 'push'
+                || (
+                    requestedPostCommitCommand === undefined
+                    && configuredPostCommitCommand === 'push'
+                );
+
+            if (!shouldReleasePush) {
+                return originalCommit.call(repository, message, options);
+            }
+
+            await originalCommit.call(repository, message, {
+                ...(options ?? {}),
+                postCommitCommand: null,
+            });
+
+            void Promise.resolve()
+                .then(() => originalPush.call(repository))
+                .catch(error => notifications.error(error));
+        };
+
+        state = {
+            references: 0,
+            originalCommit,
+            wrappedCommit,
+        };
+        repository.commit = wrappedCommit;
+        wrappedRepositories.set(repository, state);
+    }
+
+    state.references += 1;
+    let disposed = false;
+
+    return {
+        dispose() {
+            if (disposed) return;
+            disposed = true;
+            state.references -= 1;
+            if (state.references !== 0) return;
+
+            if (repository.commit === state.wrappedCommit) {
+                repository.commit = state.originalCommit;
+            }
+            wrappedRepositories.delete(repository);
+        }
+    };
+}
+
 function scmToolkitCreateControls(widget, observe, commands, notifications, configuration, mcpService, settings) {
     const doc = widget.element.ownerDocument;
     if (settings.hideOutgoingSyncCount) scmToolkitHideOutgoingSyncCount(widget);
@@ -190,6 +330,11 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     pushMark.setAttribute('aria-hidden', 'true');
 
     pushControl.append(pushCheckbox, pushMark);
+
+    const syncButton = doc.createElement('button');
+    syncButton.type = 'button';
+    syncButton.className = 'scm-toolkit-sync-branch codicon codicon-sync';
+    syncButton.hidden = true;
 
     const deleteButton = doc.createElement('button');
     deleteButton.type = 'button';
@@ -231,6 +376,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     widget.element.prepend(branchButton);
     widget.element.append(
         pushControl,
+        syncButton,
         deleteButton,
         autocompleteButton,
         codexButton,
@@ -472,6 +618,70 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         }
     };
 
+    const refreshSyncBranch = () => {
+        const branch = currentBranch;
+        const repository = currentRepositoryArgument;
+        syncButton.hidden = !branch;
+        syncButton.disabled =
+            pending
+            || deletingBranch
+            || creatingPullRequest
+            || !repository
+            || typeof repository.fetch !== 'function'
+            || typeof repository.merge !== 'function'
+            || branch === settings.defaultBranch;
+
+        const description = branch === settings.defaultBranch
+            ? `${settings.defaultBranch} is the sync base branch`
+            : `Sync ${branch ?? 'current branch'} with ${settings.remote}/${settings.defaultBranch}`;
+        syncButton.title = description;
+        syncButton.setAttribute('aria-label', description);
+    };
+
+    const syncBranch = async event => {
+        event.stopPropagation();
+
+        const branch = currentBranch;
+        const repository = currentRepositoryArgument;
+        const input = currentInput;
+        if (
+            !branch
+            || branch === settings.defaultBranch
+            || !repository
+            || !input
+            || typeof repository.fetch !== 'function'
+            || typeof repository.merge !== 'function'
+            || pending
+            || deletingBranch
+            || creatingPullRequest
+        ) {
+            return;
+        }
+
+        pending = true;
+        pushCheckbox.disabled = true;
+        refreshBranchControls();
+
+        const previousMessage = input.value ?? '';
+        try {
+            await repository.fetch({ remote: settings.remote });
+            input.value = '🔄 Sync brach to main';
+            await repository.merge(`${settings.remote}/${settings.defaultBranch}`);
+
+            if (input.value === '🔄 Sync brach to main') {
+                input.value = previousMessage;
+            }
+            notifications.info(`Synced ${branch} with ${settings.defaultBranch}.`);
+        } catch (error) {
+            // Leave merge conflicts untouched and keep the sync message for the manual commit.
+            notifications.error(error);
+        } finally {
+            pending = false;
+            pushCheckbox.disabled = updatingPush || deletingBranch;
+            refreshBranchControls();
+        }
+    };
+
     const refreshBranchControls = () => {
         branchButton.disabled =
             pending || deletingBranch || creatingPullRequest || !currentCommand?.id;
@@ -504,6 +714,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             deleteTooltip.textContent = description;
         }
 
+        refreshSyncBranch();
         refreshCodexCommit();
         refreshPullRequest();
     };
@@ -590,12 +801,14 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     };
 
     branchButton.addEventListener('click', openBranchPicker);
+    syncButton.addEventListener('click', syncBranch);
     deleteButton.addEventListener('click', deleteBranch);
     codexButton.addEventListener('click', commitWithCodex);
     pullRequestButton.addEventListener('click', createPullRequest);
     widget.disposables.add({
         dispose() {
             branchButton.removeEventListener('click', openBranchPicker);
+            syncButton.removeEventListener('click', syncBranch);
             deleteButton.removeEventListener('click', deleteBranch);
             pushCheckbox.removeEventListener('change', changePush);
             autocompleteButton.removeEventListener('click', toggleAutocomplete);
@@ -603,6 +816,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             pullRequestButton.removeEventListener('click', createPullRequest);
             branchButton.remove();
             pushControl.remove();
+            syncButton.remove();
             deleteButton.remove();
             autocompleteButton.remove();
             codexButton.remove();
@@ -618,6 +832,9 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             const pushWidth = pushControl.hidden
                 ? 0
                 : pushControl.getBoundingClientRect().width;
+            const syncWidth = syncButton.hidden
+                ? 0
+                : syncButton.getBoundingClientRect().width;
             const deleteWidth = deleteButton.hidden
                 ? 0
                 : deleteButton.getBoundingClientRect().width;
@@ -630,7 +847,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             const pullRequestWidth = pullRequestButton.hidden
                 ? 0
                 : pullRequestButton.getBoundingClientRect().width;
-            return branchWidth + pushWidth + deleteWidth + autocompleteWidth
+            return branchWidth + pushWidth + syncWidth + deleteWidth + autocompleteWidth
                 + codexWidth + pullRequestWidth;
         },
 
@@ -643,6 +860,8 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             branchButton.hidden = true;
             branchButton.disabled = true;
             pushControl.hidden = true;
+            syncButton.hidden = true;
+            syncButton.disabled = true;
             deleteButton.hidden = true;
             deleteButton.disabled = true;
             autocompleteButton.hidden = true;
@@ -675,6 +894,10 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
                 refreshPullRequest();
             }
 
+            syncButton.classList.toggle(
+                'scm-toolkit-has-following-control',
+                !deleteButton.hidden || !autocompleteButton.hidden || !codexButton.hidden || !pullRequestButton.hidden
+            );
             deleteButton.classList.toggle(
                 'scm-toolkit-has-following-control',
                 !autocompleteButton.hidden || !codexButton.hidden || !pullRequestButton.hidden
@@ -709,6 +932,22 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
                 currentRepositoryArgument = command?.arguments?.[0];
 
                 if (
+                    settings.commitAndPush
+                    && currentRepositoryArgument
+                    && !widget.repositoryDisposables.__scmToolkitAsyncPushBound
+                ) {
+                    const asyncPushDisposable = scmToolkitReleaseCommitBeforePush(
+                        currentRepositoryArgument,
+                        configuration,
+                        notifications
+                    );
+                    if (asyncPushDisposable) {
+                        widget.repositoryDisposables.__scmToolkitAsyncPushBound = true;
+                        widget.repositoryDisposables.add(asyncPushDisposable);
+                    }
+                }
+
+                if (
                     settings.blankStateRefresh
                     && currentRepositoryArgument
                     && !blankStateRefreshDisposable
@@ -717,7 +956,8 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
                         widget,
                         input,
                         commands,
-                        currentRepositoryArgument
+                        currentRepositoryArgument,
+                        settings.autoPullClean
                     );
                     if (blankStateRefreshDisposable) {
                         widget.repositoryDisposables.add(blankStateRefreshDisposable);
