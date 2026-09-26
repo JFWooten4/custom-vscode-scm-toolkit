@@ -6,6 +6,7 @@ import json
 import os
 import re
 import subprocess
+import workspace_search
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -13,6 +14,8 @@ START = '\n/* scm-toolkit:start */\n'
 END = '\n/* scm-toolkit:end */\n'
 CODEX_START = '\n/* scm-toolkit-codex-countdown:start */\n'
 CODEX_END = '\n/* scm-toolkit-codex-countdown:end */\n'
+CODEX_PROMOTIONS_START = '\n/* scm-toolkit-codex-promotions:start */\n'
+CODEX_PROMOTIONS_END = '\n/* scm-toolkit-codex-promotions:end */\n'
 
 DEFAULT_SETTINGS = {
     "branchPicker": True,
@@ -25,6 +28,8 @@ DEFAULT_SETTINGS = {
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
     "autoPullClean": True,
+    "cmdClickCloseOthers": False,
+    "browserChatgptHome": False,
     "aiCommit": True,
     "aiDefaultBranchDescription": True,
     "aiCommitModel": "qwen2.5-coder:7b",
@@ -35,6 +40,7 @@ DEFAULT_SETTINGS = {
     "mcpPrServer": "codex-drafter",
     "mcpPrTool": "github_create_pull_request",
     "codexUsageResetCountdown": False,
+    "codexHidePromotions": False,
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -108,6 +114,14 @@ def load_settings():
             "scm-toolkit.auto-pull-clean",
             DEFAULT_SETTINGS["autoPullClean"],
         ),
+        "cmdClickCloseOthers": read_git_bool(
+            "scm-toolkit.cmd-click-close-others",
+            DEFAULT_SETTINGS["cmdClickCloseOthers"],
+        ),
+        "browserChatgptHome": read_git_bool(
+            "scm-toolkit.browser-chatgpt-home",
+            DEFAULT_SETTINGS["browserChatgptHome"],
+        ),
         "aiCommit": read_git_bool(
             "scm-toolkit.ai-commit", DEFAULT_SETTINGS["aiCommit"]
         ),
@@ -140,6 +154,10 @@ def load_settings():
         "codexUsageResetCountdown": read_git_bool(
             "scm-toolkit.codex-usage-reset-countdown",
             DEFAULT_SETTINGS["codexUsageResetCountdown"],
+        ),
+        "codexHidePromotions": read_git_bool(
+            "scm-toolkit.codex-hide-promotions",
+            DEFAULT_SETTINGS["codexHidePromotions"],
         ),
         "defaultBranch": read_git_string(
             "scm-toolkit.default-branch", DEFAULT_SETTINGS["defaultBranch"]
@@ -217,12 +235,48 @@ def sync_model_picker(enabled=True, remove=False, check=False, destination=None)
     return changed
 
 
-def edits(js=None):
+def unpack_edit(edit):
+    if len(edit) == 2:
+        original, replacement = edit
+        return original, replacement, 1
+    original, replacement, expected_count = edit
+    return original, replacement, expected_count
+
+
+def browser_chatgpt_home_edits(js):
+    anchor = "Invalid browser view resource:"
+    anchor_index = js.find(anchor)
+    if anchor_index < 0:
+        raise ValueError(
+            "Unsupported VS Code build: Integrated Browser resolver anchor does not match."
+        )
+
+    segment = js[anchor_index : anchor_index + 4000]
+    pattern = re.compile(
+        r"(?P<prefix>[A-Za-z_$][\w$]*\.getOrCreateLazy\(\{id:"
+        r"[A-Za-z_$][\w$]*\.id,\.\.\.(?P<options>[A-Za-z_$][\w$]*)"
+        r"\?\.viewState)(?P<suffix>\}\))"
+    )
+    matches = list(pattern.finditer(segment))
+    if len(matches) != 1:
+        raise ValueError(
+            "Unsupported VS Code build: Integrated Browser resolver does not match."
+        )
+
+    match = matches[0]
+    original = match.group(0)
+    replacement = (
+        f'{match.group("prefix")},url:{match.group("options")}?.viewState?.url'
+        f'??"https://chatgpt.com/"{match.group("suffix")}'
+    )
+    return [(original, replacement)]
+
+
+def edits(js=None, settings=None):
     command, notification, configuration, mcp, observe, dimension = "fe", "Le", "Xe", "Me", "pe", "xi"
+    ident = r"[A-Za-z_$][\w$]*"
 
     if js is not None:
-        ident = r"[A-Za-z_$][\w$]*"
-
         def unique(pattern):
             matches = re.findall(pattern, js)
             if len(matches) != 1:
@@ -242,7 +296,7 @@ def edits(js=None):
             r"t=new (" + ident + r")\(this\.element\.clientWidth-e,o\);if\(t\.width<0\)"
         )
 
-    return [
+    changes = [
         (
             "this.disposables.add(this.toolbar)}static{this.ValidationTimeouts=",
             "this.disposables.add(this.toolbar);this.scmToolkitControls="
@@ -269,6 +323,35 @@ def edits(js=None):
             "(this.scmToolkitControls?.width()??0),o);if(t.width<0)",
         ),
     ]
+    if js is not None and settings and settings.get("browserChatgptHome"):
+        changes.extend(browser_chatgpt_home_edits(js))
+
+    if js is not None and settings and settings.get("cmdClickCloseOthers"):
+        modifier_pattern = re.compile(
+            r"this\.setAltPressed\((" + ident + r")\.altKey\)"
+        )
+        events = modifier_pattern.findall(js)
+        if len(events) != 2:
+            raise ValueError(
+                "Unsupported VS Code build: tab close-others modifier anchor does not match."
+            )
+
+        modifier_edits = {}
+        for event in events:
+            original = f"this.setAltPressed({event}.altKey)"
+            replacement = (
+                f"this.setAltPressed({event}.altKey||"
+                f"scmToolkitSettings.cmdClickCloseOthers&&{event}.metaKey)"
+            )
+            key = (original, replacement)
+            modifier_edits[key] = modifier_edits.get(key, 0) + 1
+
+        changes.extend(
+            (original, replacement, count)
+            for (original, replacement), count in modifier_edits.items()
+        )
+
+    return changes
 
 
 def strip_payload(text):
@@ -288,6 +371,16 @@ def strip_codex_payload(text):
         raise ValueError("Unexpected Codex countdown patch markers; refusing to modify this file.")
     before, rest = text.split(CODEX_START, 1)
     _, after = rest.split(CODEX_END, 1)
+    return before + after
+
+
+def strip_codex_promotions_payload(text):
+    if CODEX_PROMOTIONS_START not in text:
+        return text
+    if text.count(CODEX_PROMOTIONS_START) != 1 or text.count(CODEX_PROMOTIONS_END) != 1:
+        raise ValueError("Unexpected Codex promotion patch markers; refusing to modify this file.")
+    before, rest = text.split(CODEX_PROMOTIONS_START, 1)
+    _, after = rest.split(CODEX_PROMOTIONS_END, 1)
     return before + after
 
 
@@ -327,7 +420,10 @@ def codex_countdown_edit(js):
     return original, replacement
 
 
-def transform_codex(js, enabled=False, remove=False):
+def transform_codex(js, enabled=False, hide_promotions=False, remove=False):
+    if CODEX_PROMOTIONS_START in js:
+        js = strip_codex_promotions_payload(js)
+
     installed = CODEX_START in js
     if installed:
         payload = js.split(CODEX_START, 1)[1].split(CODEX_END, 1)[0]
@@ -342,23 +438,29 @@ def transform_codex(js, enabled=False, remove=False):
             )
         js = js.replace(replacement, original, 1)
 
-    if remove or not enabled:
-        return js
+    if not remove and enabled:
+        original, replacement = codex_countdown_edit(js)
+        if js.count(original) != 1:
+            raise ValueError("Unsupported Codex extension build: reset-time anchor is ambiguous.")
+        js = js.replace(original, replacement, 1)
+        js = (
+            js
+            + CODEX_START
+            + "/* edit:"
+            + json.dumps([original, replacement])
+            + " */\n"
+            + (HERE / "codex-countdown.js").read_text()
+            + CODEX_END
+        )
 
-    original, replacement = codex_countdown_edit(js)
-    if js.count(original) != 1:
-        raise ValueError("Unsupported Codex extension build: reset-time anchor is ambiguous.")
-    js = js.replace(original, replacement, 1)
-    return (
-        js
-        + CODEX_START
-        + "/* edit:"
-        + json.dumps([original, replacement])
-        + " */\n"
-        + (HERE / "codex-countdown.js").read_text()
-        + CODEX_END
-    )
+    if not remove and hide_promotions:
+        js += (
+            CODEX_PROMOTIONS_START
+            + (HERE / "codex-hide-promotions.js").read_text()
+            + CODEX_PROMOTIONS_END
+        )
 
+    return js
 
 def transform(js, css, remove=False, settings=None):
     installed = START in js
@@ -371,23 +473,25 @@ def transform(js, css, remove=False, settings=None):
         previous = json.loads(saved.group(1)) if saved else edits()
         js, css = strip_payload(js), strip_payload(css)
 
-        for original, replacement in previous:
-            if js.count(replacement) != 1:
+        for edit in previous:
+            original, replacement, expected_count = unpack_edit(edit)
+            if js.count(replacement) != expected_count:
                 raise ValueError(
                     "Installed toolkit patch changed; refusing to remove unrelated edits."
                 )
-            js = js.replace(replacement, original, 1)
+            js = js.replace(replacement, original, expected_count)
 
     if remove:
         return js, css
 
-    changes = edits(js)
-    for original, replacement in changes:
-        if js.count(original) != 1:
-            raise ValueError("Unsupported VS Code build: SCM widget anchor does not match.")
-        js = js.replace(original, replacement, 1)
-
     settings = load_settings() if settings is None else settings
+    changes = edits(js, settings=settings)
+    for edit in changes:
+        original, replacement, expected_count = unpack_edit(edit)
+        if js.count(original) != expected_count:
+            raise ValueError("Unsupported VS Code build: SCM widget anchor does not match.")
+        js = js.replace(original, replacement, expected_count)
+
     js += (
         START
         + "const scmToolkitSettings = "
@@ -417,6 +521,21 @@ def application_paths(app_path):
     ]
 
 
+def codex_bundle_matches(text):
+    if CODEX_START in text or CODEX_PROMOTIONS_START in text:
+        return True
+
+    if "You’re out of Codex messages" in text:
+        try:
+            codex_countdown_edit(text)
+        except ValueError:
+            pass
+        else:
+            return True
+
+    return "Enable Fast mode" in text
+
+
 def codex_bundle_path(extension_path=None):
     if extension_path is None:
         extensions = Path.home() / ".vscode/extensions"
@@ -428,28 +547,22 @@ def codex_bundle_path(extension_path=None):
         assets = candidate / "webview/assets"
         if not assets.is_dir():
             continue
-        patched = [
-            path
-            for path in assets.glob("app-initial-*.js")
-            if CODEX_START in path.read_text()
-        ]
-        if len(patched) == 1:
-            return patched[0]
-        matches = []
+        patched = []
         for path in assets.glob("app-initial-*.js"):
             text = path.read_text()
-            if "You’re out of Codex messages" not in text:
-                continue
-            try:
-                codex_countdown_edit(text)
-            except ValueError:
-                continue
-            matches.append(path)
+            if CODEX_START in text or CODEX_PROMOTIONS_START in text:
+                patched.append(path)
+        if len(patched) == 1:
+            return patched[0]
+
+        matches = []
+        for path in assets.glob("app-initial-*.js"):
+            if codex_bundle_matches(path.read_text()):
+                matches.append(path)
         if len(matches) == 1:
             return matches[0]
 
     return None
-
 
 def write_pair(paths, new_contents, old_contents):
     written = []
@@ -477,9 +590,14 @@ def main():
     parser.add_argument("--uninstall", action="store_true", help="Remove the toolkit patch")
     parser.add_argument("--check", action="store_true", help="Validate without writing")
     parser.add_argument(
+        "--configure",
+        action="store_true",
+        help="Configure in a local browser before installing",
+    )
+    parser.add_argument(
         "--codex-only",
         action="store_true",
-        help="Only install or remove the optional Codex usage-reset countdown",
+        help="Only install or remove optional Codex webview customizations",
     )
     parser.add_argument(
         "--codex-extension",
@@ -488,7 +606,17 @@ def main():
     )
     args = parser.parse_args()
 
+    if args.configure and (args.uninstall or args.check or args.codex_only):
+        parser.error("--configure cannot be combined with --uninstall, --check, or --codex-only")
+
     settings = load_settings()
+    if args.configure:
+        from configurator import run_configurator
+
+        if not run_configurator(settings, action_label="Save and install"):
+            print("Installation cancelled; no toolkit settings were changed.")
+            return
+        settings = load_settings()
     version, workbench_paths = application_paths(args.app)
     paths = [] if args.codex_only else workbench_paths
     old = [path.read_text() for path in paths]
@@ -516,9 +644,21 @@ def main():
             destination=model_picker_path,
         )
     )
+    workspace_search_changed = (
+        False
+        if args.codex_only
+        else workspace_search.sync_extension(
+            remove=args.uninstall,
+            check=True,
+        )
+    )
 
     codex_path = codex_bundle_path(args.codex_extension)
-    should_find_codex = settings["codexUsageResetCountdown"] or args.uninstall
+    should_find_codex = (
+        settings["codexUsageResetCountdown"]
+        or settings["codexHidePromotions"]
+        or args.uninstall
+    )
     if codex_path is None and should_find_codex:
         raise ValueError("OpenAI Codex extension webview bundle was not found or is unsupported.")
     if codex_path is not None:
@@ -529,11 +669,17 @@ def main():
             transform_codex(
                 codex_old,
                 enabled=settings["codexUsageResetCountdown"],
+                hide_promotions=settings["codexHidePromotions"],
                 remove=args.uninstall,
             )
         )
 
-    if old == list(new) and not wrapper_changed and not model_picker_changed:
+    if (
+        old == list(new)
+        and not wrapper_changed
+        and not model_picker_changed
+        and not workspace_search_changed
+    ):
         action = "not installed" if args.uninstall else "already up to date"
         print(f"SCM toolkit is {action} for VS Code {version}.")
         return
@@ -550,9 +696,10 @@ def main():
                 remove=args.uninstall,
                 destination=model_picker_path,
             )
+            workspace_search.sync_extension(remove=args.uninstall)
 
     action = "Validated" if args.check else "Removed" if args.uninstall else "Installed"
-    target = "Codex countdown" if args.codex_only else "SCM toolkit"
+    target = "Codex customizations" if args.codex_only else "SCM toolkit"
     print(f"{action} {target} for VS Code {version}. Reload VS Code to apply the change.")
     if not args.codex_only:
         if args.uninstall:
@@ -563,6 +710,7 @@ def main():
                 print(f"AI model picker: {model_picker_path}")
             else:
                 print("AI model picker: disabled by scm-toolkit.ai-model-picker")
+            print(f"Workspace Search extension: {workspace_search.extension_destination()}")
             print(
                 "Set VS Code git.path to that absolute path and "
                 "git.useEditorAsCommitInput to true."
