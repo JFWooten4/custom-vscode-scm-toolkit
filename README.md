@@ -7,7 +7,7 @@ Current features:
 - show the current branch inside the SCM message box and open VS Code's normal branch picker from it
 - switch the branch selector and native Commit button between outlined and accent-filled styles
 - shorten the commit-message placeholder to `Message`
-- optionally show a commit-and-push checkbox backed by VS Code's `git.postCommitCommand`
+- optionally show a commit-and-push checkbox that dispatches the push without holding commit completion
 - optionally show a guarded local-branch cleanup button
 - optionally show a quick toggle for VS Code inline autocomplete
 - optionally show a commit button that appends the Codex Web co-author trailer
@@ -242,6 +242,8 @@ after an extension update if the countdown disappears.
 ### Commit and push
 
 When `commit-and-push` is enabled, the checkbox mirrors VS Code's `git.postCommitCommand` setting. Checking it sets the value to `push`; unchecking it sets the value to `none`.
+
+For push mode, the toolkit suppresses VS Code's awaited post-commit push, completes the commit first, then dispatches `repository.push()` without awaiting it. This releases the commit UI immediately instead of waiting for remote confirmation or performing a separate origin-verification step. Push failures are still surfaced asynchronously as notifications.
 
 Disabling the toolkit feature hides the checkbox. It does not silently rewrite an existing `git.postCommitCommand` value.
 
