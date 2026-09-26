@@ -315,7 +315,7 @@ used by the usage-reset countdown.
 
 When `commit-and-push` is enabled, the checkbox mirrors VS Code's `git.postCommitCommand` setting. Checking it sets the value to `push`; unchecking it sets the value to `none`.
 
-For push mode, the toolkit suppresses VS Code's awaited post-commit push, completes the commit first, then dispatches `repository.push()` without awaiting it. This releases the commit UI immediately instead of waiting for remote confirmation or performing a separate origin-verification step. Push failures are still surfaced asynchronously as notifications.
+For push mode, the toolkit suppresses VS Code's awaited post-commit push, completes the commit first, then dispatches `repository.push()` without awaiting it. This releases the commit UI immediately instead of waiting for remote confirmation or performing a separate origin-verification step. If Git rejects that push because the remote branch advanced (`PushRejected`), the toolkit automatically runs `repository.pull()` and retries the push once without asking for confirmation or requiring the Sync button. Any pull conflict or second push failure is surfaced asynchronously as a notification.
 
 Disabling the toolkit feature hides the checkbox. It does not silently rewrite an existing `git.postCommitCommand` value.
 
