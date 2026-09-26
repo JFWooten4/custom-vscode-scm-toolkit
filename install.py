@@ -27,6 +27,7 @@ DEFAULT_SETTINGS = {
     "codexCoauthor": True,
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
+    "autoPullClean": True,
     "cmdClickCloseOthers": False,
     "browserChatgptHome": False,
     "aiCommit": True,
@@ -108,6 +109,10 @@ def load_settings():
         "blankStateRefresh": read_git_bool(
             "scm-toolkit.blank-state-refresh",
             DEFAULT_SETTINGS["blankStateRefresh"],
+        ),
+        "autoPullClean": read_git_bool(
+            "scm-toolkit.auto-pull-clean",
+            DEFAULT_SETTINGS["autoPullClean"],
         ),
         "cmdClickCloseOthers": read_git_bool(
             "scm-toolkit.cmd-click-close-others",

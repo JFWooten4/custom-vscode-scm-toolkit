@@ -318,6 +318,11 @@
     transition-delay: .4s;
 }
 
+.scm-toolkit-refreshing > .monaco-progress-container,
+.scm-toolkit-refreshing .monaco-progress-container {
+    display: none !important;
+}
+
 .scm-view .scm-editor > .scm-toolkit-sync-branch {
     position: relative;
     display: flex;

@@ -34,7 +34,51 @@ function scmToolkitHideOutgoingSyncCount(widget) {
     observer.observe(root, { subtree: true, childList: true, characterData: true });
 }
 
-function scmToolkitEnableBlankStateRefresh(widget, input, commands, repositoryArgument) {
+async function scmToolkitPullCleanRepository(provider, commands, repositoryArgument) {
+    const hasChanges = () => provider.groups.some(group => group.resources.length > 0);
+    if (hasChanges()) return false;
+
+    const historyProvider = provider.historyProvider.get();
+    const localRef = historyProvider?.historyItemRef.get();
+    const remoteRef = historyProvider?.historyItemRemoteRef.get();
+    if (
+        !historyProvider
+        || !localRef?.id
+        || !localRef.revision
+        || !remoteRef?.id
+        || !remoteRef.revision
+        || localRef.revision === remoteRef.revision
+    ) {
+        return false;
+    }
+
+    const ancestor = await historyProvider.resolveHistoryItemRefsCommonAncestor([
+        localRef.id,
+        remoteRef.id
+    ]);
+    if (ancestor !== localRef.revision || hasChanges()) return false;
+
+    const currentLocalRef = historyProvider.historyItemRef.get();
+    const currentRemoteRef = historyProvider.historyItemRemoteRef.get();
+    if (
+        currentLocalRef?.revision !== localRef.revision
+        || currentRemoteRef?.revision !== remoteRef.revision
+        || hasChanges()
+    ) {
+        return false;
+    }
+
+    await commands.executeCommand('git.pull', repositoryArgument);
+    return true;
+}
+
+function scmToolkitEnableBlankStateRefresh(
+    widget,
+    input,
+    commands,
+    repositoryArgument,
+    autoPullClean
+) {
     const doc = widget.element.ownerDocument;
     const win = doc.defaultView;
     const provider = input.repository.provider;
@@ -43,6 +87,8 @@ function scmToolkitEnableBlankStateRefresh(widget, input, commands, repositoryAr
     let timer;
     let refreshing = false;
     let disposed = false;
+    let lastAutoPullState;
+    const progressRoot = widget.element.closest('.scm-view')?.parentElement;
 
     const hasChanges = () => provider.groups.some(group => group.resources.length > 0);
 
@@ -50,6 +96,27 @@ function scmToolkitEnableBlankStateRefresh(widget, input, commands, repositoryAr
         if (timer === undefined) return;
         win.clearTimeout(timer);
         timer = undefined;
+    };
+
+    const maybeAutoPull = async () => {
+        if (!autoPullClean || hasChanges()) return;
+
+        const historyProvider = provider.historyProvider.get();
+        const localRef = historyProvider?.historyItemRef.get();
+        const remoteRef = historyProvider?.historyItemRemoteRef.get();
+        if (!localRef?.revision || !remoteRef?.revision || localRef.revision === remoteRef.revision) {
+            return;
+        }
+
+        const state = `${localRef.revision}:${remoteRef.revision}`;
+        if (state === lastAutoPullState) return;
+        lastAutoPullState = state;
+
+        try {
+            await scmToolkitPullCleanRepository(provider, commands, repositoryArgument);
+        } catch {
+            // Keep automatic pulls best-effort; the built-in Git extension owns Git errors.
+        }
     };
 
     const schedule = delay => {
@@ -66,11 +133,14 @@ function scmToolkitEnableBlankStateRefresh(widget, input, commands, repositoryAr
             }
 
             refreshing = true;
+            progressRoot?.classList.add('scm-toolkit-refreshing');
             try {
                 await commands.executeCommand('git.refresh', repositoryArgument);
+                await maybeAutoPull();
             } catch {
                 // The built-in Git extension owns refresh errors; keep blank-state polling best-effort.
             } finally {
+                progressRoot?.classList.remove('scm-toolkit-refreshing');
                 refreshing = false;
                 if (!disposed && !hasChanges()) schedule(1500);
             }
@@ -100,6 +170,7 @@ function scmToolkitEnableBlankStateRefresh(widget, input, commands, repositoryAr
         dispose() {
             disposed = true;
             clearTimer();
+            progressRoot?.classList.remove('scm-toolkit-refreshing');
             resourceDisposable.dispose();
             doc.removeEventListener('visibilitychange', onVisibilityChange);
         }
@@ -885,7 +956,8 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
                         widget,
                         input,
                         commands,
-                        currentRepositoryArgument
+                        currentRepositoryArgument,
+                        settings.autoPullClean
                     );
                     if (blankStateRefreshDisposable) {
                         widget.repositoryDisposables.add(blankStateRefreshDisposable);

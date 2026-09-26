@@ -17,6 +17,7 @@ SETTINGS = {
     "codexCoauthor": True,
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
+    "autoPullClean": True,
     "cmdClickCloseOthers": False,
     "browserChatgptHome": False,
     "aiCommit": True,
@@ -150,6 +151,7 @@ class TransformTests(unittest.TestCase):
             '"commitAndPush":true,'
             '"branchCleanup":true,"autocompleteToggle":true,"codexCoauthor":true,'
             '"hideOutgoingSyncCount":true,"blankStateRefresh":true,'
+            '"autoPullClean":true,'
             '"cmdClickCloseOthers":false,'
             '"browserChatgptHome":false,'
             '"aiCommit":true,'
@@ -165,7 +167,12 @@ class TransformTests(unittest.TestCase):
         )
         self.assertIn("editor.inlineSuggest.enabled", js)
         self.assertIn("commands.executeCommand('git.refresh', repositoryArgument)", js)
+        self.assertIn("classList.add('scm-toolkit-refreshing')", js)
+        self.assertIn("historyItemRemoteRef.get()", js)
+        self.assertIn("resolveHistoryItemRefsCommonAncestor", js)
+        self.assertIn("commands.executeCommand('git.pull', repositoryArgument)", js)
         self.assertIn("scm-toolkit-autocomplete", css)
+        self.assertIn(".scm-toolkit-refreshing > .monaco-progress-container", css)
         self.assertEqual(js.count("className = 'scm-toolkit-tooltip'"), 3)
         self.assertIn(".scm-toolkit-autocomplete:hover > .scm-toolkit-tooltip", css)
         self.assertIn("Co-authored-by: Codex Web <noreply@openai.com>", js)

@@ -104,6 +104,7 @@ git config --global scm-toolkit.autocomplete-toggle true
 git config --global scm-toolkit.codex-coauthor true
 git config --global scm-toolkit.hide-outgoing-sync-count true
 git config --global scm-toolkit.blank-state-refresh true
+git config --global scm-toolkit.auto-pull-clean true
 git config --global scm-toolkit.cmd-click-close-others false
 git config --global scm-toolkit.browser-chatgpt-home true
 git config --global scm-toolkit.ai-commit true
@@ -134,6 +135,7 @@ The equivalent `~/.gitconfig` block is:
     codex-coauthor = true
     hide-outgoing-sync-count = true
     blank-state-refresh = true
+    auto-pull-clean = true
     cmd-click-close-others = false
     browser-chatgpt-home = true
     ai-commit = true
@@ -305,7 +307,15 @@ as SCM reports a change and automatically resumes after the repository becomes
 clean again. Hidden windows back off instead of polling at the foreground rate.
 
 This uses VS Code's existing `git.refresh` command; the toolkit does not run its
-own Git status implementation.
+own Git status implementation. Toolkit-triggered refreshes suppress the SCM progress
+bar so the frequent polling does not flash a distracting animation.
+
+When `auto-pull-clean` is enabled, each blank-state refresh also checks the current
+branch against its tracked upstream. The toolkit pulls only when the working tree is
+still clean and the local HEAD is an ancestor of the upstream HEAD. That means a
+behind-only branch can fast-forward automatically, while branches with unpushed or
+diverged commits are left untouched. The pull uses VS Code's existing `git.pull`
+command and does not ask for confirmation in that safe case.
 
 ### Cmd-click close others
 
