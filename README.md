@@ -14,6 +14,7 @@ Current features:
 - optionally open a pull request for the current branch through a configured MCP server
 - optionally hide the outgoing commit count from the built-in Sync action
 - optionally refresh clean/blank Git repositories more aggressively so the first new change appears in SCM quickly
+- optionally use ⌘-click on an editor tab's close button to keep that tab and close the others in its group
 - optionally use ChatGPT as the home page for blank Integrated Browser tabs
 - optionally generate a commit subject locally when the normal Commit button is used with a blank message
 - optionally show a live, minute-precision countdown in Codex usage-limit banners
@@ -101,6 +102,7 @@ git config --global scm-toolkit.autocomplete-toggle true
 git config --global scm-toolkit.codex-coauthor true
 git config --global scm-toolkit.hide-outgoing-sync-count true
 git config --global scm-toolkit.blank-state-refresh true
+git config --global scm-toolkit.cmd-click-close-others false
 git config --global scm-toolkit.browser-chatgpt-home true
 git config --global scm-toolkit.ai-commit true
 git config --global scm-toolkit.ai-default-branch-description true
@@ -129,6 +131,7 @@ The equivalent `~/.gitconfig` block is:
     codex-coauthor = true
     hide-outgoing-sync-count = true
     blank-state-refresh = true
+    cmd-click-close-others = false
     browser-chatgpt-home = true
     ai-commit = true
     ai-default-branch-description = true
@@ -144,7 +147,7 @@ The equivalent `~/.gitconfig` block is:
     remote = origin
 ```
 
-The filled-button style, Codex usage-reset countdown, and ChatGPT browser homepage default to `false`; the other twelve SCM feature switches default to `true`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
+The filled-button style, Cmd-click close-others gesture, Codex usage-reset countdown, and ChatGPT browser homepage default to `false`; the other boolean SCM feature switches default to `true`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
 
 After changing toolkit Git config, rerun:
 
@@ -259,6 +262,17 @@ clean again. Hidden windows back off instead of polling at the foreground rate.
 
 This uses VS Code's existing `git.refresh` command; the toolkit does not run its
 own Git status implementation.
+
+### Cmd-click close others
+
+When `cmd-click-close-others` is enabled, holding ⌘ while clicking an editor tab's X
+uses VS Code's built-in **Close Others** action for that tab. The clicked tab stays
+open while VS Code closes the other editors in that group using its normal behavior
+for selected editors, sticky/pinned tabs, and dirty-close prompts.
+
+The installer extends the modifier state VS Code already uses for its native
+close-others tab action. Normal clicks and normal ⌘-click tab selection are otherwise
+left to VS Code.
 
 ### Integrated Browser ChatGPT home
 

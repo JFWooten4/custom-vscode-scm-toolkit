@@ -24,6 +24,7 @@ DEFAULT_SETTINGS = {
     "codexCoauthor": True,
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
+    "cmdClickCloseOthers": False,
     "browserChatgptHome": False,
     "aiCommit": True,
     "aiDefaultBranchDescription": True,
@@ -103,6 +104,10 @@ def load_settings():
         "blankStateRefresh": read_git_bool(
             "scm-toolkit.blank-state-refresh",
             DEFAULT_SETTINGS["blankStateRefresh"],
+        ),
+        "cmdClickCloseOthers": read_git_bool(
+            "scm-toolkit.cmd-click-close-others",
+            DEFAULT_SETTINGS["cmdClickCloseOthers"],
         ),
         "browserChatgptHome": read_git_bool(
             "scm-toolkit.browser-chatgpt-home",
@@ -217,6 +222,14 @@ def sync_model_picker(enabled=True, remove=False, check=False, destination=None)
     return changed
 
 
+def unpack_edit(edit):
+    if len(edit) == 2:
+        original, replacement = edit
+        return original, replacement, 1
+    original, replacement, expected_count = edit
+    return original, replacement, expected_count
+
+
 def browser_chatgpt_home_edits(js):
     anchor = "Invalid browser view resource:"
     anchor_index = js.find(anchor)
@@ -248,10 +261,9 @@ def browser_chatgpt_home_edits(js):
 
 def edits(js=None, settings=None):
     command, notification, configuration, mcp, observe, dimension = "fe", "Le", "Xe", "Me", "pe", "xi"
+    ident = r"[A-Za-z_$][\w$]*"
 
     if js is not None:
-        ident = r"[A-Za-z_$][\w$]*"
-
         def unique(pattern):
             matches = re.findall(pattern, js)
             if len(matches) != 1:
@@ -300,6 +312,32 @@ def edits(js=None, settings=None):
     ]
     if js is not None and settings and settings.get("browserChatgptHome"):
         changes.extend(browser_chatgpt_home_edits(js))
+
+    if js is not None and settings and settings.get("cmdClickCloseOthers"):
+        modifier_pattern = re.compile(
+            r"this\.setAltPressed\((" + ident + r")\.altKey\)"
+        )
+        events = modifier_pattern.findall(js)
+        if len(events) != 2:
+            raise ValueError(
+                "Unsupported VS Code build: tab close-others modifier anchor does not match."
+            )
+
+        modifier_edits = {}
+        for event in events:
+            original = f"this.setAltPressed({event}.altKey)"
+            replacement = (
+                f"this.setAltPressed({event}.altKey||"
+                f"scmToolkitSettings.cmdClickCloseOthers&&{event}.metaKey)"
+            )
+            key = (original, replacement)
+            modifier_edits[key] = modifier_edits.get(key, 0) + 1
+
+        changes.extend(
+            (original, replacement, count)
+            for (original, replacement), count in modifier_edits.items()
+        )
+
     return changes
 
 
@@ -403,22 +441,24 @@ def transform(js, css, remove=False, settings=None):
         previous = json.loads(saved.group(1)) if saved else edits()
         js, css = strip_payload(js), strip_payload(css)
 
-        for original, replacement in previous:
-            if js.count(replacement) != 1:
+        for edit in previous:
+            original, replacement, expected_count = unpack_edit(edit)
+            if js.count(replacement) != expected_count:
                 raise ValueError(
                     "Installed toolkit patch changed; refusing to remove unrelated edits."
                 )
-            js = js.replace(replacement, original, 1)
+            js = js.replace(replacement, original, expected_count)
 
     if remove:
         return js, css
 
     settings = load_settings() if settings is None else settings
     changes = edits(js, settings=settings)
-    for original, replacement in changes:
-        if js.count(original) != 1:
+    for edit in changes:
+        original, replacement, expected_count = unpack_edit(edit)
+        if js.count(original) != expected_count:
             raise ValueError("Unsupported VS Code build: SCM widget anchor does not match.")
-        js = js.replace(original, replacement, 1)
+        js = js.replace(original, replacement, expected_count)
 
     js += (
         START
