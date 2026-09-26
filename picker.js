@@ -299,6 +299,22 @@ function scmToolkitPickPonyBranchName(refs, remote) {
     return available[Math.floor(Math.random() * available.length)];
 }
 
+async function scmToolkitPushWithPullRetry(repository, originalPush) {
+    try {
+        await originalPush.call(repository);
+    } catch (error) {
+        if (
+            error?.gitErrorCode !== 'PushRejected'
+            || typeof repository.pull !== 'function'
+        ) {
+            throw error;
+        }
+
+        await repository.pull();
+        await originalPush.call(repository);
+    }
+}
+
 function scmToolkitReleaseCommitBeforePush(repository, configuration, notifications) {
     if (
         !repository
@@ -336,8 +352,7 @@ function scmToolkitReleaseCommitBeforePush(repository, configuration, notificati
                 postCommitCommand: null,
             });
 
-            void Promise.resolve()
-                .then(() => originalPush.call(repository))
+            void scmToolkitPushWithPullRetry(repository, originalPush)
                 .catch(error => notifications.error(error));
         };
 
