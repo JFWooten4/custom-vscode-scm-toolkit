@@ -15,6 +15,7 @@ Current features:
 - optionally hide the outgoing commit count from the built-in Sync action
 - optionally refresh clean/blank Git repositories more aggressively so the first new change appears in SCM quickly
 - optionally generate a commit subject locally when the normal Commit button is used with a blank message
+- optionally spellcheck manually entered commit subjects with the configured local model
 - optionally show a live, minute-precision countdown in Codex usage-limit banners
 
 The patch is intentionally narrow: it does not copy or manage unrelated editor settings.
@@ -83,6 +84,7 @@ git config --global scm-toolkit.codex-coauthor true
 git config --global scm-toolkit.hide-outgoing-sync-count true
 git config --global scm-toolkit.blank-state-refresh true
 git config --global scm-toolkit.ai-commit true
+git config --global scm-toolkit.spellcheck-manual-commit true
 git config --global scm-toolkit.ai-default-branch-description true
 git config --global scm-toolkit.ai-commit-model qwen2.5-coder:7b
 git config --global scm-toolkit.ai-commit-low-memory-model qwen2.5-coder:3b
@@ -110,6 +112,7 @@ The equivalent `~/.gitconfig` block is:
     hide-outgoing-sync-count = true
     blank-state-refresh = true
     ai-commit = true
+    spellcheck-manual-commit = true
     ai-default-branch-description = true
     ai-commit-model = qwen2.5-coder:7b
     ai-commit-low-memory-model = qwen2.5-coder:3b
@@ -123,7 +126,7 @@ The equivalent `~/.gitconfig` block is:
     remote = origin
 ```
 
-The filled-button style and Codex usage-reset countdown default to `false`; the other twelve SCM feature switches default to `true`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
+The filled-button style and Codex usage-reset countdown default to `false`; the other thirteen SCM feature switches default to `true`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
 
 After changing toolkit Git config, rerun:
 
@@ -146,7 +149,7 @@ The installer places a Git wrapper at `~/.local/bin/scm-toolkit-git`. To make VS
 
 Use the absolute path shown by `python3 install.py`; do not rely on `~` expansion in the setting.
 
-When `ai-commit` is enabled, clicking VS Code's normal Commit button with a blank message summarizes the staged diff through the configured local Ollama model. On the configured `default-branch` (normally `main`), `ai-default-branch-description = true` asks the model for a subject plus one or two substantive sentences describing what changed and, when clear from the diff, its purpose or effect. Other branches keep the subject-only format. A manually entered message, amend/fixup/squash/reuse-message mode, path-limited commit, or `--all` keeps normal Git behavior.
+When `ai-commit` is enabled, clicking VS Code's normal Commit button with a blank message summarizes the staged diff through the configured local Ollama model. On the configured `default-branch` (normally `main`), `ai-default-branch-description = true` asks the model for a subject plus one or two substantive sentences describing what changed and, when clear from the diff, its purpose or effect. Other branches keep the subject-only format. A manually entered message is never replaced by generated commit content; when manual spellcheck is enabled, only its subject line may receive spelling corrections. Amend/fixup/squash/reuse-message mode, path-limited blank commits, or `--all` keep their existing behavior.
 
 **Ollama is required for this feature.** Run a local Ollama server and install the models you select before relying on AI-generated subjects. The wrapper talks only to Ollama on `127.0.0.1:11434`, bypasses proxy settings for that local request, and checks the local model inventory before generation. If the selected model or Ollama is unavailable, it uses a deterministic fallback subject. The prompt is generic and repository-scoped.
 
@@ -156,6 +159,26 @@ The wrapper supports two independently configurable models:
 - `ai-commit-low-memory-model` is used when macOS reports less available memory than `ai-low-memory-gib`
 
 The low-memory path never escalates to the larger primary model when the fallback is missing. During normal-memory operation, the smaller model may be used if the primary model is not installed.
+
+### Manual commit spellcheck
+
+When `spellcheck-manual-commit` is enabled, ordinary manually supplied `-m` or
+`--message` commit subjects are sent through the same configured local Ollama model
+for spelling correction before Git receives the commit. The prompt is deliberately
+narrow: it asks the model to preserve wording, punctuation, capitalization, emoji,
+identifiers, filenames, acronyms, code, and meaning rather than rewriting for style
+or grammar.
+
+Only the first subject line is corrected. Any body text remains byte-for-byte in
+place, and amend, fixup, squash, reuse-message, reedit-message, and file-message
+modes bypass spellcheck. If Ollama or the selected model is unavailable, the
+original manual message is passed through unchanged.
+
+Disable the pass without disabling blank-message AI generation:
+
+```sh
+git config --global scm-toolkit.spellcheck-manual-commit false
+```
 
 ### AI model picker
 

@@ -25,6 +25,7 @@ DEFAULT_SETTINGS = {
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
     "aiCommit": True,
+    "spellcheckManualCommit": True,
     "aiDefaultBranchDescription": True,
     "aiCommitModel": "qwen2.5-coder:7b",
     "aiCommitLowMemoryModel": "qwen2.5-coder:3b",
@@ -105,6 +106,10 @@ def load_settings():
         ),
         "aiCommit": read_git_bool(
             "scm-toolkit.ai-commit", DEFAULT_SETTINGS["aiCommit"]
+        ),
+        "spellcheckManualCommit": read_git_bool(
+            "scm-toolkit.spellcheck-manual-commit",
+            DEFAULT_SETTINGS["spellcheckManualCommit"],
         ),
         "aiDefaultBranchDescription": read_git_bool(
             "scm-toolkit.ai-default-branch-description",
