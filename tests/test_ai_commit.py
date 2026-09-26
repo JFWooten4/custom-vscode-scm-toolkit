@@ -21,6 +21,21 @@ class RoutingTests(unittest.TestCase):
             ai_commit.has_explicit_message_or_special_mode(["--message=Manual"])
         )
 
+    def test_finds_manual_message_forms(self):
+        self.assertEqual(ai_commit.manual_message_location(["-m", "Manual"]), (1, "value"))
+        self.assertEqual(
+            ai_commit.manual_message_location(["--message=Manual"]), (0, "long")
+        )
+        self.assertEqual(ai_commit.manual_message_location(["-mManual"]), (0, "short"))
+
+    def test_special_commit_modes_skip_manual_spellcheck(self):
+        self.assertIsNone(
+            ai_commit.manual_message_location(["--amend", "-m", "Manual"])
+        )
+        self.assertIsNone(
+            ai_commit.manual_message_location(["--fixup=HEAD", "-m", "Manual"])
+        )
+
     def test_rejects_path_and_all_modes(self):
         self.assertFalse(ai_commit.uses_staged_index(["README.md"]))
         self.assertFalse(ai_commit.uses_staged_index(["--all"]))
@@ -38,6 +53,10 @@ class ConfigurationTests(unittest.TestCase):
     @patch.object(ai_commit, "git_config_bool", return_value=False)
     def test_default_branch_description_can_be_disabled(self, _config):
         self.assertFalse(ai_commit.default_branch_description_enabled())
+
+    @patch.object(ai_commit, "git_config_bool", return_value=False)
+    def test_manual_spellcheck_can_be_disabled(self, _config):
+        self.assertFalse(ai_commit.manual_spellcheck_enabled())
 
     def test_description_is_limited_to_the_configured_default_branch(self):
         with patch.object(
@@ -122,6 +141,57 @@ class ConfigurationTests(unittest.TestCase):
     )
     def test_local_model_inventory_does_not_require_staged_files(self, _request):
         self.assertEqual(ai_commit.installed_local_model_names(), {"primary:test"})
+
+
+class ManualSpellcheckTests(unittest.TestCase):
+    @patch.object(ai_commit, "spellcheck_subject", return_value="Fix spelling")
+    def test_only_subject_line_is_rewritten(self, _spellcheck):
+        message = "Fxi spelling\n\nKeep this body exactly."
+        self.assertEqual(
+            ai_commit.spellcheck_manual_message(message),
+            "Fix spelling\n\nKeep this body exactly.",
+        )
+
+    @patch.object(ai_commit, "spellcheck_subject", return_value="Fix spelling")
+    def test_message_argument_is_rewritten_in_place(self, _spellcheck):
+        args, found = ai_commit.spellcheck_manual_message_args(
+            ["--quiet", "--message=Fxi spelling"]
+        )
+        self.assertTrue(found)
+        self.assertEqual(args, ["--quiet", "--message=Fix spelling"])
+
+    @patch.object(ai_commit, "installed_local_model_names", return_value=set())
+    @patch.object(
+        ai_commit,
+        "configured_models",
+        return_value=("primary:test", "fallback:test"),
+    )
+    @patch.object(ai_commit, "available_memory_bytes", return_value=8 * 1024**3)
+    def test_missing_model_preserves_manual_subject(
+        self, _memory, _configured, _models
+    ):
+        self.assertEqual(ai_commit.spellcheck_subject("Fxi spelling"), "Fxi spelling")
+
+    @patch.object(ai_commit, "installed_local_model_names", return_value={"primary:test"})
+    @patch.object(
+        ai_commit,
+        "selected_model",
+        return_value=("primary:test", False),
+    )
+    @patch.object(
+        ai_commit,
+        "configured_models",
+        return_value=("primary:test", "fallback:test"),
+    )
+    @patch.object(
+        ai_commit,
+        "ollama_json",
+        return_value={"response": "Fix spelling"},
+    )
+    def test_local_model_correction_is_used(
+        self, _request, _configured, _selected, _models
+    ):
+        self.assertEqual(ai_commit.spellcheck_subject("Fxi spelling"), "Fix spelling")
 
 
 class TitleTests(unittest.TestCase):

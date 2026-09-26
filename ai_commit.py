@@ -118,6 +118,10 @@ def feature_enabled() -> bool:
     return git_config_bool("scm-toolkit.ai-commit", True)
 
 
+def manual_spellcheck_enabled() -> bool:
+    return git_config_bool("scm-toolkit.spellcheck-manual-commit", True)
+
+
 def default_branch_description_enabled() -> bool:
     return git_config_bool("scm-toolkit.ai-default-branch-description", True)
 
@@ -248,6 +252,134 @@ def has_explicit_message_or_special_mode(args: list[str]) -> bool:
         if arg in {"-m", "-F", "--message", "--file"}:
             return True
     return False
+
+
+def has_special_commit_mode(args: list[str]) -> bool:
+    special_flags = {
+        "-e",
+        "--edit",
+        "--amend",
+        "-C",
+        "-c",
+        "--reuse-message",
+        "--reedit-message",
+        "--fixup",
+        "--squash",
+        "-F",
+        "--file",
+    }
+    special_prefixes = (
+        "-F",
+        "--file=",
+        "--reuse-message=",
+        "--reedit-message=",
+        "--fixup=",
+        "--squash=",
+    )
+    for arg in args:
+        if arg in special_flags:
+            return True
+        if any(arg.startswith(prefix) and arg != prefix for prefix in special_prefixes):
+            return True
+    return False
+
+
+def manual_message_location(args: list[str]) -> tuple[int, str] | None:
+    if has_special_commit_mode(args):
+        return None
+
+    for index, arg in enumerate(args):
+        if arg in {"-m", "--message"}:
+            if index + 1 >= len(args):
+                return None
+            return index + 1, "value"
+        if arg.startswith("--message="):
+            return index, "long"
+        if arg.startswith("-m") and arg != "-m":
+            return index, "short"
+    return None
+
+
+def spellcheck_subject(subject: str) -> str:
+    if not subject.strip():
+        return subject
+
+    installed = installed_local_model_names()
+    model, low_memory_mode = selected_model(installed)
+    primary, low_memory = configured_models()
+    if model is None:
+        detail = (
+            f"low-memory model {low_memory} is not installed locally"
+            if low_memory_mode
+            else f"configured models {primary} and {low_memory} are not installed locally"
+        )
+        print(
+            f"scm-toolkit: manual commit spellcheck skipped ({detail})",
+            file=sys.stderr,
+        )
+        return subject
+
+    prompt = f"""Correct spelling errors only in this Git commit subject.
+
+Rules:
+- preserve the wording, meaning, punctuation, capitalization, emoji, identifiers, filenames, acronyms, and code
+- do not rewrite for style or grammar
+- do not add or remove words except when correcting a misspelling
+- output exactly one corrected subject line with no quotes or markdown
+
+Subject:
+{subject}
+"""
+    try:
+        response = ollama_json(
+            "/api/generate",
+            {
+                "model": model,
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "num_ctx": min(NUM_CTX, 2048),
+                    "temperature": 0,
+                    "num_predict": 80,
+                },
+            },
+            timeout=30,
+        )
+    except Exception as exc:
+        print(
+            f"scm-toolkit: manual commit spellcheck skipped ({exc})",
+            file=sys.stderr,
+        )
+        return subject
+
+    corrected = str(response.get("response", "")).strip()
+    corrected = next((line.strip() for line in corrected.splitlines() if line.strip()), "")
+    if len(corrected) >= 2 and corrected[0] == corrected[-1] and corrected[0] in {'"', "'"}:
+        corrected = corrected[1:-1].strip()
+    return corrected or subject
+
+
+def spellcheck_manual_message(message: str) -> str:
+    subject, separator, remainder = message.partition("\n")
+    corrected = spellcheck_subject(subject)
+    return corrected + separator + remainder
+
+
+def spellcheck_manual_message_args(args: list[str]) -> tuple[list[str], bool]:
+    location = manual_message_location(args)
+    if location is None:
+        return args, False
+
+    index, kind = location
+    rewritten = list(args)
+    if kind == "value":
+        rewritten[index] = spellcheck_manual_message(rewritten[index])
+    elif kind == "long":
+        prefix = "--message="
+        rewritten[index] = prefix + spellcheck_manual_message(rewritten[index][len(prefix) :])
+    else:
+        rewritten[index] = "-m" + spellcheck_manual_message(rewritten[index][2:])
+    return rewritten, True
 
 
 def uses_staged_index(args: list[str]) -> bool:
@@ -625,18 +757,25 @@ def main() -> None:
     global GIT_GLOBAL_ARGS
 
     argv = sys.argv[1:]
-    if not feature_enabled():
-        os.execv(REAL_GIT, [REAL_GIT, *argv])
     index = commit_index(argv)
-    commit_args = argv[index + 1 :] if index is not None else []
+    if index is None:
+        os.execv(REAL_GIT, [REAL_GIT, *argv])
+
+    GIT_GLOBAL_ARGS = argv[:index]
+    commit_args = argv[index + 1 :]
+
+    if manual_spellcheck_enabled():
+        rewritten_args, found_manual_message = spellcheck_manual_message_args(commit_args)
+        if found_manual_message:
+            os.execv(REAL_GIT, [REAL_GIT, *argv[: index + 1], *rewritten_args])
+
     if (
-        index is None
+        not feature_enabled()
         or has_explicit_message_or_special_mode(commit_args)
         or not uses_staged_index(commit_args)
     ):
         os.execv(REAL_GIT, [REAL_GIT, *argv])
 
-    GIT_GLOBAL_ARGS = argv[:index]
     stat, diff, files = staged_diff()
     if not stat and not diff:
         os.execv(REAL_GIT, [REAL_GIT, *argv])
