@@ -177,7 +177,7 @@ function scmToolkitEnableBlankStateRefresh(
     };
 }
 
-const SCM_TOOLKIT_CODEX_COAUTHOR = 'Co-authored-by: Codex Web <noreply@openai.com>';
+const SCM_TOOLKIT_CODEX_COAUTHOR = 'Co-authored-by: Codex <noreply@openai.com>';
 
 function scmToolkitWithCodexCoauthor(message) {
     const base = message.trimEnd();
@@ -465,6 +465,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     );
 
     let currentCommand;
+    let currentCommitCommand;
     let currentBranch;
     let currentHistoryProvider;
     let currentRepositoryArgument;
@@ -549,7 +550,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             || deletingBranch
             || committingWithCodex
             || !currentInput
-            || !currentRepositoryArgument;
+            || !currentCommitCommand?.id;
     };
 
     const commitWithCodex = async event => {
@@ -557,7 +558,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         if (
             !settings.codexCoauthor
             || !currentInput
-            || !currentRepositoryArgument
+            || !currentCommitCommand?.id
             || pending
             || deletingBranch
             || committingWithCodex
@@ -577,7 +578,10 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         currentInput.value = attributedMessage;
 
         try {
-            await commands.executeCommand('git.commit', currentRepositoryArgument);
+            await commands.executeCommand(
+                currentCommitCommand.id,
+                ...(currentCommitCommand.arguments ?? [])
+            );
         } catch (error) {
             notifications.error(error);
         } finally {
@@ -1016,6 +1020,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
 
         bind(input) {
             currentCommand = undefined;
+            currentCommitCommand = undefined;
             currentBranch = undefined;
             currentHistoryProvider = undefined;
             currentRepositoryArgument = undefined;
@@ -1038,6 +1043,8 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
 
             if (!input || input.repository.provider.providerId !== 'git') return;
             currentInput = input;
+            const provider = input.repository.provider;
+            currentCommitCommand = provider.acceptInputCommand;
 
             if (settings.commitAndPush) {
                 pushControl.hidden = false;
@@ -1096,7 +1103,6 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
                 );
             }
 
-            const provider = input.repository.provider;
             let blankStateRefreshDisposable;
             widget.repositoryDisposables.add(observe(reader => {
                 const items = provider.statusBarCommands.read(reader) ?? [];
