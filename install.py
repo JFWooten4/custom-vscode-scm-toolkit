@@ -24,6 +24,7 @@ DEFAULT_SETTINGS = {
     "codexCoauthor": True,
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
+    "browserChatgptHome": False,
     "aiCommit": True,
     "aiDefaultBranchDescription": True,
     "aiCommitModel": "qwen2.5-coder:7b",
@@ -102,6 +103,10 @@ def load_settings():
         "blankStateRefresh": read_git_bool(
             "scm-toolkit.blank-state-refresh",
             DEFAULT_SETTINGS["blankStateRefresh"],
+        ),
+        "browserChatgptHome": read_git_bool(
+            "scm-toolkit.browser-chatgpt-home",
+            DEFAULT_SETTINGS["browserChatgptHome"],
         ),
         "aiCommit": read_git_bool(
             "scm-toolkit.ai-commit", DEFAULT_SETTINGS["aiCommit"]
@@ -212,7 +217,36 @@ def sync_model_picker(enabled=True, remove=False, check=False, destination=None)
     return changed
 
 
-def edits(js=None):
+def browser_chatgpt_home_edits(js):
+    anchor = "Invalid browser view resource:"
+    anchor_index = js.find(anchor)
+    if anchor_index < 0:
+        raise ValueError(
+            "Unsupported VS Code build: Integrated Browser resolver anchor does not match."
+        )
+
+    segment = js[anchor_index : anchor_index + 4000]
+    pattern = re.compile(
+        r"(?P<prefix>[A-Za-z_$][\w$]*\.getOrCreateLazy\(\{id:"
+        r"[A-Za-z_$][\w$]*\.id,\.\.\.(?P<options>[A-Za-z_$][\w$]*)"
+        r"\?\.viewState)(?P<suffix>\}\))"
+    )
+    matches = list(pattern.finditer(segment))
+    if len(matches) != 1:
+        raise ValueError(
+            "Unsupported VS Code build: Integrated Browser resolver does not match."
+        )
+
+    match = matches[0]
+    original = match.group(0)
+    replacement = (
+        f'{match.group("prefix")},url:{match.group("options")}?.viewState?.url'
+        f'??"https://chatgpt.com/"{match.group("suffix")}'
+    )
+    return [(original, replacement)]
+
+
+def edits(js=None, settings=None):
     command, notification, configuration, mcp, observe, dimension = "fe", "Le", "Xe", "Me", "pe", "xi"
 
     if js is not None:
@@ -237,7 +271,7 @@ def edits(js=None):
             r"t=new (" + ident + r")\(this\.element\.clientWidth-e,o\);if\(t\.width<0\)"
         )
 
-    return [
+    changes = [
         (
             "this.disposables.add(this.toolbar)}static{this.ValidationTimeouts=",
             "this.disposables.add(this.toolbar);this.scmToolkitControls="
@@ -264,6 +298,9 @@ def edits(js=None):
             "(this.scmToolkitControls?.width()??0),o);if(t.width<0)",
         ),
     ]
+    if js is not None and settings and settings.get("browserChatgptHome"):
+        changes.extend(browser_chatgpt_home_edits(js))
+    return changes
 
 
 def strip_payload(text):
@@ -376,13 +413,13 @@ def transform(js, css, remove=False, settings=None):
     if remove:
         return js, css
 
-    changes = edits(js)
+    settings = load_settings() if settings is None else settings
+    changes = edits(js, settings=settings)
     for original, replacement in changes:
         if js.count(original) != 1:
             raise ValueError("Unsupported VS Code build: SCM widget anchor does not match.")
         js = js.replace(original, replacement, 1)
 
-    settings = load_settings() if settings is None else settings
     js += (
         START
         + "const scmToolkitSettings = "

@@ -14,6 +14,7 @@ Current features:
 - optionally open a pull request for the current branch through a configured MCP server
 - optionally hide the outgoing commit count from the built-in Sync action
 - optionally refresh clean/blank Git repositories more aggressively so the first new change appears in SCM quickly
+- optionally use ChatGPT as the home page for blank Integrated Browser tabs
 - optionally generate a commit subject locally when the normal Commit button is used with a blank message
 - optionally show a live, minute-precision countdown in Codex usage-limit banners
 
@@ -100,6 +101,7 @@ git config --global scm-toolkit.autocomplete-toggle true
 git config --global scm-toolkit.codex-coauthor true
 git config --global scm-toolkit.hide-outgoing-sync-count true
 git config --global scm-toolkit.blank-state-refresh true
+git config --global scm-toolkit.browser-chatgpt-home true
 git config --global scm-toolkit.ai-commit true
 git config --global scm-toolkit.ai-default-branch-description true
 git config --global scm-toolkit.ai-commit-model qwen2.5-coder:7b
@@ -127,6 +129,7 @@ The equivalent `~/.gitconfig` block is:
     codex-coauthor = true
     hide-outgoing-sync-count = true
     blank-state-refresh = true
+    browser-chatgpt-home = true
     ai-commit = true
     ai-default-branch-description = true
     ai-commit-model = qwen2.5-coder:7b
@@ -141,7 +144,7 @@ The equivalent `~/.gitconfig` block is:
     remote = origin
 ```
 
-The filled-button style and Codex usage-reset countdown default to `false`; the other twelve SCM feature switches default to `true`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
+The filled-button style, Codex usage-reset countdown, and ChatGPT browser homepage default to `false`; the other twelve SCM feature switches default to `true`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
 
 After changing toolkit Git config, rerun:
 
@@ -256,6 +259,13 @@ clean again. Hidden windows back off instead of polling at the foreground rate.
 
 This uses VS Code's existing `git.refresh` command; the toolkit does not run its
 own Git status implementation.
+
+### Integrated Browser ChatGPT home
+
+When `browser-chatgpt-home` is enabled, a blank Integrated Browser tab starts at
+`https://chatgpt.com/`. Explicit URLs continue to win, so commands and extensions
+that open a specific page are unchanged. The toggle is applied by the installer,
+so rerun `python3 install.py` and reload VS Code after changing it.
 
 ### Codex co-author commit
 

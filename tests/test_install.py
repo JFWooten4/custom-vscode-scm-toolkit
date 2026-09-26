@@ -17,6 +17,7 @@ SETTINGS = {
     "codexCoauthor": True,
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
+    "browserChatgptHome": False,
     "aiCommit": True,
     "aiDefaultBranchDescription": True,
     "aiCommitModel": "qwen2.5-coder:7b",
@@ -46,6 +47,13 @@ def workbench_fixture():
             'this.toolbar.setInput(o),this.model={input:o,textModel:e}}get selections()',
             't=new size(this.element.clientWidth-e,o);if(t.width<0)',
         ]
+    )
+
+
+def browser_resolver_fixture():
+    return (
+        'throw new Error(`Invalid browser view resource: ${resource}`);'
+        'browserViews.getOrCreateLazy({id:parsed.id,...options?.viewState})'
     )
 
 
@@ -123,6 +131,7 @@ class TransformTests(unittest.TestCase):
             '"commitAndPush":true,'
             '"branchCleanup":true,"autocompleteToggle":true,"codexCoauthor":true,'
             '"hideOutgoingSyncCount":true,"blankStateRefresh":true,'
+            '"browserChatgptHome":false,'
             '"aiCommit":true,'
             '"aiDefaultBranchDescription":true,'
             '"aiCommitModel":"qwen2.5-coder:7b",'
@@ -151,6 +160,33 @@ class TransformTests(unittest.TestCase):
         self.assertEqual(js.count(install.END), 1)
         self.assertEqual(css.count(install.START), 1)
         self.assertEqual(css.count(install.END), 1)
+
+    def test_chatgpt_browser_home_is_opt_in(self):
+        self.assertFalse(install.DEFAULT_SETTINGS["browserChatgptHome"])
+
+        js, _ = install.transform(
+            workbench_fixture(), "base-css", settings=SETTINGS
+        )
+
+        self.assertNotIn('"https://chatgpt.com/"', js)
+
+    def test_chatgpt_browser_home_patches_blank_browser_tabs(self):
+        original_js = workbench_fixture() + browser_resolver_fixture()
+        enabled = dict(SETTINGS, browserChatgptHome=True)
+
+        patched_js, patched_css = install.transform(
+            original_js, "base-css", settings=enabled
+        )
+
+        self.assertIn(
+            'browserViews.getOrCreateLazy({id:parsed.id,...options?.viewState,'
+            'url:options?.viewState?.url??"https://chatgpt.com/"})',
+            patched_js,
+        )
+        restored = install.transform(
+            patched_js, patched_css, remove=True, settings=enabled
+        )
+        self.assertEqual(restored, (original_js, "base-css"))
 
     def test_install_and_remove_round_trip(self):
         original_js = workbench_fixture()
