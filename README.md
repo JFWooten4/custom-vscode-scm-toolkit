@@ -18,6 +18,7 @@ Current features:
 - search the active workspace semantically from a `Workspace Search` view directly inside Source Control, backed only by local Ollama
 - optionally use ⌘-click on an editor tab's close button to keep that tab and close the others in its group
 - optionally use ChatGPT as the home page for blank Integrated Browser tabs
+- optionally make Source Control Graph **Open File** open the checked-out working-tree file instead of the selected commit snapshot
 - optionally generate a commit subject locally when the normal Commit button is used with a blank message
 - optionally spellcheck manually entered commit subjects with the configured local model
 - optionally show a live, minute-precision countdown in Codex usage-limit banners
@@ -112,6 +113,7 @@ git config --global scm-toolkit.blank-state-refresh true
 git config --global scm-toolkit.auto-pull-clean true
 git config --global scm-toolkit.cmd-click-close-others false
 git config --global scm-toolkit.browser-chatgpt-home true
+git config --global scm-toolkit.graph-open-working-file true
 git config --global scm-toolkit.ai-commit true
 git config --global scm-toolkit.spellcheck-manual-commit true
 git config --global scm-toolkit.ai-default-branch-description true
@@ -145,6 +147,7 @@ The equivalent `~/.gitconfig` block is:
     auto-pull-clean = true
     cmd-click-close-others = false
     browser-chatgpt-home = true
+    graph-open-working-file = true
     ai-commit = true
     spellcheck-manual-commit = true
     ai-default-branch-description = true
@@ -324,6 +327,23 @@ Disabling the toolkit feature hides the checkbox. It does not silently rewrite a
 When `autocomplete-toggle` is enabled, the sparkle button appears after the other
 SCM controls. It toggles VS Code's `editor.inlineSuggest.enabled` setting. A slash
 through the sparkle means inline autocomplete is off.
+
+### Source Control Graph working-file open
+
+When `graph-open-working-file` is enabled, the Source Control Graph's **Open File**
+action keeps the selected history item's path but opens it as a normal `file:` URI.
+That means the editor shows the file from the branch currently checked out in the
+working tree instead of the read-only `git:` snapshot for the selected commit.
+
+If that path does not exist in the checked-out branch, VS Code reports the missing
+working-tree file rather than silently falling back to the historical snapshot.
+
+Restore VS Code's stock historical-file behavior with:
+
+```sh
+git config --global scm-toolkit.graph-open-working-file false
+python3 install.py
+```
 
 ### Blank-state refresh
 

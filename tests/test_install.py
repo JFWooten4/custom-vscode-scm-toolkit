@@ -22,6 +22,7 @@ SETTINGS = {
     "autoPullClean": True,
     "cmdClickCloseOthers": False,
     "browserChatgptHome": False,
+    "graphOpenWorkingFile": True,
     "aiCommit": True,
     "spellcheckManualCommit": True,
     "aiDefaultBranchDescription": True,
@@ -54,6 +55,9 @@ def workbench_fixture():
             't=new size(this.element.clientWidth-e,o);if(t.width<0)',
             'keys.event(e=>this.setAltPressed(e.altKey));',
             'listen(mouse=>{this.setAltPressed(mouse.altKey)},true);',
+            'id:"workbench.scm.action.graph.openFile",'
+            'async run(){await editor.openEditor({resource:change.modifiedUri,label:'
+            '`${name} (${version})`})}',
         ]
     )
 
@@ -157,6 +161,7 @@ class TransformTests(unittest.TestCase):
             '"autoPullClean":true,'
             '"cmdClickCloseOthers":false,'
             '"browserChatgptHome":false,'
+            '"graphOpenWorkingFile":true,'
             '"aiCommit":true,'
             '"spellcheckManualCommit":true,'
             '"aiDefaultBranchDescription":true,'
@@ -245,6 +250,34 @@ class TransformTests(unittest.TestCase):
 
         patched = install.transform(original_js, original_css, settings=enabled)
         restored = install.transform(*patched, remove=True, settings=enabled)
+
+        self.assertEqual(restored, (original_js, original_css))
+
+    def test_graph_open_working_file_is_on_by_default(self):
+        self.assertTrue(install.DEFAULT_SETTINGS["graphOpenWorkingFile"])
+
+    def test_graph_open_working_file_retargets_history_uri(self):
+        js, _ = install.transform(workbench_fixture(), "base-css", settings=SETTINGS)
+
+        self.assertIn(
+            'resource:change.modifiedUri.with({scheme:"file",query:""}),label:',
+            js,
+        )
+        self.assertNotIn("resource:change.modifiedUri,label:", js)
+
+    def test_graph_open_working_file_can_be_disabled(self):
+        disabled = dict(SETTINGS, graphOpenWorkingFile=False)
+        js, _ = install.transform(workbench_fixture(), "base-css", settings=disabled)
+
+        self.assertIn("resource:change.modifiedUri,label:", js)
+        self.assertNotIn('.modifiedUri.with({scheme:"file",query:""})', js)
+
+    def test_graph_open_working_file_round_trip(self):
+        original_js = workbench_fixture()
+        original_css = "base-css"
+
+        patched = install.transform(original_js, original_css, settings=SETTINGS)
+        restored = install.transform(*patched, remove=True, settings=SETTINGS)
 
         self.assertEqual(restored, (original_js, original_css))
 
