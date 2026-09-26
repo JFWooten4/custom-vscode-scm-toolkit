@@ -7,7 +7,7 @@ Current features:
 - show the current branch inside the SCM message box and open VS Code's normal branch picker from it
 - switch the branch selector and native Commit button between outlined and accent-filled styles
 - shorten the commit-message placeholder to `Message`
-- optionally show a commit-and-push checkbox backed by VS Code's `git.postCommitCommand`
+- optionally show a commit-and-push checkbox that dispatches the push without holding commit completion
 - optionally show a guarded local-branch cleanup button
 - optionally show a quick toggle for VS Code inline autocomplete
 - optionally show a commit button that appends the Codex Web co-author trailer
@@ -15,6 +15,8 @@ Current features:
 - optionally hide the outgoing commit count from the built-in Sync action
 - optionally refresh clean/blank Git repositories more aggressively so the first new change appears in SCM quickly
 - search the active workspace semantically from a `Workspace Search` view directly inside Source Control, backed only by local Ollama
+- optionally use ⌘-click on an editor tab's close button to keep that tab and close the others in its group
+- optionally use ChatGPT as the home page for blank Integrated Browser tabs
 - optionally generate a commit subject locally when the normal Commit button is used with a blank message
 - optionally show a live, minute-precision countdown in Codex usage-limit banners
 
@@ -51,6 +53,12 @@ Install the patch:
 python3 install.py
 ```
 
+To review the settings in a local browser before installing, run:
+
+```sh
+python3 install.py --configure
+```
+
 Then reload or restart Visual Studio Code.
 
 The default application path is:
@@ -71,6 +79,18 @@ If macOS blocks the write, allow the terminal or Python process you are using un
 
 Toolkit settings live in your global Git config under the `scm-toolkit` section. This keeps feature settings in the normal `~/.gitconfig` file and leaves room for new options later.
 
+### Local web configurator
+
+Run the configurator without installing anything:
+
+```sh
+python3 configure.py
+```
+
+It opens an app-like settings page in the default browser, prefilled with the current Git configuration. The page includes every toolkit switch plus the Ollama model choices and low-memory threshold. If Ollama is running on `127.0.0.1:11434`, locally installed models appear as suggestions; model tags can still be entered manually when it is offline.
+
+The configurator uses only the Python standard library, binds to a random loopback port, requires a one-time URL token, and sends no settings off the computer. Its UI is cross-platform; the workbench installer remains macOS-specific because it currently targets the Visual Studio Code application-bundle layout.
+
 Set options with `git config --global`:
 
 ```sh
@@ -83,6 +103,8 @@ git config --global scm-toolkit.autocomplete-toggle true
 git config --global scm-toolkit.codex-coauthor true
 git config --global scm-toolkit.hide-outgoing-sync-count true
 git config --global scm-toolkit.blank-state-refresh true
+git config --global scm-toolkit.cmd-click-close-others false
+git config --global scm-toolkit.browser-chatgpt-home true
 git config --global scm-toolkit.ai-commit true
 git config --global scm-toolkit.ai-default-branch-description true
 git config --global scm-toolkit.ai-commit-model qwen2.5-coder:7b
@@ -110,6 +132,8 @@ The equivalent `~/.gitconfig` block is:
     codex-coauthor = true
     hide-outgoing-sync-count = true
     blank-state-refresh = true
+    cmd-click-close-others = false
+    browser-chatgpt-home = true
     ai-commit = true
     ai-default-branch-description = true
     ai-commit-model = qwen2.5-coder:7b
@@ -124,7 +148,7 @@ The equivalent `~/.gitconfig` block is:
     remote = origin
 ```
 
-The filled-button style and Codex usage-reset countdown default to `false`; the other twelve SCM feature switches default to `true`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
+The filled-button style, Cmd-click close-others gesture, Codex usage-reset countdown, and ChatGPT browser homepage default to `false`; the other boolean SCM feature switches default to `true`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
 
 After changing toolkit Git config, rerun:
 
@@ -238,6 +262,8 @@ after an extension update if the countdown disappears.
 
 When `commit-and-push` is enabled, the checkbox mirrors VS Code's `git.postCommitCommand` setting. Checking it sets the value to `push`; unchecking it sets the value to `none`.
 
+For push mode, the toolkit suppresses VS Code's awaited post-commit push, completes the commit first, then dispatches `repository.push()` without awaiting it. This releases the commit UI immediately instead of waiting for remote confirmation or performing a separate origin-verification step. Push failures are still surfaced asynchronously as notifications.
+
 Disabling the toolkit feature hides the checkbox. It does not silently rewrite an existing `git.postCommitCommand` value.
 
 ### Autocomplete toggle
@@ -257,6 +283,24 @@ clean again. Hidden windows back off instead of polling at the foreground rate.
 
 This uses VS Code's existing `git.refresh` command; the toolkit does not run its
 own Git status implementation.
+
+### Cmd-click close others
+
+When `cmd-click-close-others` is enabled, holding ⌘ while clicking an editor tab's X
+uses VS Code's built-in **Close Others** action for that tab. The clicked tab stays
+open while VS Code closes the other editors in that group using its normal behavior
+for selected editors, sticky/pinned tabs, and dirty-close prompts.
+
+The installer extends the modifier state VS Code already uses for its native
+close-others tab action. Normal clicks and normal ⌘-click tab selection are otherwise
+left to VS Code.
+
+### Integrated Browser ChatGPT home
+
+When `browser-chatgpt-home` is enabled, a blank Integrated Browser tab starts at
+`https://chatgpt.com/`. Explicit URLs continue to win, so commands and extensions
+that open a specific page are unchanged. The toggle is applied by the installer,
+so rerun `python3 install.py` and reload VS Code after changing it.
 
 ### Codex co-author commit
 
