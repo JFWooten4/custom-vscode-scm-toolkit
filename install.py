@@ -104,8 +104,8 @@ def graph_open_working_file_edits(js):
 
     segment = js[anchor_index : anchor_index + 6000]
     pattern = re.compile(
-        r"(?P<prefix>[A-Za-z_$][\\w$]*\\.openEditor\\(\\{resource:)"
-        r"(?P<change>[A-Za-z_$][\\w$]*)\\.modifiedUri"
+        r"(?P<prefix>[A-Za-z_$][\w$]*\.openEditor\(\{resource:)"
+        r"(?P<change>[A-Za-z_$][\w$]*)\.modifiedUri"
         r"(?P<suffix>,label:)"
     )
     matches = list(pattern.finditer(segment))
