@@ -106,7 +106,7 @@ function scmToolkitEnableBlankStateRefresh(widget, input, commands, repositoryAr
     };
 }
 
-const SCM_TOOLKIT_CODEX_COAUTHOR = 'Co-authored-by: Codex Web <noreply@openai.com>';
+const SCM_TOOLKIT_CODEX_COAUTHOR = 'Co-authored-by: Codex <noreply@openai.com>';
 
 function scmToolkitWithCodexCoauthor(message) {
     const base = message.trimEnd();

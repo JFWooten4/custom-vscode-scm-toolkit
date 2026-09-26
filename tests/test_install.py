@@ -139,7 +139,7 @@ class TransformTests(unittest.TestCase):
         self.assertIn("scm-toolkit-autocomplete", css)
         self.assertEqual(js.count("className = 'scm-toolkit-tooltip'"), 3)
         self.assertIn(".scm-toolkit-autocomplete:hover > .scm-toolkit-tooltip", css)
-        self.assertIn("Co-authored-by: Codex Web <noreply@openai.com>", js)
+        self.assertIn("Co-authored-by: Codex <noreply@openai.com>", js)
         self.assertIn("currentCommitCommand = provider.acceptInputCommand", js)
         self.assertIn("currentCommitCommand.id,", js)
         self.assertIn("...(currentCommitCommand.arguments ?? [])", js)
