@@ -21,6 +21,7 @@ SETTINGS = {
     "cmdClickCloseOthers": False,
     "browserChatgptHome": False,
     "aiCommit": True,
+    "spellcheckManualCommit": True,
     "aiDefaultBranchDescription": True,
     "aiCommitModel": "qwen2.5-coder:7b",
     "aiCommitLowMemoryModel": "qwen2.5-coder:3b",
@@ -155,6 +156,7 @@ class TransformTests(unittest.TestCase):
             '"cmdClickCloseOthers":false,'
             '"browserChatgptHome":false,'
             '"aiCommit":true,'
+            '"spellcheckManualCommit":true,'
             '"aiDefaultBranchDescription":true,'
             '"aiCommitModel":"qwen2.5-coder:7b",'
             '"aiCommitLowMemoryModel":"qwen2.5-coder:3b",'
@@ -344,6 +346,9 @@ class GitConfigTests(unittest.TestCase):
     def test_missing_boolean_git_config_uses_default(self, run):
         run.return_value = types.SimpleNamespace(returncode=1, stdout="", stderr="")
         self.assertTrue(install.read_git_bool("scm-toolkit.branch-picker", True))
+
+    def test_manual_commit_spellcheck_defaults_on(self):
+        self.assertTrue(install.DEFAULT_SETTINGS["spellcheckManualCommit"])
 
     @patch("install.subprocess.run")
     def test_string_git_config_uses_value(self, run):
