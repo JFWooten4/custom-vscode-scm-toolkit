@@ -18,7 +18,11 @@ SETTINGS = {
     "codexCoauthor": True,
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
+    "autoPullClean": True,
+    "cmdClickCloseOthers": False,
+    "browserChatgptHome": False,
     "aiCommit": True,
+    "spellcheckManualCommit": True,
     "aiDefaultBranchDescription": True,
     "aiCommitModel": "qwen2.5-coder:7b",
     "aiCommitLowMemoryModel": "qwen2.5-coder:3b",
@@ -28,6 +32,7 @@ SETTINGS = {
     "mcpPrServer": "codex-drafter",
     "mcpPrTool": "github_create_pull_request",
     "codexUsageResetCountdown": False,
+    "codexHidePromotions": False,
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -46,7 +51,16 @@ def workbench_fixture():
             'let e=o.repository.provider.inputBoxTextModel;',
             'this.toolbar.setInput(o),this.model={input:o,textModel:e}}get selections()',
             't=new size(this.element.clientWidth-e,o);if(t.width<0)',
+            'keys.event(e=>this.setAltPressed(e.altKey));',
+            'listen(mouse=>{this.setAltPressed(mouse.altKey)},true);',
         ]
+    )
+
+
+def browser_resolver_fixture():
+    return (
+        'throw new Error(`Invalid browser view resource: ${resource}`);'
+        'browserViews.getOrCreateLazy({id:parsed.id,...options?.viewState})'
     )
 
 
@@ -54,8 +68,8 @@ class TransformTests(unittest.TestCase):
     def test_controls_use_the_vscode_input_background(self):
         css = (install.HERE / "picker.css").read_text()
 
-        self.assertEqual(css.count("background: var(--vscode-input-background);"), 6)
-        self.assertEqual(css.count("background: transparent;"), 1)
+        self.assertEqual(css.count("background: var(--vscode-input-background);"), 5)
+        self.assertEqual(css.count("background: transparent;"), 3)
 
     def test_branch_selector_uses_the_vscode_button_colors(self):
         css = (install.HERE / "picker.css").read_text()
@@ -115,6 +129,21 @@ class TransformTests(unittest.TestCase):
             )[0]
             self.assertNotIn("border-left", control_css)
 
+    def test_sync_control_uses_studio_toolbar_style(self):
+        css = (install.HERE / "picker.css").read_text()
+        sync_css = css.split(
+            ".scm-view .scm-editor > .scm-toolkit-sync-branch {", 1
+        )[1].split(
+            ".scm-view .scm-editor > .scm-toolkit-sync-branch[hidden]", 1
+        )[0]
+
+        self.assertIn("background: transparent;", sync_css)
+        self.assertIn("color: var(--vscode-descriptionForeground);", sync_css)
+        self.assertIn(
+            ".scm-view .scm-editor > .scm-toolkit-sync-branch:hover:not(:disabled)",
+            css,
+        )
+
     def test_install_injects_valid_settings_line(self):
         js, css = install.transform(workbench_fixture(), "base-css", settings=SETTINGS)
 
@@ -124,24 +153,36 @@ class TransformTests(unittest.TestCase):
             '"commitAndPush":true,'
             '"branchCleanup":true,"autocompleteToggle":true,"codexCoauthor":true,'
             '"hideOutgoingSyncCount":true,"blankStateRefresh":true,'
+            '"autoPullClean":true,'
+            '"cmdClickCloseOthers":false,'
+            '"browserChatgptHome":false,'
             '"aiCommit":true,'
+            '"spellcheckManualCommit":true,'
             '"aiDefaultBranchDescription":true,'
             '"aiCommitModel":"qwen2.5-coder:7b",'
             '"aiCommitLowMemoryModel":"qwen2.5-coder:3b",'
             '"aiLowMemoryGiB":"4","aiModelPicker":true,'
             '"mcpPullRequest":true,'
             '"mcpPrServer":"codex-drafter","mcpPrTool":"github_create_pull_request",'
-            '"codexUsageResetCountdown":false,'
+            '"codexUsageResetCountdown":false,"codexHidePromotions":false,'
             '"defaultBranch":"main","remote":"origin"};\n',
             js,
         )
         self.assertIn("editor.inlineSuggest.enabled", js)
         self.assertIn("commands.executeCommand('git.refresh', repositoryArgument)", js)
+        self.assertIn("classList.add('scm-toolkit-refreshing')", js)
+        self.assertIn("historyItemRemoteRef.get()", js)
+        self.assertIn("resolveHistoryItemRefsCommonAncestor", js)
+        self.assertIn("commands.executeCommand('git.pull', repositoryArgument)", js)
         self.assertIn("scm-toolkit-autocomplete", css)
+        self.assertIn(".scm-toolkit-refreshing > .monaco-progress-container", css)
         self.assertEqual(js.count("className = 'scm-toolkit-tooltip'"), 4)
         self.assertIn(".scm-toolkit-autocomplete:hover > .scm-toolkit-tooltip", css)
         self.assertIn("Co-authored-by: Codex Web <noreply@openai.com>", js)
         self.assertIn("commands.executeCommand('git.commit', currentRepositoryArgument)", js)
+        self.assertIn("scmToolkitReleaseCommitBeforePush(", js)
+        self.assertIn("postCommitCommand: null", js)
+        self.assertIn(".then(() => originalPush.call(repository))", js)
         self.assertIn("mcpService.activateCollections()", js)
         self.assertIn("mcpService.servers.get()", js)
         self.assertIn("server.start({ promptType: 'all-untrusted' })", js)
@@ -158,10 +199,71 @@ class TransformTests(unittest.TestCase):
         self.assertIn("'murky-number-seven'", js)
         self.assertIn("commands.executeCommand('git.sync', repository)", js)
         self.assertIn("repository.branch(branchName, true, 'HEAD')", js)
+        self.assertIn("scm-toolkit-sync-branch", css)
+        self.assertIn("input.value = '🔄 Sync brach to main';", js)
+        self.assertIn("await repository.fetch({ remote: settings.remote });", js)
+        self.assertIn(
+            "await repository.merge(`${settings.remote}/${settings.defaultBranch}`);",
+            js,
+        )
+        self.assertNotIn("resolveMergeConflicts", js)
         self.assertEqual(js.count(install.START), 1)
         self.assertEqual(js.count(install.END), 1)
         self.assertEqual(css.count(install.START), 1)
         self.assertEqual(css.count(install.END), 1)
+
+    def test_cmd_click_close_others_is_off_by_default(self):
+        self.assertFalse(install.DEFAULT_SETTINGS["cmdClickCloseOthers"])
+
+    def test_cmd_click_close_others_extends_native_modifier(self):
+        enabled = dict(SETTINGS, cmdClickCloseOthers=True)
+        js, _ = install.transform(workbench_fixture(), "base-css", settings=enabled)
+
+        self.assertIn(
+            "this.setAltPressed(e.altKey||scmToolkitSettings.cmdClickCloseOthers&&e.metaKey)",
+            js,
+        )
+        self.assertIn(
+            "this.setAltPressed(mouse.altKey||scmToolkitSettings.cmdClickCloseOthers&&mouse.metaKey)",
+            js,
+        )
+
+    def test_cmd_click_close_others_round_trip(self):
+        original_js = workbench_fixture()
+        original_css = "base-css"
+        enabled = dict(SETTINGS, cmdClickCloseOthers=True)
+
+        patched = install.transform(original_js, original_css, settings=enabled)
+        restored = install.transform(*patched, remove=True, settings=enabled)
+
+        self.assertEqual(restored, (original_js, original_css))
+
+    def test_chatgpt_browser_home_is_opt_in(self):
+        self.assertFalse(install.DEFAULT_SETTINGS["browserChatgptHome"])
+
+        js, _ = install.transform(
+            workbench_fixture(), "base-css", settings=SETTINGS
+        )
+
+        self.assertNotIn('"https://chatgpt.com/"', js)
+
+    def test_chatgpt_browser_home_patches_blank_browser_tabs(self):
+        original_js = workbench_fixture() + browser_resolver_fixture()
+        enabled = dict(SETTINGS, browserChatgptHome=True)
+
+        patched_js, patched_css = install.transform(
+            original_js, "base-css", settings=enabled
+        )
+
+        self.assertIn(
+            'browserViews.getOrCreateLazy({id:parsed.id,...options?.viewState,'
+            'url:options?.viewState?.url??"https://chatgpt.com/"})',
+            patched_js,
+        )
+        restored = install.transform(
+            patched_js, patched_css, remove=True, settings=enabled
+        )
+        self.assertEqual(restored, (original_js, "base-css"))
 
     def test_install_and_remove_round_trip(self):
         original_js = workbench_fixture()
@@ -256,6 +358,9 @@ class GitConfigTests(unittest.TestCase):
         run.return_value = types.SimpleNamespace(returncode=1, stdout="", stderr="")
         self.assertTrue(install.read_git_bool("scm-toolkit.branch-picker", True))
 
+    def test_manual_commit_spellcheck_defaults_on(self):
+        self.assertTrue(install.DEFAULT_SETTINGS["spellcheckManualCommit"])
+
     @patch("install.subprocess.run")
     def test_string_git_config_uses_value(self, run):
         run.return_value = types.SimpleNamespace(returncode=0, stdout="upstream\n", stderr="")
@@ -289,6 +394,37 @@ class CodexCountdownTests(unittest.TestCase):
         patched = install.transform_codex(original, enabled=True)
 
         self.assertEqual(install.transform_codex(patched, enabled=False), original)
+
+
+class CodexPromotionTests(unittest.TestCase):
+    def test_promotion_hiding_is_off_by_default(self):
+        self.assertFalse(install.DEFAULT_SETTINGS["codexHidePromotions"])
+
+    def test_codex_promotion_install_and_remove_round_trip(self):
+        original = "const promo=`Enable Fast mode`;const action=`Enable now`;"
+        patched = install.transform_codex(original, hide_promotions=True)
+
+        self.assertIn("scm-toolkit-codex-promotions:start", patched)
+        self.assertIn("Enable Fast mode", patched)
+        self.assertIn("Enable now", patched)
+        self.assertEqual(install.transform_codex(patched, remove=True), original)
+
+    def test_promotions_and_countdown_can_coexist(self):
+        original = CodexCountdownTests().fixture()
+        patched = install.transform_codex(
+            original, enabled=True, hide_promotions=True
+        )
+
+        self.assertIn("scm-toolkit-usage-reset-countdown", patched)
+        self.assertIn("scm-toolkit-codex-promotions:start", patched)
+        self.assertEqual(install.transform_codex(patched, remove=True), original)
+
+    def test_bundle_match_accepts_fast_mode_promotion(self):
+        self.assertTrue(
+            install.codex_bundle_matches(
+                "const title=`Enable Fast mode`;const action=`Enable now`;"
+            )
+        )
 
 
 if __name__ == "__main__":
