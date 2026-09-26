@@ -62,7 +62,7 @@ class TransformTests(unittest.TestCase):
         css = (install.HERE / "picker.css").read_text()
 
         self.assertEqual(css.count("background: var(--vscode-input-background);"), 5)
-        self.assertEqual(css.count("background: transparent;"), 1)
+        self.assertEqual(css.count("background: transparent;"), 2)
 
     def test_branch_selector_uses_the_vscode_button_colors(self):
         css = (install.HERE / "picker.css").read_text()
@@ -122,6 +122,21 @@ class TransformTests(unittest.TestCase):
             )[0]
             self.assertNotIn("border-left", control_css)
 
+    def test_sync_control_uses_studio_toolbar_style(self):
+        css = (install.HERE / "picker.css").read_text()
+        sync_css = css.split(
+            ".scm-view .scm-editor > .scm-toolkit-sync-branch {", 1
+        )[1].split(
+            ".scm-view .scm-editor > .scm-toolkit-sync-branch[hidden]", 1
+        )[0]
+
+        self.assertIn("background: transparent;", sync_css)
+        self.assertIn("color: var(--vscode-descriptionForeground);", sync_css)
+        self.assertIn(
+            ".scm-view .scm-editor > .scm-toolkit-sync-branch:hover:not(:disabled)",
+            css,
+        )
+
     def test_install_injects_valid_settings_line(self):
         js, css = install.transform(workbench_fixture(), "base-css", settings=SETTINGS)
 
@@ -156,6 +171,14 @@ class TransformTests(unittest.TestCase):
         self.assertIn("const result = await tool.call({", js)
         self.assertIn("github_create_pull_request", js)
         self.assertIn("scm-toolkit-pull-request", css)
+        self.assertIn("scm-toolkit-sync-branch", css)
+        self.assertIn("input.value = '🔄 Sync brach to main';", js)
+        self.assertIn("await repository.fetch({ remote: settings.remote });", js)
+        self.assertIn(
+            "await repository.merge(`${settings.remote}/${settings.defaultBranch}`);",
+            js,
+        )
+        self.assertNotIn("resolveMergeConflicts", js)
         self.assertEqual(js.count(install.START), 1)
         self.assertEqual(js.count(install.END), 1)
         self.assertEqual(css.count(install.START), 1)
