@@ -50,6 +50,12 @@ Install the patch:
 python3 install.py
 ```
 
+To review the settings in a local browser before installing, run:
+
+```sh
+python3 install.py --configure
+```
+
 Then reload or restart Visual Studio Code.
 
 The default application path is:
@@ -69,6 +75,18 @@ If macOS blocks the write, allow the terminal or Python process you are using un
 ## Configuration
 
 Toolkit settings live in your global Git config under the `scm-toolkit` section. This keeps feature settings in the normal `~/.gitconfig` file and leaves room for new options later.
+
+### Local web configurator
+
+Run the configurator without installing anything:
+
+```sh
+python3 configure.py
+```
+
+It opens an app-like settings page in the default browser, prefilled with the current Git configuration. The page includes every toolkit switch plus the Ollama model choices and low-memory threshold. If Ollama is running on `127.0.0.1:11434`, locally installed models appear as suggestions; model tags can still be entered manually when it is offline.
+
+The configurator uses only the Python standard library, binds to a random loopback port, requires a one-time URL token, and sends no settings off the computer. Its UI is cross-platform; the workbench installer remains macOS-specific because it currently targets the Visual Studio Code application-bundle layout.
 
 Set options with `git config --global`:
 
