@@ -158,6 +158,75 @@ async function scmToolkitWaitForMcpTool(doc, server, toolName) {
     return undefined;
 }
 
+function scmToolkitReleaseCommitBeforePush(repository, configuration, notifications) {
+    if (
+        !repository
+        || typeof repository.commit !== 'function'
+        || typeof repository.push !== 'function'
+    ) {
+        return;
+    }
+
+    const wrappedRepositories =
+        globalThis.__scmToolkitAsyncPushRepositories ??= new WeakMap();
+    let state = wrappedRepositories.get(repository);
+
+    if (!state) {
+        const originalCommit = repository.commit;
+        const originalPush = repository.push;
+
+        const wrappedCommit = async function(message, options) {
+            const requestedPostCommitCommand = options?.postCommitCommand;
+            const configuredPostCommitCommand =
+                configuration.getValue('git.postCommitCommand');
+            const shouldReleasePush =
+                requestedPostCommitCommand === 'push'
+                || (
+                    requestedPostCommitCommand === undefined
+                    && configuredPostCommitCommand === 'push'
+                );
+
+            if (!shouldReleasePush) {
+                return originalCommit.call(repository, message, options);
+            }
+
+            await originalCommit.call(repository, message, {
+                ...(options ?? {}),
+                postCommitCommand: null,
+            });
+
+            void Promise.resolve()
+                .then(() => originalPush.call(repository))
+                .catch(error => notifications.error(error));
+        };
+
+        state = {
+            references: 0,
+            originalCommit,
+            wrappedCommit,
+        };
+        repository.commit = wrappedCommit;
+        wrappedRepositories.set(repository, state);
+    }
+
+    state.references += 1;
+    let disposed = false;
+
+    return {
+        dispose() {
+            if (disposed) return;
+            disposed = true;
+            state.references -= 1;
+            if (state.references !== 0) return;
+
+            if (repository.commit === state.wrappedCommit) {
+                repository.commit = state.originalCommit;
+            }
+            wrappedRepositories.delete(repository);
+        }
+    };
+}
+
 function scmToolkitCreateControls(widget, observe, commands, notifications, configuration, mcpService, settings) {
     const doc = widget.element.ownerDocument;
     if (settings.hideOutgoingSyncCount) scmToolkitHideOutgoingSyncCount(widget);
@@ -790,6 +859,22 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
                 const command = items[0];
                 currentCommand = command;
                 currentRepositoryArgument = command?.arguments?.[0];
+
+                if (
+                    settings.commitAndPush
+                    && currentRepositoryArgument
+                    && !widget.repositoryDisposables.__scmToolkitAsyncPushBound
+                ) {
+                    const asyncPushDisposable = scmToolkitReleaseCommitBeforePush(
+                        currentRepositoryArgument,
+                        configuration,
+                        notifications
+                    );
+                    if (asyncPushDisposable) {
+                        widget.repositoryDisposables.__scmToolkitAsyncPushBound = true;
+                        widget.repositoryDisposables.add(asyncPushDisposable);
+                    }
+                }
 
                 if (
                     settings.blankStateRefresh
