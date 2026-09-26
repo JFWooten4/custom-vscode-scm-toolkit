@@ -94,6 +94,36 @@ def unpack_edit(edit):
     return original, replacement, expected_count
 
 
+def graph_open_working_file_edits(js):
+    anchor = "workbench.scm.action.graph.openFile"
+    anchor_index = js.find(anchor)
+    if anchor_index < 0:
+        raise ValueError(
+            "Unsupported VS Code build: Source Control Graph Open File anchor does not match."
+        )
+
+    segment = js[anchor_index : anchor_index + 6000]
+    pattern = re.compile(
+        r"(?P<prefix>[A-Za-z_$][\\w$]*\\.openEditor\\(\\{resource:)"
+        r"(?P<change>[A-Za-z_$][\\w$]*)\\.modifiedUri"
+        r"(?P<suffix>,label:)"
+    )
+    matches = list(pattern.finditer(segment))
+    if len(matches) != 1:
+        raise ValueError(
+            "Unsupported VS Code build: Source Control Graph Open File action does not match."
+        )
+
+    match = matches[0]
+    original = match.group(0)
+    replacement = (
+        f'{match.group("prefix")}{match.group("change")}.modifiedUri'
+        '.with({scheme:"file",query:""})'
+        f'{match.group("suffix")}'
+    )
+    return [(original, replacement)]
+
+
 def browser_chatgpt_home_edits(js):
     anchor = "Invalid browser view resource:"
     anchor_index = js.find(anchor)
@@ -174,6 +204,9 @@ def edits(js=None, settings=None):
             "(this.scmToolkitControls?.width()??0),o);if(t.width<0)",
         ),
     ]
+    if js is not None and settings and settings.get("graphOpenWorkingFile"):
+        changes.extend(graph_open_working_file_edits(js))
+
     if js is not None and settings and settings.get("browserChatgptHome"):
         changes.extend(browser_chatgpt_home_edits(js))
 
