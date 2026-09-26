@@ -10,7 +10,7 @@ Current features:
 - optionally show a commit-and-push checkbox backed by VS Code's `git.postCommitCommand`
 - optionally show a guarded local-branch cleanup button
 - optionally show a quick toggle for VS Code inline autocomplete
-- optionally show a commit button that appends the Codex Web co-author trailer
+- optionally show a commit button that appends the Codex co-author trailer
 - optionally open a pull request for the current branch through a configured MCP server
 - optionally hide the outgoing commit count from the built-in Sync action
 - optionally refresh clean/blank Git repositories more aggressively so the first new change appears in SCM quickly
@@ -246,7 +246,7 @@ It appends this trailer to the current message and then runs VS Code's normal
 `git.commit` command:
 
 ```text
-Co-authored-by: Codex Web <noreply@openai.com>
+Co-authored-by: Codex <noreply@openai.com>
 ```
 
 The trailer is added after a blank line and is not duplicated if it is already
