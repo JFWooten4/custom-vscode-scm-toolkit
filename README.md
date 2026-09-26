@@ -152,6 +152,15 @@ The default **Ask Ollama** model is automatic: it first reuses a currently loade
 
 The companion extension only accepts loopback Ollama URLs (`127.0.0.1`, `localhost`, or `::1`). You can also install or remove just this companion extension with `python3 workspace_search.py` or `python3 workspace_search.py --uninstall`.
 
+
+#### Historical work index
+
+The active workspace is only the first corpus this search needs to cover. A more substantive persistent index should eventually span prior research, comment letters, examination responses, drafts, and other related repositories or files so earlier work can be referenced quickly even when the exact wording is forgotten.
+
+A concrete example is the September 2026 lookup for earlier discussion of transitioning away from custodial retirement holdings, the Spain and India direct-holding examples, and the related SEC examination response. Finding those passages required crossing separate stores and took roughly three minutes. That retrieval should instead be a near-immediate semantic lookup that returns the relevant passage together with durable provenance such as repository, file, commit, page, and line.
+
+That broader corpus implies future work beyond active-workspace embeddings: configurable indexed roots or collections, durable cross-workspace metadata, incremental refresh across those sources, and stable source references suitable for citing prior work directly.
+
 ### AI commit titles
 
 The installer places a Git wrapper at `~/.local/bin/scm-toolkit-git`. To make VS Code use it, set these User Settings and reload VS Code:
