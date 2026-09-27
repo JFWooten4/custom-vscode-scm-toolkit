@@ -146,7 +146,7 @@
         "cobalt-shade",
         "coco-pommel",
         "cold-front",
-        "coloratura",
+        "rara",
         "commander-easyglider",
         "soaring-virtue",
         "coral-bits",
@@ -1369,7 +1369,10 @@
         "wind-sprint",
         "winnie-waltz",
         "zipporwhill"
-      ]
+      ],
+      "sources": {
+        "cloudy-daze": "https://mlp.fandom.com/wiki/List_of_ponies/Foals"
+      }
     },
     {
       "id": "g4-colts",
