@@ -1509,6 +1509,23 @@
       ]
     },
     {
+      "id": "equestria-girls",
+      "label": "Equestria Girls",
+      "description": "Distinct Equestria Girls characters not already represented by their pony-world counterparts.",
+      "names": [
+        "principal-cinch",
+        "adagio-dazzle",
+        "aria-blaze",
+        "sonata-dusk"
+      ],
+      "sources": {
+        "principal-cinch": "https://mlp.fandom.com/wiki/My_Little_Pony_Equestria_Girls_(franchise)",
+        "adagio-dazzle": "https://mlp.fandom.com/wiki/Adagio_Dazzle",
+        "aria-blaze": "https://mlp.fandom.com/wiki/Aria_Blaze",
+        "sonata-dusk": "https://mlp.fandom.com/wiki/Sonata_Dusk"
+      }
+    },
+    {
       "id": "g5-main",
       "label": "G5 main cast",
       "description": "Main G5 characters.",

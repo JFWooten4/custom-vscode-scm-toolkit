@@ -37,6 +37,7 @@ class BranchNamePackTests(unittest.TestCase):
                 "g4-colts",
                 "g4-unspecified",
                 "g4-creatures",
+                "equestria-girls",
                 "g5-main",
                 "tamers12345",
                 "princewhateverer",
@@ -69,6 +70,10 @@ class BranchNamePackTests(unittest.TestCase):
         self.assertIn("spike", packs["g4-creatures"]["names"])
         self.assertIn("gilda", packs["g4-creatures"]["names"])
         self.assertIn("pipp-petals", packs["g5-main"]["names"])
+        self.assertEqual(
+            set(packs["equestria-girls"]["names"]),
+            {"principal-cinch", "adagio-dazzle", "aria-blaze", "sonata-dusk"},
+        )
         self.assertIn("buttons-mom", packs["fandom-ocs"]["names"])
         self.assertNotIn("yona-yak", packs["g4-creatures"]["names"])
         self.assertIn("anonfilly", packs["mlp-4chan"]["names"])
