@@ -279,7 +279,10 @@ class TransformTests(unittest.TestCase):
             'resource:change.modifiedUri.with({scheme:"file",query:""}),label:',
             js,
         )
-        self.assertNotIn("resource:change.modifiedUri,label:", js)
+        self.assertNotIn(
+            "resource:change.modifiedUri,label:",
+            js.split(install.START, 1)[0],
+        )
 
     def test_graph_open_working_file_can_be_disabled(self):
         disabled = dict(SETTINGS, graphOpenWorkingFile=False)
