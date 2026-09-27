@@ -121,6 +121,7 @@ class BranchNamePackTests(unittest.TestCase):
         self.assertIn("chancellor-neighsay", packs["g4-stallions"]["names"])
         self.assertIn("twist", packs["g4-fillies"]["names"])
         self.assertIn("dipsy", packs["g4-fillies"]["names"])
+        self.assertIn("little-red", packs["g4-fillies"]["names"])
         self.assertIn("aloe-vera", packs["g4-mares"]["names"])
         self.assertEqual(
             packs["g4-mares"]["sources"]["aloe-vera"],
