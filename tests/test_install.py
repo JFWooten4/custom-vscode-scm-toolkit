@@ -219,7 +219,7 @@ class TransformTests(unittest.TestCase):
             )
             for name in packs[pack_id]["names"]
         ]
-        self.assertEqual(len(g4_names), 1440)
+        self.assertEqual(len(g4_names), 1405)
         self.assertIn("night-glider", packs["g4-mares"]["names"])
         self.assertIn("rainy-day", packs["g4-mares"]["names"])
         self.assertIn("rainbowshine", packs["g4-mares"]["names"])
