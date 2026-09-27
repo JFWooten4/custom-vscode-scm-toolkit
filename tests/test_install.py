@@ -196,7 +196,6 @@ class TransformTests(unittest.TestCase):
                 "g4-stallions",
                 "g4-fillies",
                 "g4-colts",
-                "g4-unspecified",
                 "g4-creatures",
                 "equestria-girls",
                 "g5-main",
@@ -215,11 +214,10 @@ class TransformTests(unittest.TestCase):
                 "g4-stallions",
                 "g4-fillies",
                 "g4-colts",
-                "g4-unspecified",
             )
             for name in packs[pack_id]["names"]
         ]
-        self.assertEqual(len(g4_names), 1405)
+        self.assertEqual(len(g4_names), 1396)
         self.assertIn("night-glider", packs["g4-mares"]["names"])
         self.assertIn("rainy-day", packs["g4-mares"]["names"])
         self.assertIn("rainbowshine", packs["g4-mares"]["names"])
@@ -262,6 +260,7 @@ class TransformTests(unittest.TestCase):
             self.assertIn(eqg_name, packs["equestria-girls"]["names"])
         self.assertIn("flawless-sparklemoon", packs["tamers12345"]["names"])
         self.assertIn("apogee", packs["fandom-ocs"]["names"])
+        self.assertIn("sweetie-bot", packs["fandom-ocs"]["names"])
         self.assertIn("buttons-mom", packs["fandom-ocs"]["names"])
         self.assertIn("anonfilly", packs["mlp-4chan"]["names"])
         self.assertIn("snowpity", packs["mlp-4chan"]["names"])
@@ -272,7 +271,6 @@ class TransformTests(unittest.TestCase):
         self.assertIn("harmonic-tune", packs["con-mascots"]["names"])
         self.assertIn("caramel-malt", packs["con-mascots"]["names"])
         self.assertIn("fair-flyer", packs["con-mascots"]["names"])
-        self.assertIn("sweetie-bot", packs["princewhateverer"]["names"])
         self.assertIn("blackjack", packs["fallout-equestria"]["names"])
         self.assertIn("murky-number-seven", packs["fallout-equestria"]["names"])
         self.assertEqual(runtime["branchNameDisabledPacks"], [])
