@@ -204,6 +204,8 @@ class TransformTests(unittest.TestCase):
         self.assertIn("scm-toolkit-pony-branch", css)
         self.assertIn("SCM_TOOLKIT_PONY_BRANCH_NAMES", js)
         self.assertIn("SCM_TOOLKIT_G4_PONY_BRANCH_NAMES", js)
+        self.assertIn("aloe-vera", g4_names)
+        self.assertNotIn("aloe", g4_names)
         g4_block = js.split("const SCM_TOOLKIT_G4_PONY_BRANCH_NAMES = \`", 1)[1].split("\`.trim()", 1)[0]
         g4_names = g4_block.splitlines()
         self.assertGreaterEqual(len(g4_names), 1400)

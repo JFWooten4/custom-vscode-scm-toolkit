@@ -231,6 +231,8 @@ async function scmToolkitWaitForMcpTool(doc, server, toolName) {
 
 // Named G4 pony entries from the full MLP pony roster. Explicitly unnamed placeholders,
 // G5 entries, and non-pony kirin are intentionally excluded from this branch-name pool.
+// Aloe Vera: official closing credits for "Deep Tissue Memories" list the character as "Aloe Vera".
+// Source: https://mlp.fandom.com/wiki/Credits/Season_nine#Deep_Tissue_Memories
 const SCM_TOOLKIT_G4_PONY_BRANCH_NAMES = `abradacanter
 ace-point
 acrylic-paint
@@ -240,7 +242,7 @@ admiral-fairy-flight
 affero
 al-roker
 alicorn-royal-guards
-aloe
+aloe-vera
 aloha
 alphabittle-blossomforth
 alt-pony-1derek
