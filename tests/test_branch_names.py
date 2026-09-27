@@ -50,6 +50,7 @@ class BranchNamePackTests(unittest.TestCase):
         self.assertIn("spike", packs["g4-creatures"]["names"])
         self.assertIn("gilda", packs["g4-creatures"]["names"])
         self.assertIn("pipp-petals", packs["g5-main"]["names"])
+        self.assertIn("buttons-mom", packs["fandom-ocs"]["names"])
         self.assertNotIn("yona-yak", packs["g4-creatures"]["names"])
         self.assertIn("anonfilly", packs["mlp-4chan"]["names"])
         self.assertIn("snowpity", packs["mlp-4chan"]["names"])

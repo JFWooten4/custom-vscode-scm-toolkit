@@ -1567,8 +1567,12 @@
         "gears",
         "applebloom-bot",
         "scoota-bot",
-        "flawless"
-      ]
+        "flawless",
+        "buttons-mom"
+      ],
+      "sources": {
+        "buttons-mom": "https://www.fimfiction.net/group/199740/buttons-mom"
+      }
     },
     {
       "id": "mlp-4chan",
