@@ -1516,13 +1516,23 @@
         "principal-cinch",
         "adagio-dazzle",
         "aria-blaze",
-        "sonata-dusk"
+        "sonata-dusk",
+        "sour-sweet",
+        "sunny-flare",
+        "indigo-zap",
+        "sugarcoat",
+        "lemon-zest"
       ],
       "sources": {
         "principal-cinch": "https://mlp.fandom.com/wiki/My_Little_Pony_Equestria_Girls_(franchise)",
         "adagio-dazzle": "https://mlp.fandom.com/wiki/Adagio_Dazzle",
         "aria-blaze": "https://mlp.fandom.com/wiki/Aria_Blaze",
-        "sonata-dusk": "https://mlp.fandom.com/wiki/Sonata_Dusk"
+        "sonata-dusk": "https://mlp.fandom.com/wiki/Sonata_Dusk",
+        "sour-sweet": "https://mlp.fandom.com/wiki/Shadowbolts",
+        "sunny-flare": "https://mlp.fandom.com/wiki/Shadowbolts",
+        "indigo-zap": "https://mlp.fandom.com/wiki/Shadowbolts",
+        "sugarcoat": "https://mlp.fandom.com/wiki/Shadowbolts",
+        "lemon-zest": "https://mlp.fandom.com/wiki/Shadowbolts"
       }
     },
     {

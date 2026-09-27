@@ -72,7 +72,17 @@ class BranchNamePackTests(unittest.TestCase):
         self.assertIn("pipp-petals", packs["g5-main"]["names"])
         self.assertEqual(
             set(packs["equestria-girls"]["names"]),
-            {"principal-cinch", "adagio-dazzle", "aria-blaze", "sonata-dusk"},
+            {
+                "principal-cinch",
+                "adagio-dazzle",
+                "aria-blaze",
+                "sonata-dusk",
+                "sour-sweet",
+                "sunny-flare",
+                "indigo-zap",
+                "sugarcoat",
+                "lemon-zest",
+            },
         )
         self.assertIn("buttons-mom", packs["fandom-ocs"]["names"])
         self.assertNotIn("yona-yak", packs["g4-creatures"]["names"])

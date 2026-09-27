@@ -238,7 +238,17 @@ class TransformTests(unittest.TestCase):
             self.assertNotIn(invented_name, packs["g4-creatures"]["names"])
         for g5_pony in ("sunny-starscout", "izzy-moonbow", "hitch-trailblazer", "pipp-petals", "zipp-storm", "misty-brightdawn"):
             self.assertIn(g5_pony, packs["g5-main"]["names"])
-        for eqg_name in ("principal-cinch", "adagio-dazzle", "aria-blaze", "sonata-dusk"):
+        for eqg_name in (
+            "principal-cinch",
+            "adagio-dazzle",
+            "aria-blaze",
+            "sonata-dusk",
+            "sour-sweet",
+            "sunny-flare",
+            "indigo-zap",
+            "sugarcoat",
+            "lemon-zest",
+        ):
             self.assertIn(eqg_name, packs["equestria-girls"]["names"])
         self.assertIn("flawless-sparklemoon", packs["tamers12345"]["names"])
         self.assertIn("apogee", packs["fandom-ocs"]["names"])
