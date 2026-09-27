@@ -8,12 +8,19 @@ from unittest.mock import patch
 
 import configurator
 import install
+import branch_names
 
 
 def form_values():
     values = {}
+    for pack in branch_names.load_catalog()["packs"]:
+        values.setdefault("branchNameKnownPack", []).append(pack["id"])
+        values.setdefault("branchNamePack", []).append(pack["id"])
+
     for setting in configurator.SETTINGS:
         current = install.DEFAULT_SETTINGS[setting.name]
+        if setting.kind == "packs":
+            continue
         if setting.kind == "bool":
             if current:
                 values[setting.name] = ["true"]
@@ -32,6 +39,32 @@ class SubmissionTests(unittest.TestCase):
         self.assertFalse(parsed["branchPicker"])
         self.assertTrue(parsed["commitAndPush"])
         self.assertEqual(parsed["aiCommitModel"], "qwen2.5-coder:7b")
+        self.assertEqual(parsed["branchNameDisabledPacks"], "")
+        self.assertEqual(parsed["branchCustomNames"], "")
+        self.assertEqual(parsed["branchNameImports"], "[]")
+
+    def test_parses_disabled_custom_and_imported_branch_names(self):
+        values = form_values()
+        values["branchNamePack"].remove("g4-creatures")
+        values["branchCustomNames"] = ["my-oc\nrainy-friend"]
+        values["branchNameImports"] = [
+            '[{"id":"friends","label":"Friends","names":["other-oc"]}]'
+        ]
+
+        parsed = configurator.parse_submission(values)
+
+        self.assertEqual(parsed["branchNameDisabledPacks"], "g4-creatures")
+        self.assertEqual(parsed["branchCustomNames"], "my-oc,rainy-friend")
+        self.assertIn('"id":"friends"', parsed["branchNameImports"])
+
+    def test_rejects_invalid_imported_branch_name(self):
+        values = form_values()
+        values["branchNameImports"] = [
+            '[{"id":"friends","label":"Friends","names":["Not Safe"]}]'
+        ]
+
+        with self.assertRaisesRegex(ValueError, "branch-safe slug"):
+            configurator.parse_submission(values)
 
     def test_rejects_invalid_memory_threshold(self):
         values = form_values()
@@ -55,6 +88,10 @@ class SubmissionTests(unittest.TestCase):
         self.assertIn("&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;", page)
         self.assertIn('<option value="local:model">', page)
         self.assertIn("/save?token=test-token", page)
+        self.assertIn("G4 ponies", page)
+        self.assertIn('name="branchNamePack"', page)
+        self.assertIn('name="branchCustomNames"', page)
+        self.assertIn('name="branchNameImports"', page)
 
 
 class GitConfigTests(unittest.TestCase):

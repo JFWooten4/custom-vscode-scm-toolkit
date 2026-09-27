@@ -15,10 +15,11 @@ import webbrowser
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from toolkit_settings import load_settings
+from branch_names import load_catalog, merge_catalog, parse_imported_packs, parse_name_list, parse_pack_id_list
 
 
 OLLAMA_URL = "http://127.0.0.1:11434"
-MAX_FORM_BYTES = 64 * 1024
+MAX_FORM_BYTES = 512 * 1024
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,7 @@ class Setting:
 
 SETTINGS = (
     Setting("branchPicker", "scm-toolkit.branch-picker", "Branch picker", "Show the current branch in the commit-message row.", "Source control"),
+    Setting("ponyBranch", "scm-toolkit.pony-branch", "Random branch button", "Create a freshly synced branch using the configured branch-name pool.", "Source control"),
     Setting("shortPlaceholder", "scm-toolkit.short-placeholder", "Short message placeholder", "Use Message instead of the longer built-in placeholder.", "Source control"),
     Setting("filledButtons", "scm-toolkit.filled-buttons", "Accent-filled buttons", "Fill the branch and Commit controls with the theme accent instead of outlining them.", "Source control"),
     Setting("commitAndPush", "scm-toolkit.commit-and-push", "Commit and push checkbox", "Show the control backed by git.postCommitCommand.", "Source control"),
@@ -44,6 +46,9 @@ SETTINGS = (
     Setting("graphOpenWorkingFile", "scm-toolkit.graph-open-working-file", "Open graph files from working tree", "Make Source Control Graph Open File target the checked-out working-tree file instead of the selected commit snapshot.", "Source control"),
     Setting("defaultBranch", "scm-toolkit.default-branch", "Default branch", "Protected branch and pull-request base.", "Repository", "text"),
     Setting("remote", "scm-toolkit.remote", "Git remote", "Remote used for branch checks and repository discovery.", "Repository", "text"),
+    Setting("branchNameDisabledPacks", "scm-toolkit.branch-name-disabled-packs", "Name packs", "Enable or disable built-in and imported branch-name packs.", "Branch names", "packs"),
+    Setting("branchCustomNames", "scm-toolkit.branch-custom-names", "Custom names", "Add your own lowercase branch names, one per line.", "Branch names", "names"),
+    Setting("branchNameImports", "scm-toolkit.branch-name-imports", "Imported packs", "Paste third-party packs as JSON using id, label, description, and names.", "Branch names", "imports"),
     Setting("aiCommit", "scm-toolkit.ai-commit", "AI commit titles", "Generate commit messages through the local Ollama service.", "Ollama"),
     Setting("aiDefaultBranchDescription", "scm-toolkit.ai-default-branch-description", "Default-branch descriptions", "Add a short description when generating commits on the default branch.", "Ollama"),
     Setting("aiModelPicker", "scm-toolkit.ai-model-picker", "Model picker command", "Install the separate model-selection helper.", "Ollama"),
@@ -79,7 +84,26 @@ def fetch_ollama_models() -> tuple[list[str], str]:
 
 def parse_submission(values: dict[str, list[str]]) -> dict[str, bool | str]:
     parsed: dict[str, bool | str] = {}
+
+    imports = parse_imported_packs(values.get("branchNameImports", ["[]"])[0])
+    catalog = merge_catalog(load_catalog(), imports)
+    known_ids = {str(pack["id"]) for pack in catalog["packs"]}
+    rendered_ids = set(values.get("branchNameKnownPack", []))
+    enabled_ids = set(values.get("branchNamePack", []))
+    unknown_enabled = enabled_ids - known_ids
+    if unknown_enabled:
+        raise ValueError(f"Unknown branch-name pack: {sorted(unknown_enabled)[0]}")
+
+    disabled = sorted((rendered_ids - enabled_ids) & known_ids)
+    parsed["branchNameDisabledPacks"] = ",".join(disabled)
+    parsed["branchCustomNames"] = ",".join(
+        parse_name_list(values.get("branchCustomNames", [""])[0])
+    )
+    parsed["branchNameImports"] = json.dumps(imports, separators=(",", ":"))
+
     for setting in SETTINGS:
+        if setting.kind in {"packs", "names", "imports"}:
+            continue
         if setting.kind == "bool":
             parsed[setting.name] = setting.name in values
             continue
@@ -140,6 +164,34 @@ def save_settings(settings: dict[str, bool | str]) -> None:
         raise
 
 
+def _pack_controls(current: dict[str, object]) -> str:
+    disabled = set(parse_pack_id_list(current.get("branchNameDisabledPacks", "")))
+    raw_imports = current.get("branchNameImports", "[]")
+    try:
+        imports = parse_imported_packs(raw_imports)
+        catalog = merge_catalog(load_catalog(), imports)
+    except ValueError:
+        catalog = load_catalog()
+
+    controls = []
+    for pack in catalog["packs"]:
+        pack_id = str(pack["id"])
+        checked = "" if pack_id in disabled else " checked"
+        description = str(pack.get("description", ""))
+        count = len(pack["names"])
+        detail = f"{description} {count} name{'s' if count != 1 else ''}.".strip()
+        escaped_id = html.escape(pack_id, quote=True)
+        controls.append(
+            f'<input type="hidden" name="branchNameKnownPack" value="{escaped_id}">'
+            '<label class="setting toggle-row">'
+            f'<span><strong>{html.escape(str(pack["label"]))}</strong>'
+            f'<small>{html.escape(detail)}</small></span>'
+            f'<input type="checkbox" name="branchNamePack" value="{escaped_id}"{checked}>'
+            '<span class="toggle" aria-hidden="true"></span></label>'
+        )
+    return "".join(controls)
+
+
 def _setting_control(setting: Setting, current: object) -> str:
     label = html.escape(setting.label)
     description = html.escape(setting.description)
@@ -151,6 +203,32 @@ def _setting_control(setting: Setting, current: object) -> str:
             f'<span><strong>{label}</strong><small>{description}</small></span>'
             f'<input type="checkbox" name="{name}" value="true"{checked}>'
             '<span class="toggle" aria-hidden="true"></span></label>'
+        )
+
+    if setting.kind == "packs":
+        return ""
+
+    if setting.kind == "names":
+        value = "\n".join(parse_name_list(current))
+        return (
+            '<label class="setting textarea-row">'
+            f'<span><strong>{label}</strong><small>{description}</small></span>'
+            f'<textarea name="{name}" rows="6" spellcheck="false" '
+            f'placeholder="rainy-day&#10;my-oc">{html.escape(value)}</textarea></label>'
+        )
+
+    if setting.kind == "imports":
+        raw = str(current or "[]")
+        try:
+            value = json.dumps(parse_imported_packs(raw), indent=2)
+        except ValueError:
+            value = raw
+        return (
+            '<label class="setting textarea-row">'
+            f'<span><strong>{label}</strong><small>{description} '
+            'Example: [{"id":"friends","label":"Friends","names":["name-one","name-two"]}]'
+            '</small></span>'
+            f'<textarea name="{name}" rows="8" spellcheck="false">{html.escape(value)}</textarea></label>'
         )
 
     value = html.escape(str(current), quote=True)
@@ -180,6 +258,8 @@ def render_form(
             for setting in SETTINGS
             if setting.section == section
         )
+        if section == "Branch names":
+            controls = _pack_controls(current) + controls
         status = ""
         if section == "Ollama":
             status = f'<p class="status">{html.escape(ollama_status)}</p>'
@@ -196,10 +276,10 @@ def render_form(
 main{{width:min(880px,calc(100% - 32px));margin:40px auto 96px}}header{{margin-bottom:24px}}h1{{margin:0 0 8px;font-size:30px}}header p,.status{{color:var(--muted)}}
 section{{margin:16px 0;padding:8px 20px;background:var(--panel);border:1px solid var(--line);border-radius:12px}}h2{{font-size:16px;margin:10px 0}}
 .setting{{display:flex;align-items:center;gap:20px;min-height:62px;padding:10px 0;border-top:1px solid var(--line)}}.setting:first-of-type{{border-top:0}}.setting>span:first-child{{flex:1;min-width:0}}strong,small{{display:block}}small{{margin-top:2px;color:var(--muted)}}
-.field-row input{{width:min(300px,45%);padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text)}}
-.toggle-row input{{position:absolute;opacity:0;pointer-events:none}}.toggle{{position:relative;width:42px;height:24px;flex:none;border-radius:99px;background:#484f58;transition:.15s}}.toggle:after{{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:white;transition:.15s}}input:checked+.toggle{{background:var(--accent)}}input:checked+.toggle:after{{transform:translateX(18px)}}input:focus-visible+.toggle,.field-row input:focus{{outline:2px solid var(--accent);outline-offset:2px}}
+.field-row input,.textarea-row textarea{{width:min(440px,52%);padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text);font:inherit}}.textarea-row textarea{{resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}}
+.toggle-row input{{position:absolute;opacity:0;pointer-events:none}}.toggle{{position:relative;width:42px;height:24px;flex:none;border-radius:99px;background:#484f58;transition:.15s}}.toggle:after{{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:white;transition:.15s}}input:checked+.toggle{{background:var(--accent)}}input:checked+.toggle:after{{transform:translateX(18px)}}input:focus-visible+.toggle,.field-row input:focus,.textarea-row textarea:focus{{outline:2px solid var(--accent);outline-offset:2px}}
 .actions{{position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:10px;margin-top:24px;padding:16px;background:color-mix(in srgb,var(--bg) 92%,transparent);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(12px)}}button{{padding:9px 15px;border:1px solid var(--line);border-radius:7px;background:transparent;color:var(--text);font:inherit;cursor:pointer}}button.primary{{border-color:var(--accent);background:var(--accent);font-weight:600}}.error{{margin-bottom:16px;padding:12px;border:1px solid var(--danger);border-radius:8px;color:#ffb3ad}}
-@media(max-width:620px){{main{{width:min(100% - 20px,880px);margin-top:20px}}.field-row{{align-items:flex-start;flex-direction:column;gap:8px}}.field-row input{{width:100%}}}}
+@media(max-width:620px){{main{{width:min(100% - 20px,880px);margin-top:20px}}.field-row,.textarea-row{{align-items:flex-start;flex-direction:column;gap:8px}}.field-row input,.textarea-row textarea{{width:100%}}}}
 </style></head><body><main><header><h1>SCM Toolkit Setup</h1><p>Configure locally, save to global Git config, then return to the terminal. No data leaves this computer.</p></header>
 {error_html}<form method="post" action="{action}">{''.join(sections)}<datalist id="ollama-models">{options}</datalist>
 <div class="actions"><button type="submit" name="action" value="cancel">Cancel</button><button class="primary" type="submit" name="action" value="save">{html.escape(action_label)}</button></div></form>

@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 import tempfile
 import types
@@ -11,6 +12,9 @@ import toolkit_settings
 SETTINGS = {
     "branchPicker": True,
     "ponyBranch": True,
+    "branchNameDisabledPacks": "",
+    "branchCustomNames": "",
+    "branchNameImports": "[]",
     "shortPlaceholder": True,
     "filledButtons": False,
     "commitAndPush": True,
@@ -202,30 +206,46 @@ class TransformTests(unittest.TestCase):
         self.assertIn("github_create_pull_request", js)
         self.assertIn("scm-toolkit-pull-request", css)
         self.assertIn("scm-toolkit-pony-branch", css)
-        self.assertIn("SCM_TOOLKIT_PONY_BRANCH_NAMES", js)
-        self.assertIn("SCM_TOOLKIT_G4_PONY_BRANCH_NAMES", js)
-        self.assertIn("aloe-vera", g4_names)
-        for creature in ("spike", "ember", "thorax", "pharynx", "smolder", "garble", "gallus", "ocellus", "silverstream", "yona", "gilda", "gabby", "capper", "discord"):
-            self.assertIn(f"'{{creature}}'", js)
-        for invented_name in ("yona-yak", "dragon-lord-ember", "king-thorax"):
-            self.assertNotIn(f"'{{invented_name}}'", js)
-        self.assertNotIn("aloe", g4_names)
-        g4_block = js.split("const SCM_TOOLKIT_G4_PONY_BRANCH_NAMES = \`", 1)[1].split("\`.trim()", 1)[0]
-        g4_names = g4_block.splitlines()
+        self.assertIn("scmToolkitBranchNamePool", js)
+        runtime_json = js.split("const scmToolkitSettings = ", 1)[1].split(";\n/* edits:", 1)[0]
+        runtime = json.loads(runtime_json)
+        packs = {pack["id"]: pack for pack in runtime["branchNamePacks"]}
+        self.assertEqual(
+            set(packs),
+            {
+                "g4-ponies",
+                "g4-creatures",
+                "g5-main",
+                "tamers12345",
+                "princewhateverer",
+                "fandom-ocs",
+                "fallout-equestria",
+            },
+        )
+        g4_names = packs["g4-ponies"]["names"]
         self.assertGreaterEqual(len(g4_names), 1400)
-        for pony in ("rainy-day", "rainbowshine", "windy-whistles", "bow-hothoof", "snap-shutter", "mane-allgood", "cozy-glow"):
+        self.assertIn("aloe-vera", g4_names)
+        self.assertNotIn("aloe", g4_names)
+        self.assertEqual(
+            packs["g4-ponies"]["sources"]["aloe-vera"],
+            "https://mlp.fandom.com/wiki/Credits/Season_nine#Deep_Tissue_Memories",
+        )
+        for pony in ("rainy-day", "rainbowshine", "windy-whistles", "bow-hothoof", "snap-shutter", "mane-allgood", "cozy-glow", "chancellor-neighsay"):
             self.assertIn(pony, g4_names)
         self.assertFalse(any("unnamed" in pony for pony in g4_names))
-        for g5_pony in ("sunny-starscout", "hitch-trailblazer", "princess-pipp-petals", "princess-zipp-storm", "izzy-moonbow"):
-            self.assertNotIn(g5_pony, g4_names)
+        for creature in ("spike", "ember", "thorax", "pharynx", "smolder", "garble", "gallus", "ocellus", "silverstream", "yona", "gilda", "gabby", "capper", "discord"):
+            self.assertIn(creature, packs["g4-creatures"]["names"])
+        for invented_name in ("yona-yak", "dragon-lord-ember", "king-thorax"):
+            self.assertNotIn(invented_name, packs["g4-creatures"]["names"])
         for g5_pony in ("sunny-starscout", "izzy-moonbow", "hitch-trailblazer", "pipp-petals", "zipp-storm", "misty-brightdawn"):
-            self.assertIn(f"'{{g5_pony}}'", js)
-        self.assertIn("'flawless-sparklemoon'", js)
-        self.assertIn("'apogee'", js)
-        self.assertIn("'sweetie-bot'", js)
-        self.assertIn("'retro-city'", js)
-        self.assertIn("'blackjack'", js)
-        self.assertIn("'murky-number-seven'", js)
+            self.assertIn(g5_pony, packs["g5-main"]["names"])
+        self.assertIn("flawless-sparklemoon", packs["tamers12345"]["names"])
+        self.assertIn("apogee", packs["fandom-ocs"]["names"])
+        self.assertIn("sweetie-bot", packs["princewhateverer"]["names"])
+        self.assertIn("blackjack", packs["fallout-equestria"]["names"])
+        self.assertIn("murky-number-seven", packs["fallout-equestria"]["names"])
+        self.assertEqual(runtime["branchNameDisabledPacks"], [])
+        self.assertEqual(runtime["branchCustomNames"], [])
         self.assertIn("commands.executeCommand('git.sync', repository)", js)
         self.assertIn("repository.branch(branchName, true, 'HEAD')", js)
         self.assertIn("scm-toolkit-sync-branch", css)

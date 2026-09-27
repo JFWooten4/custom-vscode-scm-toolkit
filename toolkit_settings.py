@@ -8,6 +8,9 @@ import subprocess
 DEFAULT_SETTINGS = {
     "branchPicker": True,
     "ponyBranch": True,
+    "branchNameDisabledPacks": "",
+    "branchCustomNames": "",
+    "branchNameImports": "[]",
     "shortPlaceholder": True,
     "filledButtons": False,
     "commitAndPush": True,
@@ -84,6 +87,9 @@ def load_settings():
 SETTING_KEYS = {
     "branchPicker": "scm-toolkit.branch-picker",
     "ponyBranch": "scm-toolkit.pony-branch",
+    "branchNameDisabledPacks": "scm-toolkit.branch-name-disabled-packs",
+    "branchCustomNames": "scm-toolkit.branch-custom-names",
+    "branchNameImports": "scm-toolkit.branch-name-imports",
     "shortPlaceholder": "scm-toolkit.short-placeholder",
     "filledButtons": "scm-toolkit.filled-buttons",
     "commitAndPush": "scm-toolkit.commit-and-push",
