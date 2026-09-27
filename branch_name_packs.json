@@ -1556,6 +1556,25 @@
       ]
     },
     {
+      "id": "vylet-pony",
+      "label": "Vylet Pony",
+      "description": "Original characters created or co-created by Vylet Pony.",
+      "names": [
+        "can-opener",
+        "creekflow",
+        "vid",
+        "dubstep-growl",
+        "io-jayce"
+      ],
+      "sources": {
+        "can-opener": "https://www.vyletpony.com/can-opener",
+        "creekflow": "https://www.vyletpony.com/creekflow",
+        "vid": "https://www.vyletpony.com/top-five-videos-oc",
+        "dubstep-growl": "https://www.vyletpony.com/dubstep-growl",
+        "io-jayce": "https://www.vyletpony.com/io-jayce"
+      }
+    },
+    {
       "id": "fandom-ocs",
       "label": "Fandom OCs",
       "description": "Well-known community OCs and fan characters.",
