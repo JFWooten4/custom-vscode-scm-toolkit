@@ -1193,7 +1193,6 @@
         "tall-tale",
         "tatterdemalion-hooffield",
         "temple-chant",
-        "the-tenth-doctor-doctor-whooves-3",
         "the-unconditioner",
         "theodore-donald-donny-kerabatsos",
         "thorn",
@@ -1239,7 +1238,6 @@
         "wacky-hair-day-and-spray",
         "warm-front",
         "wave-chill",
-        "wavy-haired-pegasusthe-tenth-doctor-doctor-whooves-3",
         "waxton",
         "wedding-guest-ponydark-moon",
         "welch-cloudy-haze",
@@ -1254,10 +1252,12 @@
         "written-script",
         "wylin-slobinzki",
         "zephyr-breeze",
-        "zirconic"
+        "zirconic",
+        "dr-whooves"
       ],
       "sources": {
-        "clean-sweep": "https://mlp.fandom.com/wiki/List_of_ponies/Earth_ponies/Stallions"
+        "clean-sweep": "https://mlp.fandom.com/wiki/List_of_ponies/Earth_ponies/Stallions",
+        "dr-whooves": "https://mlp.fandom.com/wiki/Dr._Hooves"
       }
     },
     {

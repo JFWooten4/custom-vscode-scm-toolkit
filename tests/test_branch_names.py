@@ -21,6 +21,9 @@ class BranchNamePackTests(unittest.TestCase):
         self.assertIn("clean-sweep", next(pack for pack in catalog["packs"] if pack["id"] == "g4-stallions")["names"])
         self.assertNotIn("game-playin-schoolponybutton-mash", seen)
         self.assertNotIn("janitor-ponyclean-sweep", seen)
+        self.assertIn("dr-whooves", next(pack for pack in catalog["packs"] if pack["id"] == "g4-stallions")["names"])
+        self.assertNotIn("the-tenth-doctor-doctor-whooves-3", seen)
+        self.assertNotIn("wavy-haired-pegasusthe-tenth-doctor-doctor-whooves-3", seen)
     def test_builtin_catalog_has_expected_packs_and_names(self):
         catalog = branch_names.load_catalog()
         packs = {pack["id"]: pack for pack in catalog["packs"]}
