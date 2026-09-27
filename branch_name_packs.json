@@ -632,7 +632,9 @@
         "tangerine-tassels",
         "tarantella",
         "tempest-shadow",
+        "the-headless-horse",
         "the-inquisitor",
+        "the-olden-pony",
         "tiger-lily",
         "toastie",
         "toffee",
@@ -689,6 +691,8 @@
       "sources": {
         "aloe-vera": "https://mlp.fandom.com/wiki/Credits/Season_nine#Deep_Tissue_Memories",
         "tempest-shadow": "https://mlp.fandom.com/wiki/Tempest_Shadow",
+        "the-headless-horse": "https://mlp.fandom.com/wiki/The_Headless_Horse",
+        "the-olden-pony": "https://mlp.fandom.com/wiki/List_of_ponies/Elders",
         "fizzlepop-berrytwist": "https://mlp.fandom.com/wiki/Tempest_Shadow"
       }
     },
@@ -970,6 +974,7 @@
         "spring-bud",
         "matt-lauer",
         "cream-cheese",
+        "mayor-baltimare",
         "cassidy",
         "meadow-song",
         "melilot",
@@ -1224,6 +1229,7 @@
       ],
       "sources": {
         "clean-sweep": "https://mlp.fandom.com/wiki/List_of_ponies/Earth_ponies/Stallions",
+        "mayor-baltimare": "https://mlp.fandom.com/wiki/List_of_ponies/Earth_ponies/Stallions",
         "dr-whooves": "https://mlp.fandom.com/wiki/Dr._Hooves"
       }
     },

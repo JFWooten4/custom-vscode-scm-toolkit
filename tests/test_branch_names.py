@@ -42,6 +42,8 @@ class BranchNamePackTests(unittest.TestCase):
           "sir-pony-moore",
           "star-swirl-the-bearded",
           "tag-a-long",
+          "the-headless-horse",
+          "the-olden-pony",
           "theodore-donald-donny-kerabatsos",
           "tree-h-hooffield",
           "upper-east-stride"
@@ -113,12 +115,15 @@ class BranchNamePackTests(unittest.TestCase):
                 "g4-colts",
             )
         )
-        self.assertEqual(g4_total, 1393)
+        self.assertEqual(g4_total, 1396)
         self.assertIn("night-glider", packs["g4-mares"]["names"])
         self.assertIn("rainy-day", packs["g4-mares"]["names"])
         self.assertIn("tempest-shadow", packs["g4-mares"]["names"])
         self.assertIn("fizzlepop-berrytwist", packs["g4-mares"]["names"])
+        self.assertIn("the-headless-horse", packs["g4-mares"]["names"])
+        self.assertIn("the-olden-pony", packs["g4-mares"]["names"])
         self.assertIn("chancellor-neighsay", packs["g4-stallions"]["names"])
+        self.assertIn("mayor-baltimare", packs["g4-stallions"]["names"])
         self.assertIn("twist", packs["g4-fillies"]["names"])
         self.assertIn("dipsy", packs["g4-fillies"]["names"])
         self.assertIn("little-red", packs["g4-fillies"]["names"])
