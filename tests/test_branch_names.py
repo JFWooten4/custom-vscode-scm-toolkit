@@ -12,7 +12,11 @@ class BranchNamePackTests(unittest.TestCase):
         self.assertEqual(
             set(packs),
             {
-                "g4-ponies",
+                "g4-mares",
+                "g4-stallions",
+                "g4-fillies",
+                "g4-colts",
+                "g4-unspecified",
                 "g4-creatures",
                 "g5-main",
                 "tamers12345",
@@ -21,10 +25,24 @@ class BranchNamePackTests(unittest.TestCase):
                 "fallout-equestria",
             },
         )
-        self.assertGreaterEqual(len(packs["g4-ponies"]["names"]), 1400)
-        self.assertIn("aloe-vera", packs["g4-ponies"]["names"])
+        g4_total = sum(
+            len(packs[pack_id]["names"])
+            for pack_id in (
+                "g4-mares",
+                "g4-stallions",
+                "g4-fillies",
+                "g4-colts",
+                "g4-unspecified",
+            )
+        )
+        self.assertEqual(g4_total, 1442)
+        self.assertIn("night-glider", packs["g4-mares"]["names"])
+        self.assertIn("rainy-day", packs["g4-mares"]["names"])
+        self.assertIn("chancellor-neighsay", packs["g4-stallions"]["names"])
+        self.assertIn("twist", packs["g4-fillies"]["names"])
+        self.assertIn("aloe-vera", packs["g4-mares"]["names"])
         self.assertEqual(
-            packs["g4-ponies"]["sources"]["aloe-vera"],
+            packs["g4-mares"]["sources"]["aloe-vera"],
             "https://mlp.fandom.com/wiki/Credits/Season_nine#Deep_Tissue_Memories",
         )
         self.assertIn("spike", packs["g4-creatures"]["names"])
@@ -69,7 +87,7 @@ class BranchNamePackTests(unittest.TestCase):
             branch_names.merge_catalog(
                 branch_names.load_catalog(),
                 branch_names.parse_imported_packs(
-                    '[{"id":"g4-ponies","label":"Conflict","names":["other"]}]'
+                    '[{"id":"g4-mares","label":"Conflict","names":["other"]}]'
                 ),
             )
 

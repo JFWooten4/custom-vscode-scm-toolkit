@@ -192,7 +192,11 @@ class TransformTests(unittest.TestCase):
         self.assertEqual(
             set(packs),
             {
-                "g4-ponies",
+                "g4-mares",
+                "g4-stallions",
+                "g4-fillies",
+                "g4-colts",
+                "g4-unspecified",
                 "g4-creatures",
                 "g5-main",
                 "tamers12345",
@@ -201,16 +205,29 @@ class TransformTests(unittest.TestCase):
                 "fallout-equestria",
             },
         )
-        g4_names = packs["g4-ponies"]["names"]
-        self.assertGreaterEqual(len(g4_names), 1400)
-        self.assertIn("aloe-vera", g4_names)
+        g4_names = [
+            name
+            for pack_id in (
+                "g4-mares",
+                "g4-stallions",
+                "g4-fillies",
+                "g4-colts",
+                "g4-unspecified",
+            )
+            for name in packs[pack_id]["names"]
+        ]
+        self.assertEqual(len(g4_names), 1442)
+        self.assertIn("night-glider", packs["g4-mares"]["names"])
+        self.assertIn("rainy-day", packs["g4-mares"]["names"])
+        self.assertIn("rainbowshine", packs["g4-mares"]["names"])
+        self.assertIn("chancellor-neighsay", packs["g4-stallions"]["names"])
+        self.assertIn("twist", packs["g4-fillies"]["names"])
+        self.assertIn("aloe-vera", packs["g4-mares"]["names"])
         self.assertNotIn("aloe", g4_names)
         self.assertEqual(
-            packs["g4-ponies"]["sources"]["aloe-vera"],
+            packs["g4-mares"]["sources"]["aloe-vera"],
             "https://mlp.fandom.com/wiki/Credits/Season_nine#Deep_Tissue_Memories",
         )
-        for pony in ("rainy-day", "rainbowshine", "windy-whistles", "bow-hothoof", "snap-shutter", "mane-allgood", "cozy-glow", "chancellor-neighsay"):
-            self.assertIn(pony, g4_names)
         self.assertFalse(any("unnamed" in pony for pony in g4_names))
         for creature in ("spike", "ember", "thorax", "pharynx", "smolder", "garble", "gallus", "ocellus", "silverstream", "yona", "gilda", "gabby", "capper", "discord"):
             self.assertIn(creature, packs["g4-creatures"]["names"])

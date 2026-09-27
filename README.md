@@ -182,7 +182,7 @@ Then reload Visual Studio Code. The installer resolves the Git-config values and
 
 ### Branch-name packs
 
-Random branch names are data-driven. Built-in packs live in `branch_name_packs.json`, and every pack uses the same small schema:
+Random branch names are data-driven. Built-in packs live in `branch_name_packs.json`, and every pack uses the same small schema: The G4 pony roster is split into mares, stallions, fillies, colts, and a small source-unspecified pack; background and minor ponies remain included.
 
 ```json
 {
