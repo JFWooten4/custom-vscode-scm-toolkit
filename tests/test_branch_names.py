@@ -57,9 +57,11 @@ class BranchNamePackTests(unittest.TestCase):
                 "g4-unspecified",
             )
         )
-        self.assertEqual(g4_total, 1439)
+        self.assertEqual(g4_total, 1440)
         self.assertIn("night-glider", packs["g4-mares"]["names"])
         self.assertIn("rainy-day", packs["g4-mares"]["names"])
+        self.assertIn("tempest-shadow", packs["g4-mares"]["names"])
+        self.assertIn("fizzlepop-berrytwist", packs["g4-mares"]["names"])
         self.assertIn("chancellor-neighsay", packs["g4-stallions"]["names"])
         self.assertIn("twist", packs["g4-fillies"]["names"])
         self.assertIn("aloe-vera", packs["g4-mares"]["names"])

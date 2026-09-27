@@ -699,10 +699,13 @@
         "zapp",
         "zesty",
         "zesty-gourmand",
-        "zoom-zephyrwing"
+        "zoom-zephyrwing",
+        "fizzlepop-berrytwist"
       ],
       "sources": {
-        "aloe-vera": "https://mlp.fandom.com/wiki/Credits/Season_nine#Deep_Tissue_Memories"
+        "aloe-vera": "https://mlp.fandom.com/wiki/Credits/Season_nine#Deep_Tissue_Memories",
+        "tempest-shadow": "https://mlp.fandom.com/wiki/Tempest_Shadow",
+        "fizzlepop-berrytwist": "https://mlp.fandom.com/wiki/Tempest_Shadow"
       }
     },
     {
