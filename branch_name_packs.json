@@ -291,7 +291,6 @@
         "jubileena",
         "juicy-fruit",
         "junebug",
-        "juniper-montage",
         "juno",
         "kathie-lee-gifford",
         "kerfuffle",
@@ -890,7 +889,6 @@
         "flam",
         "flank-sinatra",
         "flash-magnus",
-        "flash-sentry",
         "flashy-ponydance-fever",
         "flim",
         "fluttershys-fathermr-shy",
@@ -1521,7 +1519,15 @@
         "sunny-flare",
         "indigo-zap",
         "sugarcoat",
-        "lemon-zest"
+        "lemon-zest",
+        "flash-sentry",
+        "juniper-montage",
+        "gloriosa-daisy",
+        "timber-spruce",
+        "wallflower-blush",
+        "vignette-valencia",
+        "kiwi-lollipop",
+        "supernova-zap"
       ],
       "sources": {
         "principal-cinch": "https://mlp.fandom.com/wiki/My_Little_Pony_Equestria_Girls_(franchise)",
@@ -1532,7 +1538,15 @@
         "sunny-flare": "https://mlp.fandom.com/wiki/Shadowbolts",
         "indigo-zap": "https://mlp.fandom.com/wiki/Shadowbolts",
         "sugarcoat": "https://mlp.fandom.com/wiki/Shadowbolts",
-        "lemon-zest": "https://mlp.fandom.com/wiki/Shadowbolts"
+        "lemon-zest": "https://mlp.fandom.com/wiki/Shadowbolts",
+        "flash-sentry": "https://mlp.fandom.com/wiki/Flash_Sentry",
+        "juniper-montage": "https://mlp.fandom.com/wiki/Juniper_Montage",
+        "gloriosa-daisy": "https://mlp.fandom.com/wiki/Gloriosa_Daisy",
+        "timber-spruce": "https://mlp.fandom.com/wiki/Timber_Spruce",
+        "wallflower-blush": "https://mlp.fandom.com/wiki/Wallflower_Blush",
+        "vignette-valencia": "https://mlp.fandom.com/wiki/Vignette_Valencia",
+        "kiwi-lollipop": "https://mlp.fandom.com/wiki/Kiwi_Lollipop_and_Supernova_Zap",
+        "supernova-zap": "https://mlp.fandom.com/wiki/Kiwi_Lollipop_and_Supernova_Zap"
       }
     },
     {

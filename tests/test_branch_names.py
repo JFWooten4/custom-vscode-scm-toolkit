@@ -57,7 +57,7 @@ class BranchNamePackTests(unittest.TestCase):
                 "g4-unspecified",
             )
         )
-        self.assertEqual(g4_total, 1441)
+        self.assertEqual(g4_total, 1439)
         self.assertIn("night-glider", packs["g4-mares"]["names"])
         self.assertIn("rainy-day", packs["g4-mares"]["names"])
         self.assertIn("chancellor-neighsay", packs["g4-stallions"]["names"])
@@ -82,6 +82,14 @@ class BranchNamePackTests(unittest.TestCase):
                 "indigo-zap",
                 "sugarcoat",
                 "lemon-zest",
+                "flash-sentry",
+                "gloriosa-daisy",
+                "timber-spruce",
+                "juniper-montage",
+                "wallflower-blush",
+                "vignette-valencia",
+                "kiwi-lollipop",
+                "supernova-zap",
             },
         )
         self.assertIn("buttons-mom", packs["fandom-ocs"]["names"])
