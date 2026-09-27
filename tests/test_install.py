@@ -234,7 +234,7 @@ class TransformTests(unittest.TestCase):
             "https://mlp.fandom.com/wiki/Credits/Season_nine#Deep_Tissue_Memories",
         )
         self.assertFalse(any("unnamed" in pony for pony in g4_names))
-        for creature in ("spike", "ember", "thorax", "pharynx", "smolder", "garble", "gallus", "ocellus", "silverstream", "yona", "gilda", "gabby", "capper", "discord"):
+        for creature in ("spike", "ember", "thorax", "pharynx", "smolder", "garble", "gallus", "ocellus", "silverstream", "yona", "gilda", "gabby", "capper", "discord", "queen-novo"):
             self.assertIn(creature, packs["g4-creatures"]["names"])
         for invented_name in ("yona-yak", "dragon-lord-ember", "king-thorax"):
             self.assertNotIn(invented_name, packs["g4-creatures"]["names"])

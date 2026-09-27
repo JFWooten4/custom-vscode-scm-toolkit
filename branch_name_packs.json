@@ -1506,8 +1506,12 @@
         "gilda",
         "gabby",
         "capper",
-        "discord"
-      ]
+        "discord",
+        "queen-novo"
+      ],
+      "sources": {
+        "queen-novo": "https://mlp.fandom.com/wiki/Queen_Novo"
+      }
     },
     {
       "id": "equestria-girls",
