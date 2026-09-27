@@ -205,6 +205,10 @@ class TransformTests(unittest.TestCase):
         self.assertIn("SCM_TOOLKIT_PONY_BRANCH_NAMES", js)
         self.assertIn("SCM_TOOLKIT_G4_PONY_BRANCH_NAMES", js)
         self.assertIn("aloe-vera", g4_names)
+        for creature in ("spike", "ember", "thorax", "pharynx", "smolder", "garble", "gallus", "ocellus", "silverstream", "yona", "gilda", "gabby", "capper", "discord"):
+            self.assertIn(f"'{{creature}}'", js)
+        for invented_name in ("yona-yak", "dragon-lord-ember", "king-thorax"):
+            self.assertNotIn(f"'{{invented_name}}'", js)
         self.assertNotIn("aloe", g4_names)
         g4_block = js.split("const SCM_TOOLKIT_G4_PONY_BRANCH_NAMES = \`", 1)[1].split("\`.trim()", 1)[0]
         g4_names = g4_block.splitlines()

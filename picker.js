@@ -598,7 +598,6 @@ dinky-doo
 dipsy
 dirtbound
 disciplined-traineehyacinth-dawn
-discord
 dishwater-slog
 distant-star
 distinguished-waiter-ponyearl-grey
@@ -1668,7 +1667,6 @@ wrangler
 written-script
 wylin-slobinzki
 yellow-crystal-ponyscarlet-heart
-yona
 yuma-spurs
 zapp
 zephyr-breeze
@@ -1683,6 +1681,11 @@ const SCM_TOOLKIT_PONY_BRANCH_NAMES = [
     // Main G5 cast
     'sunny-starscout', 'izzy-moonbow', 'hitch-trailblazer',
     'pipp-petals', 'zipp-storm', 'misty-brightdawn',
+
+    // Major canon G4 non-pony creatures; use attested character names only.
+    'spike', 'ember', 'thorax', 'pharynx', 'smolder', 'garble',
+    'gallus', 'ocellus', 'silverstream', 'yona', 'gilda', 'gabby',
+    'capper', 'discord',
 
     // Tamers12345 continuity and variants
     'flawless-sparklemoon', 'apple-bottom', 'apple-split', 'care-package',

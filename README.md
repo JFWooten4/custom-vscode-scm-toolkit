@@ -421,8 +421,8 @@ the synchronized HEAD.
 
 The branch name is chosen randomly from a built-in, branch-safe pool. Its canon
 portion covers the named G4 pony roster (excluding explicitly unnamed placeholders
-and non-pony kirin), with the main G5 cast added separately alongside Tamers12345
-continuity names, fanmade characters featured in PrinceWhateverer songs, well-known
+and non-pony kirin), with major canon G4 non-pony creatures and the main G5 cast
+added separately alongside Tamers12345 continuity names, fanmade characters featured
 Fallout: Equestria characters and major side-story variants. Existing local
 and configured-remote branch names are excluded before the random choice.
 
