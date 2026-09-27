@@ -71,6 +71,8 @@ class BranchNamePackTests(unittest.TestCase):
         )
         self.assertIn("spike", packs["g4-creatures"]["names"])
         self.assertIn("gilda", packs["g4-creatures"]["names"])
+        self.assertIn("capper-dapperpaws", packs["g4-creatures"]["names"])
+        self.assertNotIn("capper", packs["g4-creatures"]["names"])
         self.assertIn("queen-novo", packs["g4-creatures"]["names"])
         self.assertIn("pipp-petals", packs["g5-main"]["names"])
         self.assertEqual(
