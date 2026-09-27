@@ -8,6 +8,7 @@ import re
 import workspace_search
 from pathlib import Path
 from toolkit_settings import DEFAULT_SETTINGS, load_settings, read_git_bool, read_git_string
+from branch_names import resolve_runtime_settings
 
 HERE = Path(__file__).resolve().parent
 START = '\n/* scm-toolkit:start */\n'
@@ -369,6 +370,7 @@ def transform(js, css, remove=False, settings=None):
         return js, css
 
     settings = load_settings() if settings is None else settings
+    runtime_settings = resolve_runtime_settings(settings)
     changes = edits(js, settings=settings)
     for edit in changes:
         original, replacement, expected_count = unpack_edit(edit)
@@ -379,7 +381,7 @@ def transform(js, css, remove=False, settings=None):
     js += (
         START
         + "const scmToolkitSettings = "
-        + json.dumps(settings, separators=(",", ":"))
+        + json.dumps(runtime_settings, separators=(",", ":"))
         + ";\n"
         + "/* edits:"
         + json.dumps(changes)

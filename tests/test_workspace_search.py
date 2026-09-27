@@ -29,6 +29,8 @@ class WorkspaceSearchInstallerTests(unittest.TestCase):
             self.assertTrue(workspace_search.destination_matches(destination))
             self.assertTrue((destination / "configurator.py").is_file())
             self.assertTrue((destination / "toolkit_settings.py").is_file())
+            self.assertTrue((destination / "branch_names.py").is_file())
+            self.assertTrue((destination / "branch_name_packs.json").is_file())
             self.assertFalse(workspace_search.sync_extension(check=True, extensions_dir=root))
 
     def test_removes_installed_extension(self):

@@ -9,7 +9,7 @@ Current features:
 - shorten the commit-message placeholder to `Message`
 - optionally show a commit-and-push checkbox that dispatches the push without holding commit completion
 - optionally show a guarded local-branch cleanup button
-- optionally create a freshly synced branch from `main` with a random G4/fandom pony name
+- optionally create a freshly synced branch from `main` using configurable built-in, imported, and custom name packs
 - optionally show a quick toggle for VS Code inline autocomplete
 - optionally show a commit button that appends the Codex co-author trailer
 - optionally open a pull request for the current branch through a configured MCP server
@@ -91,7 +91,7 @@ Run the configurator without installing anything:
 python3 configure.py
 ```
 
-It opens an app-like settings page in the default browser, prefilled with the current Git configuration. The page includes every toolkit switch plus the Ollama model choices and low-memory threshold. If Ollama is running on `127.0.0.1:11434`, locally installed models appear as suggestions; model tags can still be entered manually when it is offline.
+It opens an app-like settings page in the default browser, prefilled with the current Git configuration. The page includes every toolkit switch plus the Ollama model choices and low-memory threshold. The **Branch names** section lets you toggle individual packs, add custom names, and paste third-party packs as JSON. If Ollama is running on `127.0.0.1:11434`, locally installed models appear as suggestions; model tags can still be entered manually when it is offline.
 
 After installation, the gear at the right end of the Source Control message row opens the same local settings page directly. The companion extension starts the loopback configurator and opens the browser automatically, so the repository checkout and manual URL entry are not required.
 
@@ -128,6 +128,9 @@ git config --global scm-toolkit.codex-usage-reset-countdown true
 git config --global scm-toolkit.codex-hide-promotions true
 git config --global scm-toolkit.default-branch main
 git config --global scm-toolkit.remote origin
+git config --global scm-toolkit.branch-name-disabled-packs ""
+git config --global scm-toolkit.branch-custom-names ""
+git config --global scm-toolkit.branch-name-imports '[]'
 ```
 
 The equivalent `~/.gitconfig` block is:
@@ -162,6 +165,9 @@ The equivalent `~/.gitconfig` block is:
     codex-hide-promotions = true
     default-branch = main
     remote = origin
+    branch-name-disabled-packs =
+    branch-custom-names =
+    branch-name-imports = []
 ```
 
 The filled-button style, Cmd-click close-others gesture, Codex usage-reset countdown, Codex promotion hiding, and ChatGPT browser homepage default to `false`; the other boolean SCM feature switches default to `true`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
@@ -173,6 +179,23 @@ python3 install.py
 ```
 
 Then reload Visual Studio Code. The installer resolves the Git-config values and embeds that configuration into the installed patch.
+
+### Branch-name packs
+
+Random branch names are data-driven. Built-in packs live in `branch_name_packs.json`, and every pack uses the same small schema: The G4 pony roster is split into mares, stallions, fillies, colts, and a small source-unspecified pack; background and minor ponies remain included.
+
+```json
+{
+  "id": "friends",
+  "label": "Friends",
+  "description": "Optional human-readable description.",
+  "names": ["name-one", "name-two"]
+}
+```
+
+Pack IDs and names are lowercase branch-safe slugs containing letters, numbers, and hyphens. Built-in packs keep each branch-name slug unique across packs; shared characters use one canonical slug rather than duplicate entries. The G4 catalog also strips import-only role and episode descriptors (for example, `Knowledgeable ShopperRainbowshine` becomes `rainbowshine`) while retaining genuine multiword names such as `fleur-de-lis`. A pack may also include a `sources` object keyed by a name when a naming choice needs provenance. This keeps contributed lists as data instead of picker logic.
+
+Built-in community packs also include a dedicated **Convention mascots** set and a **4chan /mlp/** set; the latter intentionally includes Anonfilly but excludes generic `anon`, `anonpony`, and Aryanne. The web configurator enables every pack by default. Disabling a pack stores only its ID in `scm-toolkit.branch-name-disabled-packs`, so newly added packs remain enabled by default. Custom names are stored in `scm-toolkit.branch-custom-names`. Third-party packs can be pasted into **Imported packs** as one pack object, an array of packs, or a `{"packs":[...]}` object and are stored in `scm-toolkit.branch-name-imports`.
 
 ### Workspace Search
 

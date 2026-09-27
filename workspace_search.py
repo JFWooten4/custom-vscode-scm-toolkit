@@ -35,6 +35,8 @@ def source_files() -> dict[Path, Path]:
     }
     files[Path("configurator.py")] = HERE / "configurator.py"
     files[Path("toolkit_settings.py")] = HERE / "toolkit_settings.py"
+    files[Path("branch_names.py")] = HERE / "branch_names.py"
+    files[Path("branch_name_packs.json")] = HERE / "branch_name_packs.json"
     return dict(sorted(files.items()))
 
 
