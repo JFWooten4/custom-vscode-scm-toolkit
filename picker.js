@@ -1678,6 +1678,10 @@ zoom-zephyrwing`.trim().split('\n');
 
 const SCM_TOOLKIT_PONY_BRANCH_NAMES = [
     ...SCM_TOOLKIT_G4_PONY_BRANCH_NAMES,
+    // Main G5 cast
+    'sunny-starscout', 'izzy-moonbow', 'hitch-trailblazer',
+    'pipp-petals', 'zipp-storm', 'misty-brightdawn',
+
     // Tamers12345 continuity and variants
     'flawless-sparklemoon', 'apple-bottom', 'apple-split', 'care-package',
     'jinx', 'clean-sweep', 'future-soarin', 'friendship', 'arinos',

@@ -420,9 +420,9 @@ with its upstream remote, then creates and checks out a new branch directly from
 the synchronized HEAD.
 
 The branch name is chosen randomly from a built-in, branch-safe pool. Its canon
-portion covers the named G4 pony roster (excluding explicitly unnamed placeholders,
-G5 entries, and non-pony kirin), alongside Tamers12345 continuity names, fanmade
-characters featured in PrinceWhateverer songs, well-known community OCs, and
+portion covers the named G4 pony roster (excluding explicitly unnamed placeholders
+and non-pony kirin), with the main G5 cast added separately alongside Tamers12345
+continuity names, fanmade characters featured in PrinceWhateverer songs, well-known
 Fallout: Equestria characters and major side-story variants. Existing local
 and configured-remote branch names are excluded before the random choice.
 

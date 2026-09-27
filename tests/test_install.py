@@ -212,6 +212,8 @@ class TransformTests(unittest.TestCase):
         self.assertFalse(any("unnamed" in pony for pony in g4_names))
         for g5_pony in ("sunny-starscout", "hitch-trailblazer", "princess-pipp-petals", "princess-zipp-storm", "izzy-moonbow"):
             self.assertNotIn(g5_pony, g4_names)
+        for g5_pony in ("sunny-starscout", "izzy-moonbow", "hitch-trailblazer", "pipp-petals", "zipp-storm", "misty-brightdawn"):
+            self.assertIn(f"'{{g5_pony}}'", js)
         self.assertIn("'flawless-sparklemoon'", js)
         self.assertIn("'apogee'", js)
         self.assertIn("'sweetie-bot'", js)
