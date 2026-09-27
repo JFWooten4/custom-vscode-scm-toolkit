@@ -126,6 +126,10 @@ class BranchNamePackTests(unittest.TestCase):
         self.assertIn("cloudy-daze", packs["g4-fillies"]["names"])
         self.assertIn("sugar-plum", packs["g4-fillies"]["names"])
         self.assertIn("super-stream", packs["g4-fillies"]["names"])
+        self.assertEqual(
+            packs["g4-fillies"]["sources"]["cloudy-daze"],
+            "https://mlp.fandom.com/wiki/List_of_ponies/Foals",
+        )
         self.assertIn("train-tracks", packs["g4-colts"]["names"])
         self.assertIn("first-base", packs["g4-colts"]["names"])
         self.assertIn("blade-runner", packs["g4-colts"]["names"])
