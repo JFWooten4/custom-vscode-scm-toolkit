@@ -198,6 +198,7 @@ class TransformTests(unittest.TestCase):
                 "g4-colts",
                 "g4-unspecified",
                 "g4-creatures",
+                "equestria-girls",
                 "g5-main",
                 "tamers12345",
                 "princewhateverer",
@@ -218,10 +219,12 @@ class TransformTests(unittest.TestCase):
             )
             for name in packs[pack_id]["names"]
         ]
-        self.assertEqual(len(g4_names), 1442)
+        self.assertEqual(len(g4_names), 1405)
         self.assertIn("night-glider", packs["g4-mares"]["names"])
         self.assertIn("rainy-day", packs["g4-mares"]["names"])
         self.assertIn("rainbowshine", packs["g4-mares"]["names"])
+        self.assertIn("tempest-shadow", packs["g4-mares"]["names"])
+        self.assertIn("fizzlepop-berrytwist", packs["g4-mares"]["names"])
         self.assertIn("chancellor-neighsay", packs["g4-stallions"]["names"])
         self.assertIn("twist", packs["g4-fillies"]["names"])
         self.assertIn("aloe-vera", packs["g4-mares"]["names"])
@@ -231,12 +234,32 @@ class TransformTests(unittest.TestCase):
             "https://mlp.fandom.com/wiki/Credits/Season_nine#Deep_Tissue_Memories",
         )
         self.assertFalse(any("unnamed" in pony for pony in g4_names))
-        for creature in ("spike", "ember", "thorax", "pharynx", "smolder", "garble", "gallus", "ocellus", "silverstream", "yona", "gilda", "gabby", "capper", "discord"):
+        for creature in ("spike", "ember", "thorax", "pharynx", "smolder", "garble", "gallus", "ocellus", "silverstream", "yona", "gilda", "gabby", "capper-dapperpaws", "discord", "queen-novo"):
             self.assertIn(creature, packs["g4-creatures"]["names"])
         for invented_name in ("yona-yak", "dragon-lord-ember", "king-thorax"):
             self.assertNotIn(invented_name, packs["g4-creatures"]["names"])
         for g5_pony in ("sunny-starscout", "izzy-moonbow", "hitch-trailblazer", "pipp-petals", "zipp-storm", "misty-brightdawn"):
             self.assertIn(g5_pony, packs["g5-main"]["names"])
+        for eqg_name in (
+            "principal-cinch",
+            "adagio-dazzle",
+            "aria-blaze",
+            "sonata-dusk",
+            "sour-sweet",
+            "sunny-flare",
+            "indigo-zap",
+            "sugarcoat",
+            "lemon-zest",
+            "flash-sentry",
+            "gloriosa-daisy",
+            "timber-spruce",
+            "juniper-montage",
+            "wallflower-blush",
+            "vignette-valencia",
+            "kiwi-lollipop",
+            "supernova-zap",
+        ):
+            self.assertIn(eqg_name, packs["equestria-girls"]["names"])
         self.assertIn("flawless-sparklemoon", packs["tamers12345"]["names"])
         self.assertIn("apogee", packs["fandom-ocs"]["names"])
         self.assertIn("buttons-mom", packs["fandom-ocs"]["names"])
