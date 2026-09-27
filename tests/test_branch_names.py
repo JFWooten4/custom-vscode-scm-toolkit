@@ -7,7 +7,7 @@ import branch_names
 class BranchNamePackTests(unittest.TestCase):
     def test_g4_long_names_are_intentional(self):
         catalog = branch_names.load_catalog()
-        g4_ids = {"g4-mares", "g4-stallions", "g4-fillies", "g4-colts", "g4-unspecified"}
+        g4_ids = {"g4-mares", "g4-stallions", "g4-fillies", "g4-colts"}
         allowed = {
           "apple-brown-betty",
           "big-daddy-mccolt",
@@ -93,7 +93,6 @@ class BranchNamePackTests(unittest.TestCase):
                 "g4-stallions",
                 "g4-fillies",
                 "g4-colts",
-                "g4-unspecified",
                 "g4-creatures",
                 "equestria-girls",
                 "g5-main",
@@ -112,16 +111,16 @@ class BranchNamePackTests(unittest.TestCase):
                 "g4-stallions",
                 "g4-fillies",
                 "g4-colts",
-                "g4-unspecified",
             )
         )
-        self.assertEqual(g4_total, 1404)
+        self.assertEqual(g4_total, 1389)
         self.assertIn("night-glider", packs["g4-mares"]["names"])
         self.assertIn("rainy-day", packs["g4-mares"]["names"])
         self.assertIn("tempest-shadow", packs["g4-mares"]["names"])
         self.assertIn("fizzlepop-berrytwist", packs["g4-mares"]["names"])
         self.assertIn("chancellor-neighsay", packs["g4-stallions"]["names"])
         self.assertIn("twist", packs["g4-fillies"]["names"])
+        self.assertIn("dipsy", packs["g4-fillies"]["names"])
         self.assertIn("aloe-vera", packs["g4-mares"]["names"])
         self.assertEqual(
             packs["g4-mares"]["sources"]["aloe-vera"],

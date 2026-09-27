@@ -1275,6 +1275,7 @@
         "cyan-skies",
         "diamond-tiara",
         "dinky-doo",
+        "dipsy",
         "finish-line",
         "firelock",
         "flurry-heart",
@@ -1428,29 +1429,6 @@
       "sources": {
         "button-mash": "https://mlp.fandom.com/wiki/Button_Mash"
       }
-    },
-    {
-      "id": "g4-unspecified",
-      "label": "G4 ponies — unspecified",
-      "description": "Named G4 ponies whose source roster does not specify mare, stallion, filly, or colt.",
-      "names": [
-        "apple-bud",
-        "choco-cozy",
-        "cloudy-daze",
-        "dazzle-feather",
-        "dipsy",
-        "goldie-fortune",
-        "isla-breeze",
-        "jelly-vine",
-        "ruddy-sparks",
-        "sherbet-sunset",
-        "shutter-snap",
-        "sugar-plum",
-        "super-stream",
-        "sweets-pop",
-        "valor-valentine",
-        "watermelon-shimmer"
-      ]
     },
     {
       "id": "g4-creatures",
