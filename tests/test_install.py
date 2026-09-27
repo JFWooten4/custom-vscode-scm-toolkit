@@ -203,6 +203,15 @@ class TransformTests(unittest.TestCase):
         self.assertIn("scm-toolkit-pull-request", css)
         self.assertIn("scm-toolkit-pony-branch", css)
         self.assertIn("SCM_TOOLKIT_PONY_BRANCH_NAMES", js)
+        self.assertIn("SCM_TOOLKIT_G4_PONY_BRANCH_NAMES", js)
+        g4_block = js.split("const SCM_TOOLKIT_G4_PONY_BRANCH_NAMES = \`", 1)[1].split("\`.trim()", 1)[0]
+        g4_names = g4_block.splitlines()
+        self.assertGreaterEqual(len(g4_names), 1400)
+        for pony in ("rainy-day", "rainbowshine", "windy-whistles", "bow-hothoof", "snap-shutter", "mane-allgood", "cozy-glow"):
+            self.assertIn(pony, g4_names)
+        self.assertFalse(any("unnamed" in pony for pony in g4_names))
+        for g5_pony in ("sunny-starscout", "hitch-trailblazer", "princess-pipp-petals", "princess-zipp-storm", "izzy-moonbow"):
+            self.assertNotIn(g5_pony, g4_names)
         self.assertIn("'flawless-sparklemoon'", js)
         self.assertIn("'apogee'", js)
         self.assertIn("'sweetie-bot'", js)

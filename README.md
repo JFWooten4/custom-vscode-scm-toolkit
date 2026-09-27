@@ -419,10 +419,11 @@ the SCM message row. It checks out the configured `default-branch` (normally
 with its upstream remote, then creates and checks out a new branch directly from
 the synchronized HEAD.
 
-The branch name is chosen randomly from a built-in, branch-safe pool of G4 pony
-names and fandom characters. The pool includes Tamers12345 continuity names,
-fanmade characters featured in PrinceWhateverer songs, well-known community OCs,
-and Fallout: Equestria characters and major side-story variants. Existing local
+The branch name is chosen randomly from a built-in, branch-safe pool. Its canon
+portion covers the named G4 pony roster (excluding explicitly unnamed placeholders,
+G5 entries, and non-pony kirin), alongside Tamers12345 continuity names, fanmade
+characters featured in PrinceWhateverer songs, well-known community OCs, and
+Fallout: Equestria characters and major side-story variants. Existing local
 and configured-remote branch names are excluded before the random choice.
 
 Disable the button without changing the rest of the toolkit:
