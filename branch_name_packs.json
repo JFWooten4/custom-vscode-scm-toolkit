@@ -1539,7 +1539,6 @@
       "label": "PrinceWhateverer",
       "description": "Fanmade characters used by PrinceWhateverer songs.",
       "names": [
-        "sweetie-bot",
         "retro-city",
         "act-normal",
         "bad-taste",
@@ -1563,7 +1562,7 @@
         "gears",
         "applebloom-bot",
         "scoota-bot",
-        "flawless",
+        "sweetie-bot",
         "buttons-mom"
       ],
       "sources": {
