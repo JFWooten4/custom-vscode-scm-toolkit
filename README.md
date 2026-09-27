@@ -193,7 +193,7 @@ Random branch names are data-driven. Built-in packs live in `branch_name_packs.j
 }
 ```
 
-Pack IDs and names are lowercase branch-safe slugs containing letters, numbers, and hyphens. A pack may also include a `sources` object keyed by a name when a naming choice needs provenance. This keeps contributed lists as data instead of picker logic.
+Pack IDs and names are lowercase branch-safe slugs containing letters, numbers, and hyphens. Built-in packs keep each branch-name slug unique across packs; shared characters use one canonical slug rather than duplicate entries. A pack may also include a `sources` object keyed by a name when a naming choice needs provenance. This keeps contributed lists as data instead of picker logic.
 
 Built-in community packs also include a dedicated **Convention mascots** set and a **4chan /mlp/** set; the latter intentionally includes Anonfilly but excludes generic `anon`, `anonpony`, and Aryanne. The web configurator enables every pack by default. Disabling a pack stores only its ID in `scm-toolkit.branch-name-disabled-packs`, so newly added packs remain enabled by default. Custom names are stored in `scm-toolkit.branch-custom-names`. Third-party packs can be pasted into **Imported packs** as one pack object, an array of packs, or a `{"packs":[...]}` object and are stored in `scm-toolkit.branch-name-imports`.
 

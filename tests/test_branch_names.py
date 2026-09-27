@@ -5,6 +5,22 @@ import branch_names
 
 
 class BranchNamePackTests(unittest.TestCase):
+    def test_builtin_catalog_has_unique_names_across_packs(self):
+        catalog = branch_names.load_catalog()
+        seen = {}
+        for pack in catalog["packs"]:
+            for name in pack["names"]:
+                self.assertNotIn(
+                    name,
+                    seen,
+                    f"{name} appears in both {seen.get(name)} and {pack['id']}",
+                )
+                seen[name] = pack["id"]
+
+        self.assertIn("button-mash", next(pack for pack in catalog["packs"] if pack["id"] == "g4-colts")["names"])
+        self.assertIn("clean-sweep", next(pack for pack in catalog["packs"] if pack["id"] == "g4-stallions")["names"])
+        self.assertNotIn("game-playin-schoolponybutton-mash", seen)
+        self.assertNotIn("janitor-ponyclean-sweep", seen)
     def test_builtin_catalog_has_expected_packs_and_names(self):
         catalog = branch_names.load_catalog()
         packs = {pack["id"]: pack for pack in catalog["packs"]}

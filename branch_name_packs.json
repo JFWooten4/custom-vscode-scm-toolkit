@@ -962,7 +962,7 @@
         "jack-hammer",
         "jack-pot",
         "jaded-jasper",
-        "janitor-ponyclean-sweep",
+        "clean-sweep",
         "jeff-letrotski",
         "jeff-trotsworthy",
         "jesus-pezuna",
@@ -1255,7 +1255,10 @@
         "wylin-slobinzki",
         "zephyr-breeze",
         "zirconic"
-      ]
+      ],
+      "sources": {
+        "clean-sweep": "https://mlp.fandom.com/wiki/List_of_ponies/Earth_ponies/Stallions"
+      }
     },
     {
       "id": "g4-fillies",
@@ -1416,7 +1419,7 @@
         "featherweight",
         "formalwear-coltstrike",
         "future-apple-foalbig-sugar",
-        "game-playin-schoolponybutton-mash",
+        "button-mash",
         "green-daze",
         "hard-rock",
         "imperial-coltcinnamon-tea",
@@ -1456,7 +1459,10 @@
         "waltzer",
         "water-spout",
         "white-crystal-foalfrosty-quartz"
-      ]
+      ],
+      "sources": {
+        "button-mash": "https://mlp.fandom.com/wiki/Button_Mash"
+      }
     },
     {
       "id": "g4-unspecified",
@@ -1521,15 +1527,10 @@
       "description": "Tamers12345 continuity characters and variants.",
       "names": [
         "flawless-sparklemoon",
-        "apple-bottom",
-        "apple-split",
         "care-package",
-        "jinx",
-        "clean-sweep",
         "future-soarin",
         "friendship",
         "arinos",
-        "dazzle-feather",
         "skye-silver",
         "parcelcore",
         "professor-kirin",
@@ -1545,7 +1546,6 @@
       "names": [
         "sweetie-bot",
         "retro-city",
-        "felix",
         "normal-oc",
         "bad-oc"
       ]
@@ -1559,7 +1559,6 @@
         "snowdrop",
         "nyx",
         "fluffle-puff",
-        "button-mash",
         "celestai",
         "turing-test",
         "flower",
@@ -1583,7 +1582,6 @@
         "tracy-cage",
         "frosty-flakes",
         "nasapone",
-        "fair-flyer",
         "heavy-halbard",
         "righty-tighty",
         "bijou-butterfly",
@@ -1595,7 +1593,6 @@
         "tracy-cage": "https://derpibooru.org/images/244955",
         "frosty-flakes": "https://twibooru.org/3273731",
         "nasapone": "https://twibooru.org/3351087?q=oc%3Anasapone",
-        "fair-flyer": "https://marefair.org/news/fair-flyers-photo-album-sweepstakes/",
         "heavy-halbard": "https://www.twibooru.org/3139177",
         "righty-tighty": "https://twibooru.org/3534513",
         "bijou-butterfly": "https://www.twibooru.org/3288154",
@@ -1684,7 +1681,6 @@
         "xenith",
         "blackjack",
         "p-21",
-        "morning-glory",
         "rampage",
         "lacunae",
         "scotch-tape",
@@ -1692,7 +1688,6 @@
         "stygius",
         "goldenblood",
         "psychoshy",
-        "bottlecap",
         "puppysmiles",
         "better-days",
         "hired-gun",
@@ -1716,7 +1711,6 @@
         "cherry-smiles",
         "crossed-wires",
         "cinder-trails",
-        "cobalt",
         "airborne",
         "amber-glow",
         "aqua-breeze",
