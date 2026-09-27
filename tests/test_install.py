@@ -202,6 +202,8 @@ class TransformTests(unittest.TestCase):
                 "tamers12345",
                 "princewhateverer",
                 "fandom-ocs",
+                "mlp-4chan",
+                "con-mascots",
                 "fallout-equestria",
             },
         )
@@ -237,6 +239,15 @@ class TransformTests(unittest.TestCase):
             self.assertIn(g5_pony, packs["g5-main"]["names"])
         self.assertIn("flawless-sparklemoon", packs["tamers12345"]["names"])
         self.assertIn("apogee", packs["fandom-ocs"]["names"])
+        self.assertIn("anonfilly", packs["mlp-4chan"]["names"])
+        self.assertIn("snowpity", packs["mlp-4chan"]["names"])
+        self.assertIn("milkmare-of-trottingham", packs["mlp-4chan"]["names"])
+        self.assertNotIn("anon", packs["mlp-4chan"]["names"])
+        self.assertNotIn("anonpony", packs["mlp-4chan"]["names"])
+        self.assertNotIn("aryanne", packs["mlp-4chan"]["names"])
+        self.assertIn("harmonic-tune", packs["con-mascots"]["names"])
+        self.assertIn("caramel-malt", packs["con-mascots"]["names"])
+        self.assertIn("fair-flyer", packs["con-mascots"]["names"])
         self.assertIn("sweetie-bot", packs["princewhateverer"]["names"])
         self.assertIn("blackjack", packs["fallout-equestria"]["names"])
         self.assertIn("murky-number-seven", packs["fallout-equestria"]["names"])

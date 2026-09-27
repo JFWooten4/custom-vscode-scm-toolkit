@@ -22,6 +22,8 @@ class BranchNamePackTests(unittest.TestCase):
                 "tamers12345",
                 "princewhateverer",
                 "fandom-ocs",
+                "mlp-4chan",
+                "con-mascots",
                 "fallout-equestria",
             },
         )
@@ -49,6 +51,27 @@ class BranchNamePackTests(unittest.TestCase):
         self.assertIn("gilda", packs["g4-creatures"]["names"])
         self.assertIn("pipp-petals", packs["g5-main"]["names"])
         self.assertNotIn("yona-yak", packs["g4-creatures"]["names"])
+        self.assertIn("anonfilly", packs["mlp-4chan"]["names"])
+        self.assertIn("snowpity", packs["mlp-4chan"]["names"])
+        self.assertIn("milkmare-of-trottingham", packs["mlp-4chan"]["names"])
+        self.assertIn("heavy-halbard", packs["mlp-4chan"]["names"])
+        self.assertIn("righty-tighty", packs["mlp-4chan"]["names"])
+        self.assertIn("bijou-butterfly", packs["mlp-4chan"]["names"])
+        for excluded in ("anon", "anonpony", "aryanne"):
+            self.assertNotIn(excluded, packs["mlp-4chan"]["names"])
+        for mascot in (
+            "harmonic-tune",
+            "harmony-star",
+            "caramel-malt",
+            "barley-tender",
+            "fizzy-glitch",
+            "fair-flyer",
+            "morning-mimosa",
+            "matinee",
+            "soiree",
+            "fun-raiser",
+        ):
+            self.assertIn(mascot, packs["con-mascots"]["names"])
 
     def test_imports_accept_single_pack_array_or_catalog_object(self):
         pack = {"id": "friends", "label": "Friends", "names": ["one", "two"]}
