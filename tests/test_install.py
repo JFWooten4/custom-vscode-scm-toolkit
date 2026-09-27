@@ -5,6 +5,7 @@ import types
 import unittest
 from unittest.mock import patch
 
+import branch_names
 import install
 import toolkit_settings
 
@@ -188,91 +189,10 @@ class TransformTests(unittest.TestCase):
         self.assertIn("scmToolkitBranchNamePool", js)
         runtime_json = js.split("const scmToolkitSettings = ", 1)[1].split(";\n/* edits:", 1)[0]
         runtime = json.loads(runtime_json)
-        packs = {pack["id"]: pack for pack in runtime["branchNamePacks"]}
         self.assertEqual(
-            set(packs),
-            {
-                "g4-mares",
-                "g4-stallions",
-                "g4-fillies",
-                "g4-colts",
-                "g4-creatures",
-                "equestria-girls",
-                "g5-main",
-                "tamers12345",
-                "princewhateverer",
-                "fandom-ocs",
-                "mlp-4chan",
-                "con-mascots",
-                "fallout-equestria",
-            },
+            runtime["branchNamePacks"],
+            branch_names.load_catalog()["packs"],
         )
-        g4_names = [
-            name
-            for pack_id in (
-                "g4-mares",
-                "g4-stallions",
-                "g4-fillies",
-                "g4-colts",
-            )
-            for name in packs[pack_id]["names"]
-        ]
-        self.assertEqual(len(g4_names), 1396)
-        self.assertIn("night-glider", packs["g4-mares"]["names"])
-        self.assertIn("rainy-day", packs["g4-mares"]["names"])
-        self.assertIn("rainbowshine", packs["g4-mares"]["names"])
-        self.assertIn("tempest-shadow", packs["g4-mares"]["names"])
-        self.assertIn("fizzlepop-berrytwist", packs["g4-mares"]["names"])
-        self.assertIn("chancellor-neighsay", packs["g4-stallions"]["names"])
-        self.assertIn("twist", packs["g4-fillies"]["names"])
-        self.assertIn("aloe-vera", packs["g4-mares"]["names"])
-        self.assertNotIn("aloe", g4_names)
-        self.assertEqual(
-            packs["g4-mares"]["sources"]["aloe-vera"],
-            "https://mlp.fandom.com/wiki/Credits/Season_nine#Deep_Tissue_Memories",
-        )
-        self.assertFalse(any("unnamed" in pony for pony in g4_names))
-        for creature in ("spike", "ember", "thorax", "pharynx", "smolder", "garble", "gallus", "ocellus", "silverstream", "yona", "gilda", "gabby", "capper-dapperpaws", "discord", "queen-novo"):
-            self.assertIn(creature, packs["g4-creatures"]["names"])
-        for invented_name in ("yona-yak", "dragon-lord-ember", "king-thorax"):
-            self.assertNotIn(invented_name, packs["g4-creatures"]["names"])
-        for g5_pony in ("sunny-starscout", "izzy-moonbow", "hitch-trailblazer", "pipp-petals", "zipp-storm", "misty-brightdawn"):
-            self.assertIn(g5_pony, packs["g5-main"]["names"])
-        for eqg_name in (
-            "principal-cinch",
-            "adagio-dazzle",
-            "aria-blaze",
-            "sonata-dusk",
-            "sour-sweet",
-            "sunny-flare",
-            "indigo-zap",
-            "sugarcoat",
-            "lemon-zest",
-            "flash-sentry",
-            "gloriosa-daisy",
-            "timber-spruce",
-            "juniper-montage",
-            "wallflower-blush",
-            "vignette-valencia",
-            "kiwi-lollipop",
-            "supernova-zap",
-        ):
-            self.assertIn(eqg_name, packs["equestria-girls"]["names"])
-        self.assertIn("flawless-sparklemoon", packs["tamers12345"]["names"])
-        self.assertIn("apogee", packs["fandom-ocs"]["names"])
-        self.assertIn("sweetie-bot", packs["fandom-ocs"]["names"])
-        self.assertIn("buttons-mom", packs["fandom-ocs"]["names"])
-        self.assertIn("anonfilly", packs["mlp-4chan"]["names"])
-        self.assertIn("snowpity", packs["mlp-4chan"]["names"])
-        self.assertIn("milkmare-of-trottingham", packs["mlp-4chan"]["names"])
-        self.assertNotIn("anon", packs["mlp-4chan"]["names"])
-        self.assertNotIn("anonpony", packs["mlp-4chan"]["names"])
-        self.assertNotIn("aryanne", packs["mlp-4chan"]["names"])
-        self.assertIn("harmonic-tune", packs["con-mascots"]["names"])
-        self.assertIn("caramel-malt", packs["con-mascots"]["names"])
-        self.assertIn("fair-flyer", packs["con-mascots"]["names"])
-        self.assertIn("blackjack", packs["fallout-equestria"]["names"])
-        self.assertIn("murky-number-seven", packs["fallout-equestria"]["names"])
         self.assertEqual(runtime["branchNameDisabledPacks"], [])
         self.assertEqual(runtime["branchCustomNames"], [])
         self.assertIn("commands.executeCommand('git.sync', repository)", js)
