@@ -92,7 +92,7 @@ class TransformTests(unittest.TestCase):
         css = (install.HERE / "outlined_buttons.css").read_text()
 
         self.assertIn(
-            ".scm-view .button-container > .monaco-button-dropdown", css
+            ".scm-view:not(.scm-history-view) .button-container > .monaco-button-dropdown", css
         )
         self.assertIn(
             "border: 1px solid var(--vscode-button-border, var(--vscode-widget-border));",
@@ -100,6 +100,7 @@ class TransformTests(unittest.TestCase):
         )
         self.assertEqual(css.count("--vscode-button-background: transparent;"), 2)
         self.assertIn("background: transparent !important;", css)
+        self.assertNotIn(".scm-view .button-container >", css)
 
     def test_filled_button_setting_controls_outlined_stylesheet(self):
         _, outlined_css = install.transform(
@@ -111,7 +112,7 @@ class TransformTests(unittest.TestCase):
             settings=dict(SETTINGS, filledButtons=True),
         )
 
-        selector = ".scm-view .button-container > .monaco-button-dropdown"
+        selector = ".scm-view:not(.scm-history-view) .button-container > .monaco-button-dropdown"
         self.assertIn(selector, outlined_css)
         self.assertNotIn(selector, filled_css)
 
