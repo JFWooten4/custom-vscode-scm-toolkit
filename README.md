@@ -103,6 +103,7 @@ Set options with `git config --global`:
 git config --global scm-toolkit.branch-picker true
 git config --global scm-toolkit.pony-branch true
 git config --global scm-toolkit.short-placeholder true
+git config --global scm-toolkit.source-control-label Sweetiebot
 git config --global scm-toolkit.filled-buttons false
 git config --global scm-toolkit.commit-and-push true
 git config --global scm-toolkit.branch-cleanup true
@@ -140,6 +141,7 @@ The equivalent `~/.gitconfig` block is:
     branch-picker = true
     pony-branch = true
     short-placeholder = true
+    source-control-label = Sweetiebot
     filled-buttons = false
     commit-and-push = true
     branch-cleanup = true
@@ -170,7 +172,7 @@ The equivalent `~/.gitconfig` block is:
     branch-name-imports = []
 ```
 
-The filled-button style, Cmd-click close-others gesture, Codex usage-reset countdown, Codex promotion hiding, and ChatGPT browser homepage default to `false`; the other boolean SCM feature switches default to `true`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
+The filled-button style, Cmd-click close-others gesture, Codex usage-reset countdown, Codex promotion hiding, and ChatGPT browser homepage default to `false`; the other boolean SCM feature switches default to `true`. The Source Control app-bar label defaults to `Sweetiebot`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
 
 After changing toolkit Git config, rerun:
 
@@ -350,6 +352,21 @@ Disabling the toolkit feature hides the checkbox. It does not silently rewrite a
 When `autocomplete-toggle` is enabled, the sparkle button appears after the other
 SCM controls. It toggles VS Code's `editor.inlineSuggest.enabled` setting. A slash
 through the sparkle means inline autocomplete is off.
+
+### Source Control label
+
+The toolkit can replace VS Code's built-in **Source Control** view-container label
+with a custom app-bar name. It defaults to **Sweetiebot**.
+
+Set another label and reinstall:
+
+```sh
+git config --global scm-toolkit.source-control-label "My SCM"
+python3 install.py
+```
+
+Set it back to `Source Control` to preserve VS Code's stock label while keeping
+the rest of the toolkit enabled.
 
 ### Source Control Graph working-file open
 

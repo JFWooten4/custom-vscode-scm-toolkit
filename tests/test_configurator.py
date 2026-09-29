@@ -39,6 +39,7 @@ class SubmissionTests(unittest.TestCase):
         self.assertFalse(parsed["branchPicker"])
         self.assertTrue(parsed["commitAndPush"])
         self.assertEqual(parsed["aiCommitModel"], "qwen2.5-coder:7b")
+        self.assertEqual(parsed["sourceControlLabel"], "Sweetiebot")
         self.assertEqual(parsed["branchNameDisabledPacks"], "")
         self.assertEqual(parsed["branchCustomNames"], "")
         self.assertEqual(parsed["branchNameImports"], "[]")
@@ -92,6 +93,7 @@ class SubmissionTests(unittest.TestCase):
         self.assertIn('name="branchNamePack"', page)
         self.assertIn('name="branchCustomNames"', page)
         self.assertIn('name="branchNameImports"', page)
+        self.assertIn('name="sourceControlLabel"', page)
 
 
 class GitConfigTests(unittest.TestCase):
