@@ -1,5 +1,6 @@
 import importlib.util
 from pathlib import Path
+import sys
 import unittest
 from unittest.mock import patch
 
@@ -9,6 +10,19 @@ spec = importlib.util.spec_from_file_location(
 )
 ai_commit = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ai_commit)
+
+
+class GitOutputTests(unittest.TestCase):
+    def test_replaces_non_utf8_output(self):
+        with patch.object(ai_commit, "REAL_GIT", sys.executable), patch.object(
+            ai_commit, "GIT_GLOBAL_ARGS", []
+        ):
+            output = ai_commit.git_output(
+                "-c",
+                "import sys; sys.stdout.buffer.write(b'prefix\\x93suffix')",
+            )
+
+        self.assertEqual(output, "prefix\\ufffdsuffix")
 
 
 class RoutingTests(unittest.TestCase):
