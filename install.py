@@ -125,6 +125,33 @@ def graph_open_working_file_edits(js):
     return [(original, replacement)]
 
 
+def source_control_label_edits(js, label):
+    if label == "Source Control":
+        return []
+
+    anchor = 'workbench.scm.views.state'
+    anchor_indexes = [match.start() for match in re.finditer(re.escape(anchor), js)]
+    if len(anchor_indexes) != 1:
+        raise ValueError(
+            "Unsupported VS Code build: Source Control view-container anchor does not match."
+        )
+
+    anchor_index = anchor_indexes[0]
+    start = max(0, anchor_index - 800)
+    segment = js[start : anchor_index + len(anchor)]
+    matches = list(re.finditer(r"""(["'])Source Control\1""", segment))
+    if len(matches) != 1:
+        raise ValueError(
+            "Unsupported VS Code build: Source Control app-bar label does not match."
+        )
+
+    match = matches[0]
+    suffix = segment[match.end() :]
+    original = match.group(0) + suffix
+    replacement = json.dumps(str(label)) + suffix
+    return [(original, replacement)]
+
+
 def browser_chatgpt_home_edits(js):
     anchor = "Invalid browser view resource:"
     anchor_index = js.find(anchor)
@@ -205,6 +232,9 @@ def edits(js=None, settings=None):
             "(this.scmToolkitControls?.width()??0),o);if(t.width<0)",
         ),
     ]
+    if js is not None and settings:
+        changes.extend(source_control_label_edits(js, settings["sourceControlLabel"]))
+
     if js is not None and settings and settings.get("graphOpenWorkingFile"):
         changes.extend(graph_open_working_file_edits(js))
 

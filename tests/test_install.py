@@ -17,6 +17,7 @@ SETTINGS = {
     "branchCustomNames": "",
     "branchNameImports": "[]",
     "shortPlaceholder": True,
+    "sourceControlLabel": "Sweetiebot",
     "filledButtons": False,
     "commitAndPush": True,
     "branchCleanup": True,
@@ -60,6 +61,8 @@ def workbench_fixture():
             't=new size(this.element.clientWidth-e,o);if(t.width<0)',
             'keys.event(e=>this.setAltPressed(e.altKey));',
             'listen(mouse=>{this.setAltPressed(mouse.altKey)},true);',
+            'id:"workbench.view.scm",title:localize2("source control","Source Control"),'
+            'storageId:"workbench.scm.views.state",'
             'id:"workbench.scm.action.graph.openFile",'
             'async run(){await editor.openEditor({resource:change.modifiedUri,label:'
             '`${name} (${version})`})}',
@@ -213,6 +216,37 @@ class TransformTests(unittest.TestCase):
         self.assertEqual(js.count(install.END), 1)
         self.assertEqual(css.count(install.START), 1)
         self.assertEqual(css.count(install.END), 1)
+
+    def test_source_control_label_defaults_to_sweetiebot(self):
+        self.assertEqual(install.DEFAULT_SETTINGS["sourceControlLabel"], "Sweetiebot")
+
+    def test_source_control_label_patches_view_container_title(self):
+        js, _ = install.transform(workbench_fixture(), "base-css", settings=SETTINGS)
+
+        self.assertIn(
+            'title:localize2("source control","Sweetiebot"),'
+            'storageId:"workbench.scm.views.state"',
+            js.split(install.START, 1)[0],
+        )
+
+    def test_source_control_label_can_restore_stock_name(self):
+        stock = dict(SETTINGS, sourceControlLabel="Source Control")
+        js, _ = install.transform(workbench_fixture(), "base-css", settings=stock)
+
+        self.assertIn(
+            'title:localize2("source control","Source Control"),'
+            'storageId:"workbench.scm.views.state"',
+            js.split(install.START, 1)[0],
+        )
+
+    def test_source_control_label_round_trip(self):
+        original_js = workbench_fixture()
+        original_css = "base-css"
+
+        patched = install.transform(original_js, original_css, settings=SETTINGS)
+        restored = install.transform(*patched, remove=True, settings=SETTINGS)
+
+        self.assertEqual(restored, (original_js, original_css))
 
     def test_cmd_click_close_others_is_off_by_default(self):
         self.assertFalse(install.DEFAULT_SETTINGS["cmdClickCloseOthers"])
