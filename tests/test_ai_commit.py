@@ -22,7 +22,7 @@ class GitOutputTests(unittest.TestCase):
                 "import sys; sys.stdout.buffer.write(b'prefix\\x93suffix')",
             )
 
-        self.assertEqual(output, "prefix\\ufffdsuffix")
+        self.assertEqual(output, "prefix\ufffdsuffix")
 
 
 class RoutingTests(unittest.TestCase):
