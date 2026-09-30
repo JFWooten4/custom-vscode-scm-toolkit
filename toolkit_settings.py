@@ -36,6 +36,7 @@ DEFAULT_SETTINGS = {
     "mcpPrTool": "github_create_pull_request",
     "codexUsageResetCountdown": False,
     "codexHidePromotions": False,
+    "codexHideChatTimestamps": False,
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -116,6 +117,7 @@ SETTING_KEYS = {
     "mcpPrTool": "scm-toolkit.mcp-pr-tool",
     "codexUsageResetCountdown": "scm-toolkit.codex-usage-reset-countdown",
     "codexHidePromotions": "scm-toolkit.codex-hide-promotions",
+    "codexHideChatTimestamps": "scm-toolkit.codex-hide-chat-timestamps",
     "defaultBranch": "scm-toolkit.default-branch",
     "remote": "scm-toolkit.remote",
 }

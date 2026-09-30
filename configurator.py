@@ -60,6 +60,7 @@ SETTINGS = (
     Setting("mcpPrServer", "scm-toolkit.mcp-pr-server", "MCP server", "Configured VS Code MCP server name.", "Pull requests", "text"),
     Setting("mcpPrTool", "scm-toolkit.mcp-pr-tool", "MCP tool", "Tool invoked to create a pull request.", "Pull requests", "text"),
     Setting("codexUsageResetCountdown", "scm-toolkit.codex-usage-reset-countdown", "Codex reset countdown", "Show the live usage-reset countdown in Codex limit banners.", "Codex"),
+    Setting("codexHideChatTimestamps", "scm-toolkit.codex-hide-chat-timestamps", "Hide chat timestamps", "Hide standalone date/time separators inside Codex conversations.", "Codex"),
 )
 
 
