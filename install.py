@@ -566,6 +566,7 @@ def main():
         else workspace_search.sync_extension(
             remove=args.uninstall,
             check=True,
+            settings=settings,
         )
     )
 
@@ -624,7 +625,10 @@ def main():
                 remove=args.uninstall,
                 destination=model_picker_path,
             )
-            workspace_search.sync_extension(remove=args.uninstall)
+            workspace_search.sync_extension(
+                remove=args.uninstall,
+                settings=settings,
+            )
 
     action = "Validated" if args.check else "Removed" if args.uninstall else "Installed"
     target = "Codex customizations" if args.codex_only else "SCM toolkit"
