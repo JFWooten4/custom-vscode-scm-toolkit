@@ -15,7 +15,7 @@ Current features:
 - optionally open a pull request for the current branch through a configured MCP server
 - optionally hide the outgoing commit count from the built-in Sync action
 - optionally refresh clean/blank Git repositories more aggressively so the first new change appears in SCM quickly
-- search the active workspace semantically from a `Workspace Search` view directly inside Source Control, backed only by local Ollama
+- search the active workspace semantically from a `Workspace Search` view inside Source Control by default, or optionally move it to its own Activity Bar container, backed only by local Ollama
 - optionally use ⌘-click on an editor tab's close button to keep that tab and close the others in its group
 - optionally use ChatGPT as the home page for blank Integrated Browser tabs
 - optionally make Source Control Graph **Open File** open the checked-out working-tree file instead of the selected commit snapshot
@@ -104,6 +104,8 @@ git config --global scm-toolkit.branch-picker true
 git config --global scm-toolkit.pony-branch true
 git config --global scm-toolkit.short-placeholder true
 git config --global scm-toolkit.source-control-label Sweetiebot
+git config --global scm-toolkit.workspace-search-activity-bar false
+git config --global scm-toolkit.workspace-search-label EFS
 git config --global scm-toolkit.filled-buttons false
 git config --global scm-toolkit.commit-and-push true
 git config --global scm-toolkit.branch-cleanup true
@@ -143,6 +145,8 @@ The equivalent `~/.gitconfig` block is:
     pony-branch = true
     short-placeholder = true
     source-control-label = Sweetiebot
+    workspace-search-activity-bar = false
+    workspace-search-label = EFS
     filled-buttons = false
     commit-and-push = true
     branch-cleanup = true
@@ -174,7 +178,7 @@ The equivalent `~/.gitconfig` block is:
     branch-name-imports = []
 ```
 
-The filled-button style, Cmd-click close-others gesture, Codex usage-reset countdown, Codex promotion hiding, Codex chat timestamp hiding, and ChatGPT browser homepage default to `false`; the other boolean SCM feature switches default to `true`. The Source Control app-bar label defaults to `Sweetiebot`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
+The filled-button style, standalone Workspace Search Activity Bar, Cmd-click close-others gesture, Codex usage-reset countdown, Codex promotion hiding, Codex chat timestamp hiding, and ChatGPT browser homepage default to `false`; the other boolean SCM feature switches default to `true`. The Source Control app-bar label defaults to `Sweetiebot`, and the optional standalone Workspace Search container label defaults to `EFS`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
 
 After changing toolkit Git config, rerun:
 
@@ -203,7 +207,9 @@ Built-in community packs also include a dedicated **Convention mascots** set and
 
 ### Workspace Search
 
-The normal installer also installs a small companion VS Code extension into `~/.vscode/extensions`. After reloading VS Code, Source Control contains a **Workspace Search** section with an in-sidebar query box, Hybrid/Semantic/Exact modes, ranked snippets, click-to-open results, and an optional **Ask Ollama** action. It does not open Open WebUI or a separate browser window.
+The normal installer also installs a small companion VS Code extension into `~/.vscode/extensions`. By default, after reloading VS Code, Source Control contains a **Workspace Search** section with an in-sidebar query box, Hybrid/Semantic/Exact modes, ranked snippets, click-to-open results, and an optional **Ask Ollama** action. It does not open Open WebUI or a separate browser window.
+
+Set `scm-toolkit.workspace-search-activity-bar` to `true` to move the same Workspace Search view into its own Activity Bar container. The container label is independently configurable with `scm-toolkit.workspace-search-label` and defaults to **EFS**. Rerun `python3 install.py` and reload VS Code after changing either setting.
 
 Install the default local embedding model once:
 

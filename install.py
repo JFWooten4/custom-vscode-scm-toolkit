@@ -485,7 +485,7 @@ def codex_bundle_path(extension_path=None):
         if not assets.is_dir():
             continue
         patched = []
-        for path in assets.glob("app-initial-*.js"):
+        for path in assets.glob("*.js"):
             text = path.read_text()
             if CODEX_START in text or CODEX_PROMOTIONS_START in text or CODEX_TIMESTAMPS_START in text:
                 patched.append(path)
@@ -493,7 +493,7 @@ def codex_bundle_path(extension_path=None):
             return patched[0]
 
         matches = []
-        for path in assets.glob("app-initial-*.js"):
+        for path in assets.glob("*.js"):
             if codex_bundle_matches(path.read_text()):
                 matches.append(path)
         if len(matches) == 1:
@@ -587,6 +587,7 @@ def main():
         else workspace_search.sync_extension(
             remove=args.uninstall,
             check=True,
+            settings=settings,
         )
     )
 
@@ -598,20 +599,32 @@ def main():
         or args.uninstall
     )
     if codex_path is None and should_find_codex:
-        raise ValueError("OpenAI Codex extension webview bundle was not found or is unsupported.")
+        message = "OpenAI Codex extension webview bundle was not found or is unsupported."
+        if args.codex_only:
+            raise ValueError(message)
+        print(f"Warning: {message} Skipping optional Codex customizations.")
     if codex_path is not None:
-        paths.append(codex_path)
         codex_old = codex_path.read_text()
-        old.append(codex_old)
-        new.append(
-            transform_codex(
+        try:
+            codex_new = transform_codex(
                 codex_old,
                 enabled=settings["codexUsageResetCountdown"],
                 hide_promotions=settings["codexHidePromotions"],
                 hide_timestamps=settings["codexHideChatTimestamps"],
                 remove=args.uninstall,
             )
-        )
+        except ValueError as error:
+            if (
+                args.codex_only
+                or CODEX_START in codex_old
+                or CODEX_PROMOTIONS_START in codex_old
+            ):
+                raise
+            print(f"Warning: {error} Skipping optional Codex customizations.")
+        else:
+            paths.append(codex_path)
+            old.append(codex_old)
+            new.append(codex_new)
 
     if (
         old == list(new)
@@ -635,7 +648,10 @@ def main():
                 remove=args.uninstall,
                 destination=model_picker_path,
             )
-            workspace_search.sync_extension(remove=args.uninstall)
+            workspace_search.sync_extension(
+                remove=args.uninstall,
+                settings=settings,
+            )
 
     action = "Validated" if args.check else "Removed" if args.uninstall else "Installed"
     target = "Codex customizations" if args.codex_only else "SCM toolkit"
