@@ -23,6 +23,10 @@ Current features:
 - optionally spellcheck manually entered commit subjects with the configured local model
 - optionally show a live, minute-precision countdown in Codex usage-limit banners
 - optionally hide Codex promotional cards such as the Fast mode upsell
+- mirror ChatGPT web custom instructions into Codex global instructions using the local configurator
+- optionally require the Codex Web co-author trailer for web/GitHub-tool commits
+- import a PGP secret key directly into GnuPG without persisting the private material in toolkit settings
+- search repositories through the linked GitHub authentication session instead of maintaining a separate repo allow-list
 
 The patch is intentionally narrow: it does not copy or manage unrelated editor settings.
 
@@ -32,6 +36,7 @@ The patch is intentionally narrow: it does not copy or manage unrelated editor s
 - Visual Studio Code using the standard application-bundle layout
 - Python 3
 - Git, if you want to configure feature flags through global Git config
+- GnuPG, only if you want the configurator to import a PGP signing key
 - Ollama is required for local AI commit-title generation and semantic Workspace Search; exact Workspace Search still works if embeddings are unavailable
 
 The installer modifies the installed VS Code workbench files. VS Code updates can replace those files, so rerun the installer after an update if the patch disappears. VS Code may also show an installation-integrity warning after its application files are modified.
@@ -127,6 +132,8 @@ git config --global scm-toolkit.mcp-pr-server codex-drafter
 git config --global scm-toolkit.mcp-pr-tool github_create_pull_request
 git config --global scm-toolkit.codex-usage-reset-countdown true
 git config --global scm-toolkit.codex-hide-promotions true
+git config --global scm-toolkit.chatgpt-custom-instructions ""
+git config --global scm-toolkit.chatgpt-web-codex-coauthor true
 git config --global scm-toolkit.default-branch main
 git config --global scm-toolkit.remote origin
 git config --global scm-toolkit.branch-name-disabled-packs ""
@@ -165,6 +172,8 @@ The equivalent `~/.gitconfig` block is:
     mcp-pr-tool = github_create_pull_request
     codex-usage-reset-countdown = true
     codex-hide-promotions = true
+    chatgpt-custom-instructions =
+    chatgpt-web-codex-coauthor = true
     default-branch = main
     remote = origin
     branch-name-disabled-packs =
@@ -338,6 +347,36 @@ alone.
 
 This option can be installed or refreshed with the same `--codex-only` command
 used by the usage-reset countdown.
+
+### ChatGPT and Codex instructions
+
+The local configurator includes a ChatGPT section for keeping a local copy of the
+custom instructions you use on ChatGPT web. Saving the form mirrors that text into
+a managed block in `~/.codex/AGENTS.md`, which makes the same guidance available
+to Codex without overwriting unrelated global Codex instructions.
+
+The "Sync from web" button is clipboard-assisted: copy the Custom Instructions text
+from ChatGPT Personalization, then click the button in the localhost configurator.
+The toolkit does not scrape ChatGPT session cookies or call a private custom-instructions
+endpoint.
+
+When `chatgpt-web-codex-coauthor` is enabled, the managed Codex instructions require
+web or GitHub-tool commits to append:
+
+```text
+Co-authored-by: Codex Web <noreply@openai.com>
+```
+
+The ChatGPT section also accepts an optional ASCII-armored PGP secret key. The key
+is piped to GnuPG over stdin, imported into the local keyring, and discarded from
+the form. Only the resulting public fingerprint is saved to Git configuration;
+`commit.gpgsign` is enabled and the private key is never echoed into generated
+configuration or command output.
+
+The companion extension exposes `SCM Toolkit: Search Linked GitHub Repositories`.
+It authenticates through VS Code's GitHub provider and searches the repositories
+visible to that linked account, so the toolkit does not maintain a second repository
+access list or a separate personal access token.
 
 ### Commit and push
 
