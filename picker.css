@@ -438,3 +438,9 @@
     outline: 1px solid var(--vscode-focusBorder);
     outline-offset: -1px;
 }
+
+/* Includes Source Control Graph, which also uses .scm-view. */
+.scm-view .monaco-list-row:hover .monaco-action-bar .action-item:not(.disabled) .action-label.codicon:not(.disabled),
+.scm-view .monaco-action-bar .action-item:not(.disabled):hover .action-label.codicon:not(.disabled) {
+    color: #FFFFFF !important;
+}
