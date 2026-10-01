@@ -129,6 +129,7 @@ git config --global scm-toolkit.mcp-pr-server codex-drafter
 git config --global scm-toolkit.mcp-pr-tool github_create_pull_request
 git config --global scm-toolkit.codex-usage-reset-countdown true
 git config --global scm-toolkit.codex-hide-promotions true
+git config --global scm-toolkit.codex-hide-chat-timestamps true
 git config --global scm-toolkit.default-branch main
 git config --global scm-toolkit.remote origin
 git config --global scm-toolkit.branch-name-disabled-packs ""
@@ -169,6 +170,7 @@ The equivalent `~/.gitconfig` block is:
     mcp-pr-tool = github_create_pull_request
     codex-usage-reset-countdown = true
     codex-hide-promotions = true
+    codex-hide-chat-timestamps = true
     default-branch = main
     remote = origin
     branch-name-disabled-packs =
@@ -176,7 +178,7 @@ The equivalent `~/.gitconfig` block is:
     branch-name-imports = []
 ```
 
-The filled-button style, standalone Workspace Search Activity Bar, Cmd-click close-others gesture, Codex usage-reset countdown, Codex promotion hiding, and ChatGPT browser homepage default to `false`; the other boolean SCM feature switches default to `true`. The Source Control app-bar label defaults to `Sweetiebot`, and the optional standalone Workspace Search container label defaults to `EFS`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
+The filled-button style, standalone Workspace Search Activity Bar, Cmd-click close-others gesture, Codex usage-reset countdown, Codex promotion hiding, Codex chat timestamp hiding, and ChatGPT browser homepage default to `false`; the other boolean SCM feature switches default to `true`. The Source Control app-bar label defaults to `Sweetiebot`, and the optional standalone Workspace Search container label defaults to `EFS`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
 
 After changing toolkit Git config, rerun:
 
@@ -344,6 +346,16 @@ alone.
 
 This option can be installed or refreshed with the same `--codex-only` command
 used by the usage-reset countdown.
+
+### Codex chat timestamp hiding
+
+When `codex-hide-chat-timestamps` is enabled, the Codex webview hides standalone
+conversation date/time separators such as `Today 6:44 PM`. The filter only hides
+small separator containers whose entire text looks like a date/time label; message
+content, buttons, links, inputs, and other chat UI remain untouched.
+
+This option uses the same `--codex-only` install/refresh path as the other Codex
+customizations.
 
 ### Commit and push
 

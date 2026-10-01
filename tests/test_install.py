@@ -41,6 +41,7 @@ SETTINGS = {
     "mcpPrTool": "github_create_pull_request",
     "codexUsageResetCountdown": False,
     "codexHidePromotions": False,
+    "codexHideChatTimestamps": False,
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -508,6 +509,34 @@ class CodexPromotionTests(unittest.TestCase):
                 "const title=`Enable Fast mode`;const action=`Enable now`;"
             )
         )
+
+
+class CodexTimestampTests(unittest.TestCase):
+    def test_chat_timestamp_hiding_is_off_by_default(self):
+        self.assertFalse(install.DEFAULT_SETTINGS["codexHideChatTimestamps"])
+
+    def test_codex_timestamp_hiding_install_and_remove_round_trip(self):
+        original = "const app='codex';"
+        patched = install.transform_codex(original, hide_timestamps=True)
+
+        self.assertIn("scm-toolkit-codex-timestamps:start", patched)
+        self.assertIn("data-scm-toolkit-hidden-chat-timestamp", patched)
+        self.assertIn("looksLikeTimestamp", patched)
+        self.assertEqual(install.transform_codex(patched, remove=True), original)
+
+    def test_timestamp_hiding_can_coexist_with_other_codex_patches(self):
+        original = CodexCountdownTests().fixture()
+        patched = install.transform_codex(
+            original,
+            enabled=True,
+            hide_promotions=True,
+            hide_timestamps=True,
+        )
+
+        self.assertIn("scm-toolkit-usage-reset-countdown", patched)
+        self.assertIn("scm-toolkit-codex-promotions:start", patched)
+        self.assertIn("scm-toolkit-codex-timestamps:start", patched)
+        self.assertEqual(install.transform_codex(patched, remove=True), original)
 
 
 if __name__ == "__main__":
