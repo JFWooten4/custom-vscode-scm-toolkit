@@ -9,8 +9,11 @@ import os
 import shutil
 from pathlib import Path
 
+from toolkit_settings import load_settings
+
 HERE = Path(__file__).resolve().parent
 SOURCE = HERE / "workspace-search-extension"
+STANDALONE_CONTAINER_ID = "scmToolkit.workspaceSearchContainer"
 
 
 def extension_version() -> str:
@@ -27,6 +30,30 @@ def extension_destination(extensions_dir: Path | None = None) -> Path:
     return root / f"jfwooten4.scm-toolkit-workspace-search-{extension_version()}"
 
 
+def render_package(settings: dict[str, object] | None = None) -> dict[str, object]:
+    settings = load_settings() if settings is None else settings
+    package = json.loads((SOURCE / "package.json").read_text())
+    contributes = package["contributes"]
+    workspace_view = contributes["views"]["scm"][0]
+
+    if settings["workspaceSearchActivityBar"]:
+        contributes["viewsContainers"] = {
+            "activitybar": [
+                {
+                    "id": STANDALONE_CONTAINER_ID,
+                    "title": str(settings["workspaceSearchLabel"]),
+                    "icon": "$(search)",
+                }
+            ]
+        }
+        contributes["views"] = {STANDALONE_CONTAINER_ID: [workspace_view]}
+    else:
+        contributes.pop("viewsContainers", None)
+        contributes["views"] = {"scm": [workspace_view]}
+
+    return package
+
+
 def source_files() -> dict[Path, Path]:
     files = {
         path.relative_to(SOURCE): path
@@ -41,16 +68,30 @@ def source_files() -> dict[Path, Path]:
     return dict(sorted(files.items()))
 
 
-def destination_matches(destination: Path) -> bool:
+def expected_bytes(
+    relative: Path,
+    source: Path,
+    settings: dict[str, object],
+) -> bytes:
+    if relative == Path("package.json"):
+        return (json.dumps(render_package(settings), indent=2) + "\n").encode()
+    return source.read_bytes()
+
+
+def destination_matches(
+    destination: Path,
+    settings: dict[str, object] | None = None,
+) -> bool:
     if not destination.is_dir():
         return False
+    settings = load_settings() if settings is None else settings
     sources = source_files()
     expected = set(sources)
     actual = {path.relative_to(destination) for path in destination.rglob("*") if path.is_file()}
     if expected != actual:
         return False
     return all(
-        source.read_bytes() == (destination / relative).read_bytes()
+        expected_bytes(relative, source, settings) == (destination / relative).read_bytes()
         for relative, source in sources.items()
     )
 
@@ -61,7 +102,13 @@ def installed_versions(extensions_dir: Path) -> list[Path]:
     return sorted(extensions_dir.glob("jfwooten4.scm-toolkit-workspace-search-*"))
 
 
-def sync_extension(*, remove: bool = False, check: bool = False, extensions_dir: Path | None = None) -> bool:
+def sync_extension(
+    *,
+    remove: bool = False,
+    check: bool = False,
+    extensions_dir: Path | None = None,
+    settings: dict[str, object] | None = None,
+) -> bool:
     root = Path(extensions_dir) if extensions_dir is not None else default_extensions_dir()
     destination = extension_destination(root)
     stale = [path for path in installed_versions(root) if path != destination]
@@ -77,7 +124,8 @@ def sync_extension(*, remove: bool = False, check: bool = False, extensions_dir:
                 shutil.rmtree(target)
         return bool(targets)
 
-    changed = bool(stale) or not destination_matches(destination)
+    settings = load_settings() if settings is None else settings
+    changed = bool(stale) or not destination_matches(destination, settings=settings)
     if check or not changed:
         return changed
 
@@ -92,9 +140,12 @@ def sync_extension(*, remove: bool = False, check: bool = False, extensions_dir:
         shutil.rmtree(temp)
     shutil.copytree(SOURCE, temp)
     for relative, source in source_files().items():
-        if relative.parent != Path('.'):
+        if relative.parent != Path("."):
             (temp / relative.parent).mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source, temp / relative)
+        if relative == Path("package.json"):
+            (temp / relative).write_bytes(expected_bytes(relative, source, settings))
+        else:
+            shutil.copy2(source, temp / relative)
     if destination.exists():
         if destination.is_symlink():
             destination.unlink()
@@ -111,10 +162,12 @@ def main() -> None:
     parser.add_argument("--extensions-dir", type=Path, help="Override the VS Code extensions directory")
     args = parser.parse_args()
 
+    settings = load_settings()
     changed = sync_extension(
         remove=args.uninstall,
         check=args.check,
         extensions_dir=args.extensions_dir,
+        settings=settings,
     )
     if args.check:
         print("Workspace Search needs an update." if changed else "Workspace Search is up to date.")
@@ -124,7 +177,13 @@ def main() -> None:
         return
     destination = extension_destination(args.extensions_dir)
     print(f"Installed Workspace Search to {destination}.")
-    print("Reload or restart Visual Studio Code, then open Source Control → Workspace Search.")
+    if settings["workspaceSearchActivityBar"]:
+        print(
+            "Reload or restart Visual Studio Code, then open "
+            f'{settings["workspaceSearchLabel"]} from the Activity Bar.'
+        )
+    else:
+        print("Reload or restart Visual Studio Code, then open Source Control → Workspace Search.")
 
 
 if __name__ == "__main__":

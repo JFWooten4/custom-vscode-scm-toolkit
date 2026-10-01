@@ -13,6 +13,8 @@ DEFAULT_SETTINGS = {
     "branchNameImports": "[]",
     "shortPlaceholder": True,
     "sourceControlLabel": "Sweetiebot",
+    "workspaceSearchActivityBar": False,
+    "workspaceSearchLabel": "EFS",
     "filledButtons": False,
     "commitAndPush": True,
     "branchCleanup": True,
@@ -38,6 +40,7 @@ DEFAULT_SETTINGS = {
     "codexHidePromotions": False,
     "chatgptCustomInstructions": "",
     "chatgptWebCodexCoauthor": True,
+    "codexHideChatTimestamps": False,
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -95,6 +98,8 @@ SETTING_KEYS = {
     "branchNameImports": "scm-toolkit.branch-name-imports",
     "shortPlaceholder": "scm-toolkit.short-placeholder",
     "sourceControlLabel": "scm-toolkit.source-control-label",
+    "workspaceSearchActivityBar": "scm-toolkit.workspace-search-activity-bar",
+    "workspaceSearchLabel": "scm-toolkit.workspace-search-label",
     "filledButtons": "scm-toolkit.filled-buttons",
     "commitAndPush": "scm-toolkit.commit-and-push",
     "branchCleanup": "scm-toolkit.branch-cleanup",
@@ -120,6 +125,7 @@ SETTING_KEYS = {
     "codexHidePromotions": "scm-toolkit.codex-hide-promotions",
     "chatgptCustomInstructions": "scm-toolkit.chatgpt-custom-instructions",
     "chatgptWebCodexCoauthor": "scm-toolkit.chatgpt-web-codex-coauthor",
+    "codexHideChatTimestamps": "scm-toolkit.codex-hide-chat-timestamps",
     "defaultBranch": "scm-toolkit.default-branch",
     "remote": "scm-toolkit.remote",
 }

@@ -17,6 +17,8 @@ CODEX_START = '\n/* scm-toolkit-codex-countdown:start */\n'
 CODEX_END = '\n/* scm-toolkit-codex-countdown:end */\n'
 CODEX_PROMOTIONS_START = '\n/* scm-toolkit-codex-promotions:start */\n'
 CODEX_PROMOTIONS_END = '\n/* scm-toolkit-codex-promotions:end */\n'
+CODEX_TIMESTAMPS_START = '\n/* scm-toolkit-codex-timestamps:start */\n'
+CODEX_TIMESTAMPS_END = '\n/* scm-toolkit-codex-timestamps:end */\n'
 
 def ai_wrapper_path():
     configured = os.environ.get(
@@ -299,6 +301,16 @@ def strip_codex_promotions_payload(text):
     return before + after
 
 
+def strip_codex_timestamps_payload(text):
+    if CODEX_TIMESTAMPS_START not in text:
+        return text
+    if text.count(CODEX_TIMESTAMPS_START) != 1 or text.count(CODEX_TIMESTAMPS_END) != 1:
+        raise ValueError("Unexpected Codex timestamp patch markers; refusing to modify this file.")
+    before, rest = text.split(CODEX_TIMESTAMPS_START, 1)
+    _, after = rest.split(CODEX_TIMESTAMPS_END, 1)
+    return before + after
+
+
 def codex_countdown_edit(js):
     matches = []
     pattern = re.compile(
@@ -335,7 +347,9 @@ def codex_countdown_edit(js):
     return original, replacement
 
 
-def transform_codex(js, enabled=False, hide_promotions=False, remove=False):
+def transform_codex(js, enabled=False, hide_promotions=False, hide_timestamps=False, remove=False):
+    if CODEX_TIMESTAMPS_START in js:
+        js = strip_codex_timestamps_payload(js)
     if CODEX_PROMOTIONS_START in js:
         js = strip_codex_promotions_payload(js)
 
@@ -373,6 +387,13 @@ def transform_codex(js, enabled=False, hide_promotions=False, remove=False):
             CODEX_PROMOTIONS_START
             + (HERE / "codex-hide-promotions.js").read_text()
             + CODEX_PROMOTIONS_END
+        )
+
+    if not remove and hide_timestamps:
+        js += (
+            CODEX_TIMESTAMPS_START
+            + (HERE / "codex-hide-chat-timestamps.js").read_text()
+            + CODEX_TIMESTAMPS_END
         )
 
     return js
@@ -438,7 +459,7 @@ def application_paths(app_path):
 
 
 def codex_bundle_matches(text):
-    if CODEX_START in text or CODEX_PROMOTIONS_START in text:
+    if CODEX_START in text or CODEX_PROMOTIONS_START in text or CODEX_TIMESTAMPS_START in text:
         return True
 
     if "You’re out of Codex messages" in text:
@@ -464,15 +485,15 @@ def codex_bundle_path(extension_path=None):
         if not assets.is_dir():
             continue
         patched = []
-        for path in assets.glob("app-initial-*.js"):
+        for path in assets.glob("*.js"):
             text = path.read_text()
-            if CODEX_START in text or CODEX_PROMOTIONS_START in text:
+            if CODEX_START in text or CODEX_PROMOTIONS_START in text or CODEX_TIMESTAMPS_START in text:
                 patched.append(path)
         if len(patched) == 1:
             return patched[0]
 
         matches = []
-        for path in assets.glob("app-initial-*.js"):
+        for path in assets.glob("*.js"):
             if codex_bundle_matches(path.read_text()):
                 matches.append(path)
         if len(matches) == 1:
@@ -566,6 +587,7 @@ def main():
         else workspace_search.sync_extension(
             remove=args.uninstall,
             check=True,
+            settings=settings,
         )
     )
 
@@ -573,22 +595,36 @@ def main():
     should_find_codex = (
         settings["codexUsageResetCountdown"]
         or settings["codexHidePromotions"]
+        or settings["codexHideChatTimestamps"]
         or args.uninstall
     )
     if codex_path is None and should_find_codex:
-        raise ValueError("OpenAI Codex extension webview bundle was not found or is unsupported.")
+        message = "OpenAI Codex extension webview bundle was not found or is unsupported."
+        if args.codex_only:
+            raise ValueError(message)
+        print(f"Warning: {message} Skipping optional Codex customizations.")
     if codex_path is not None:
-        paths.append(codex_path)
         codex_old = codex_path.read_text()
-        old.append(codex_old)
-        new.append(
-            transform_codex(
+        try:
+            codex_new = transform_codex(
                 codex_old,
                 enabled=settings["codexUsageResetCountdown"],
                 hide_promotions=settings["codexHidePromotions"],
+                hide_timestamps=settings["codexHideChatTimestamps"],
                 remove=args.uninstall,
             )
-        )
+        except ValueError as error:
+            if (
+                args.codex_only
+                or CODEX_START in codex_old
+                or CODEX_PROMOTIONS_START in codex_old
+            ):
+                raise
+            print(f"Warning: {error} Skipping optional Codex customizations.")
+        else:
+            paths.append(codex_path)
+            old.append(codex_old)
+            new.append(codex_new)
 
     if (
         old == list(new)
@@ -612,7 +648,10 @@ def main():
                 remove=args.uninstall,
                 destination=model_picker_path,
             )
-            workspace_search.sync_extension(remove=args.uninstall)
+            workspace_search.sync_extension(
+                remove=args.uninstall,
+                settings=settings,
+            )
 
     action = "Validated" if args.check else "Removed" if args.uninstall else "Installed"
     target = "Codex customizations" if args.codex_only else "SCM toolkit"
