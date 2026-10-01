@@ -2,18 +2,22 @@
   "name": "scm-toolkit-workspace-search",
   "displayName": "SCM Toolkit Workspace Search",
   "description": "Local semantic and hybrid workspace search in the Source Control sidebar using Ollama.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "jfwooten4",
   "engines": {
     "vscode": "^1.106.0"
   },
-  "categories": ["Other", "Machine Learning"],
+  "categories": [
+    "Other",
+    "Machine Learning"
+  ],
   "main": "./extension.js",
   "activationEvents": [
     "onView:scmToolkit.workspaceSearch",
     "onCommand:scmToolkit.openSettings",
     "onCommand:scmToolkit.workspaceSearch.reindex",
-    "onCommand:scmToolkit.workspaceSearch.clearIndex"
+    "onCommand:scmToolkit.workspaceSearch.clearIndex",
+    "onCommand:scmToolkit.chatgpt.searchRepositories"
   ],
   "contributes": {
     "views": {
@@ -42,6 +46,11 @@
         "command": "scmToolkit.workspaceSearch.clearIndex",
         "title": "Clear Workspace Search Index",
         "icon": "$(trash)"
+      },
+      {
+        "command": "scmToolkit.chatgpt.searchRepositories",
+        "title": "Search Linked GitHub Repositories",
+        "icon": "$(github)"
       }
     ],
     "menus": {
@@ -78,7 +87,11 @@
         },
         "scmToolkit.workspaceSearch.mode": {
           "type": "string",
-          "enum": ["hybrid", "semantic", "exact"],
+          "enum": [
+            "hybrid",
+            "semantic",
+            "exact"
+          ],
           "default": "hybrid",
           "description": "Default ranking mode. Hybrid combines semantic and exact term matching."
         },
