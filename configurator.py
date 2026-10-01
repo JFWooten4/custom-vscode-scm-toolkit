@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from toolkit_settings import load_settings
 from branch_names import load_catalog, merge_catalog, parse_imported_packs, parse_name_list, parse_pack_id_list
+from chatgpt_integration import import_pgp_secret_key, sync_codex_instructions
 
 
 OLLAMA_URL = "http://127.0.0.1:11434"
@@ -60,6 +61,8 @@ SETTINGS = (
     Setting("mcpPrServer", "scm-toolkit.mcp-pr-server", "MCP server", "Configured VS Code MCP server name.", "Pull requests", "text"),
     Setting("mcpPrTool", "scm-toolkit.mcp-pr-tool", "MCP tool", "Tool invoked to create a pull request.", "Pull requests", "text"),
     Setting("codexUsageResetCountdown", "scm-toolkit.codex-usage-reset-countdown", "Codex reset countdown", "Show the live usage-reset countdown in Codex limit banners.", "Codex"),
+    Setting("chatgptCustomInstructions", "scm-toolkit.chatgpt-custom-instructions", "Custom instructions", "Keep a local copy of ChatGPT web custom instructions and mirror them into Codex global instructions.", "ChatGPT", "textarea"),
+    Setting("chatgptWebCodexCoauthor", "scm-toolkit.chatgpt-web-codex-coauthor", "Codex Web co-author", "Require the Codex Web co-author trailer on Git commits made through web or GitHub tools.", "ChatGPT"),
 )
 
 
@@ -109,7 +112,14 @@ def parse_submission(values: dict[str, list[str]]) -> dict[str, bool | str]:
             parsed[setting.name] = setting.name in values
             continue
 
-        value = values.get(setting.name, [""])[0].strip()
+        raw_value = values.get(setting.name, [""])[0]
+        if setting.kind == "textarea":
+            if "\x00" in raw_value:
+                raise ValueError(f"{setting.label} contains an invalid null byte.")
+            parsed[setting.name] = raw_value.strip()
+            continue
+
+        value = raw_value.strip()
         if not value:
             raise ValueError(f"{setting.label} cannot be empty.")
         if "\x00" in value or "\n" in value or "\r" in value:
@@ -218,6 +228,13 @@ def _setting_control(setting: Setting, current: object) -> str:
             f'placeholder="rainy-day&#10;my-oc">{html.escape(value)}</textarea></label>'
         )
 
+    if setting.kind == "textarea":
+        return (
+            '<label class="setting textarea-row">'
+            f'<span><strong>{label}</strong><small>{description}</small></span>'
+            f'<textarea name="{name}" rows="8" spellcheck="true">{html.escape(str(current or ""))}</textarea></label>'
+        )
+
     if setting.kind == "imports":
         raw = str(current or "[]")
         try:
@@ -261,6 +278,18 @@ def render_form(
         )
         if section == "Branch names":
             controls = _pack_controls(current) + controls
+        if section == "ChatGPT":
+            controls += (
+                '<div class="setting textarea-row"><span><strong>Sync from ChatGPT web</strong>'
+                '<small>Copy the Custom Instructions text from ChatGPT Personalization, then use this button. '
+                'The localhost configurator reads only your clipboard after you click.</small></span>'
+                '<button type="button" id="sync-chatgpt-instructions">Sync from web</button></div>'
+                '<label class="setting textarea-row"><span><strong>PGP secret key</strong>'
+                '<small>Optional. Imported directly into GnuPG through stdin. The private key is never saved '
+                'to Git config, rendered back into this page, or written to command output.</small></span>'
+                '<textarea name="pgpSecretKey" rows="6" spellcheck="false" autocomplete="off" '
+                'placeholder="-----BEGIN PGP PRIVATE KEY BLOCK-----"></textarea></label>'
+            )
         status = ""
         if section == "Ollama":
             status = f'<p class="status">{html.escape(ollama_status)}</p>'
@@ -284,6 +313,25 @@ section{{margin:16px 0;padding:8px 20px;background:var(--panel);border:1px solid
 </style></head><body><main><header><h1>SCM Toolkit Setup</h1><p>Configure locally, save to global Git config, then return to the terminal. No data leaves this computer.</p></header>
 {error_html}<form method="post" action="{action}">{''.join(sections)}<datalist id="ollama-models">{options}</datalist>
 <div class="actions"><button type="submit" name="action" value="cancel">Cancel</button><button class="primary" type="submit" name="action" value="save">{html.escape(action_label)}</button></div></form>
+<script>
+const syncButton = document.getElementById('sync-chatgpt-instructions');
+if (syncButton) {{
+  syncButton.addEventListener('click', async () => {{
+    const target = document.querySelector('textarea[name="chatgptCustomInstructions"]');
+    if (!target) return;
+    try {{
+      const value = await navigator.clipboard.readText();
+      if (!value.trim()) throw new Error('Clipboard is empty.');
+      target.value = value.trim();
+      target.dispatchEvent(new Event('input', {{ bubbles: true }}));
+      syncButton.textContent = 'Synced';
+    }} catch (error) {{
+      syncButton.textContent = 'Copy instructions, then retry';
+      syncButton.title = String(error);
+    }}
+  }});
+}}
+</script>
 </main></body></html>"""
 
 
@@ -305,7 +353,7 @@ def run_configurator(current: dict[str, object], action_label: str = "Save confi
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
-            self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'")
+            self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; form-action 'self'; base-uri 'none'")
             self.end_headers()
             self.wfile.write(body)
 
@@ -342,6 +390,11 @@ def run_configurator(current: dict[str, object], action_label: str = "Save confi
             try:
                 parsed = parse_submission(values)
                 save_settings(parsed)
+                sync_codex_instructions(
+                    str(parsed["chatgptCustomInstructions"]),
+                    bool(parsed["chatgptWebCodexCoauthor"]),
+                )
+                import_pgp_secret_key(values.get("pgpSecretKey", [""])[0])
             except (RuntimeError, ValueError) as error:
                 self._send(render_form(current, models, ollama_status, token, action_label, str(error)), 400)
                 return
