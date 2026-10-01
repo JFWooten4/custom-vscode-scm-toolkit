@@ -470,6 +470,16 @@ class CodexCountdownTests(unittest.TestCase):
 
 
 class CodexPromotionTests(unittest.TestCase):
+    def test_bundle_discovery_supports_split_extension_chunks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            extension = Path(directory)
+            assets = extension / "webview/assets"
+            assets.mkdir(parents=True)
+            (assets / "app-initial-test.js").write_text("const app = {};")
+            bundle = assets / "home-announcement-state-test.js"
+            bundle.write_text("const title=`Enable Fast mode`;")
+            self.assertEqual(install.codex_bundle_path(extension), bundle)
+
     def test_promotion_hiding_is_off_by_default(self):
         self.assertFalse(install.DEFAULT_SETTINGS["codexHidePromotions"])
 
