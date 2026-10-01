@@ -17,6 +17,11 @@ class WorkspaceSearchInstallerTests(unittest.TestCase):
 
         self.assertIn("onCommand:scmToolkit.openSettings", package["activationEvents"])
         self.assertIn("scmToolkit.openSettings", command_ids)
+        self.assertIn("scmToolkit.chatgpt.searchRepositories", command_ids)
+        self.assertIn(
+            "onCommand:scmToolkit.chatgpt.searchRepositories",
+            package["activationEvents"],
+        )
         self.assertIn(
             "vscode.commands.registerCommand('scmToolkit.openSettings'",
             (workspace_search.SOURCE / "extension.js").read_text(),
@@ -85,6 +90,7 @@ class WorkspaceSearchInstallerTests(unittest.TestCase):
             self.assertTrue((destination / "toolkit_settings.py").is_file())
             self.assertTrue((destination / "branch_names.py").is_file())
             self.assertTrue((destination / "branch_name_packs.json").is_file())
+            self.assertTrue((destination / "chatgpt_integration.py").is_file())
             self.assertFalse(
                 workspace_search.sync_extension(
                     check=True,

@@ -41,6 +41,8 @@ SETTINGS = {
     "mcpPrTool": "github_create_pull_request",
     "codexUsageResetCountdown": False,
     "codexHidePromotions": False,
+    "chatgptCustomInstructions": "",
+    "chatgptWebCodexCoauthor": True,
     "codexHideChatTimestamps": False,
     "defaultBranch": "main",
     "remote": "origin",

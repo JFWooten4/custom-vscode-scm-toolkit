@@ -45,6 +45,8 @@ class SubmissionTests(unittest.TestCase):
         self.assertEqual(parsed["branchNameDisabledPacks"], "")
         self.assertEqual(parsed["branchCustomNames"], "")
         self.assertEqual(parsed["branchNameImports"], "[]")
+        self.assertEqual(parsed["chatgptCustomInstructions"], "")
+        self.assertTrue(parsed["chatgptWebCodexCoauthor"])
 
     def test_parses_disabled_custom_and_imported_branch_names(self):
         values = form_values()
@@ -99,6 +101,22 @@ class SubmissionTests(unittest.TestCase):
         self.assertIn('name="codexHideChatTimestamps"', page)
         self.assertIn('name="workspaceSearchActivityBar"', page)
         self.assertIn('name="workspaceSearchLabel"', page)
+        self.assertIn('name="chatgptCustomInstructions"', page)
+        self.assertIn('id="sync-chatgpt-instructions"', page)
+        self.assertIn('name="pgpSecretKey"', page)
+        self.assertNotIn("PGP PRIVATE KEY BLOCK-----\nsecret", page)
+
+
+    def test_custom_instructions_allow_multiline_text(self):
+        values = form_values()
+        values["chatgptCustomInstructions"] = ["Use ASCII quotes.\nKeep replies compact."]
+
+        parsed = configurator.parse_submission(values)
+
+        self.assertEqual(
+            parsed["chatgptCustomInstructions"],
+            "Use ASCII quotes.\nKeep replies compact.",
+        )
 
 
 class GitConfigTests(unittest.TestCase):
