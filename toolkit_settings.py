@@ -36,6 +36,8 @@ DEFAULT_SETTINGS = {
     "mcpPrTool": "github_create_pull_request",
     "codexUsageResetCountdown": False,
     "codexHidePromotions": False,
+    "chatgptCustomInstructions": "",
+    "chatgptWebCodexCoauthor": True,
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -116,6 +118,8 @@ SETTING_KEYS = {
     "mcpPrTool": "scm-toolkit.mcp-pr-tool",
     "codexUsageResetCountdown": "scm-toolkit.codex-usage-reset-countdown",
     "codexHidePromotions": "scm-toolkit.codex-hide-promotions",
+    "chatgptCustomInstructions": "scm-toolkit.chatgpt-custom-instructions",
+    "chatgptWebCodexCoauthor": "scm-toolkit.chatgpt-web-codex-coauthor",
     "defaultBranch": "scm-toolkit.default-branch",
     "remote": "scm-toolkit.remote",
 }
