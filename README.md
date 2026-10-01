@@ -6,6 +6,7 @@ Current features:
 
 - show the current branch inside the SCM message box and open VS Code's normal branch picker from it
 - switch the branch selector and native Commit button between outlined and accent-filled styles
+- show enabled action icons in pure white while hovering SCM or Source Control Graph rows and action buttons, preserving their normal theme colors otherwise
 - shorten the commit-message placeholder to `Message`
 - optionally show a commit-and-push checkbox that dispatches the push without holding commit completion
 - optionally show a guarded local-branch cleanup button
