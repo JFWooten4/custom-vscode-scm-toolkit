@@ -1588,6 +1588,25 @@
       }
     },
     {
+      "id": "lfo",
+      "label": "LFO / Flower's Journey",
+      "description": "Characters from LFO's Flower's Journey.",
+      "names": [
+        "flower",
+        "sweet-shot",
+        "kefania",
+        "mobli",
+        "lindsey"
+      ],
+      "sources": {
+        "flower": "https://www.patreon.com/posts/flowers-journey-95012323",
+        "sweet-shot": "https://www.castingcall.club/projects/flowers-journey",
+        "kefania": "https://www.castingcall.club/projects/flowers-journey",
+        "mobli": "https://www.patreon.com/the1lfo/posts/flowers-journey-151724312",
+        "lindsey": "https://music.amazon.com/tracks/B0FP6XW5QV"
+      }
+    },
+    {
       "id": "fandom-ocs",
       "label": "Fandom OCs",
       "description": "Well-known community OCs and fan characters.",
@@ -1598,7 +1617,6 @@
         "fluffle-puff",
         "celestai",
         "turing-test",
-        "flower",
         "cleverpony",
         "gears",
         "applebloom-bot",
