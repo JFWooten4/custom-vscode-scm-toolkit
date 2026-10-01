@@ -197,13 +197,20 @@ def _pack_controls(current: dict[str, object]) -> str:
         escaped_id = html.escape(pack_id, quote=True)
         controls.append(
             f'<input type="hidden" name="branchNameKnownPack" value="{escaped_id}">'
-            '<label class="setting toggle-row">'
-            f'<span><strong>{html.escape(str(pack["label"]))}</strong>'
-            f'<small>{html.escape(detail)}</small></span>'
+            f'<label class="pack-card" title="{html.escape(detail, quote=True)}">'
             f'<input type="checkbox" name="branchNamePack" value="{escaped_id}"{checked}>'
-            '<span class="toggle" aria-hidden="true"></span></label>'
+            f'<span><strong>{html.escape(str(pack["label"]))}</strong>'
+            f'<small>{count} names</small></span></label>'
         )
-    return "".join(controls)
+    return (
+        '<fieldset class="pack-picker"><legend>Name bundles</legend>'
+        '<p>Choose the bundles to draw branch names from.</p>'
+        '<div class="pack-toolbar"><input type="search" id="pack-search" '
+        'aria-label="Find name bundles" placeholder="Find a bundle…">'
+        '<output id="pack-count" aria-live="polite"></output></div>'
+        '<div class="pack-grid">' + "".join(controls) + '</div>'
+        '<p id="pack-empty" hidden>No matching bundles.</p></fieldset>'
+    )
 
 
 def _setting_control(setting: Setting, current: object) -> str:
@@ -312,11 +319,31 @@ section{{margin:16px 0;padding:8px 20px;background:var(--panel);border:1px solid
 .field-row input,.textarea-row textarea{{width:min(440px,52%);padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text);font:inherit}}.textarea-row textarea{{resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}}
 .toggle-row input{{position:absolute;opacity:0;pointer-events:none}}.toggle{{position:relative;width:42px;height:24px;flex:none;border-radius:99px;background:#484f58;transition:.15s}}.toggle:after{{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:white;transition:.15s}}input:checked+.toggle{{background:var(--accent)}}input:checked+.toggle:after{{transform:translateX(18px)}}input:focus-visible+.toggle,.field-row input:focus,.textarea-row textarea:focus{{outline:2px solid var(--accent);outline-offset:2px}}
 .actions{{position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:10px;margin-top:24px;padding:16px;background:color-mix(in srgb,var(--bg) 92%,transparent);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(12px)}}button{{padding:9px 15px;border:1px solid var(--line);border-radius:7px;background:transparent;color:var(--text);font:inherit;cursor:pointer}}button.primary{{border-color:var(--accent);background:var(--accent);font-weight:600}}.error{{margin-bottom:16px;padding:12px;border:1px solid var(--danger);border-radius:8px;color:#ffb3ad}}
+.pack-picker{{margin:12px 0;padding:14px;border:1px solid var(--line);border-radius:10px;min-width:0}}.pack-picker legend{{font-weight:600;padding:0 6px}}.pack-picker p{{margin:0 0 12px;color:var(--muted)}}.pack-toolbar{{display:flex;align-items:center;gap:12px;margin-bottom:12px}}.pack-toolbar input{{width:100%;min-width:0;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font:inherit}}.pack-toolbar output{{white-space:nowrap;color:var(--muted);font-size:12px}}.pack-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;max-height:320px;overflow:auto;padding:3px}}.pack-card{{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:var(--bg);transition:border-color .15s,background .15s}}.pack-card:has(input:checked){{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--bg))}}.pack-card:has(input:focus-visible){{outline:2px solid var(--accent);outline-offset:1px}}.pack-card input{{accent-color:var(--accent);width:16px;height:16px;flex:none}}.pack-card[hidden]{{display:none}}.pack-card strong{{font-size:13px}}.pack-card small{{font-size:12px}}
 @media(max-width:620px){{main{{width:min(100% - 20px,880px);margin-top:20px}}.field-row,.textarea-row{{align-items:flex-start;flex-direction:column;gap:8px}}.field-row input,.textarea-row textarea{{width:100%}}}}
 </style></head><body><main><header><h1>SCM Toolkit Setup</h1><p>Configure locally, save to global Git config, then return to the terminal. No data leaves this computer.</p></header>
 {error_html}<form method="post" action="{action}">{''.join(sections)}<datalist id="ollama-models">{options}</datalist>
 <div class="actions"><button type="submit" name="action" value="cancel">Cancel</button><button class="primary" type="submit" name="action" value="save">{html.escape(action_label)}</button></div></form>
 <script>
+const packSearch = document.getElementById('pack-search');
+const packCards = [...document.querySelectorAll('.pack-card')];
+function updatePacks() {{
+  const query = packSearch.value.trim().toLocaleLowerCase();
+  let visible = 0;
+  let selected = 0;
+  for (const card of packCards) {{
+    card.hidden = !card.textContent.toLocaleLowerCase().includes(query);
+    if (!card.hidden) visible++;
+    if (card.querySelector('input').checked) selected++;
+  }}
+  document.getElementById('pack-count').textContent = `${{selected}} / ${{packCards.length}} selected`;
+  document.getElementById('pack-empty').hidden = visible > 0;
+}}
+if (packSearch) {{
+  packSearch.addEventListener('input', updatePacks);
+  for (const card of packCards) card.addEventListener('change', updatePacks);
+  updatePacks();
+}}
 const syncButton = document.getElementById('sync-chatgpt-instructions');
 if (syncButton) {{
   syncButton.addEventListener('click', async () => {{
