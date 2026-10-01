@@ -1465,11 +1465,13 @@
         "fern-flare",
         "capper-dapperpaws",
         "discord",
+        "queen-chrysalis",
         "queen-novo"
       ],
       "sources": {
         "queen-novo": "https://mlp.fandom.com/wiki/Queen_Novo",
-        "capper-dapperpaws": "https://mlp.fandom.com/wiki/Capper"
+        "capper-dapperpaws": "https://mlp.fandom.com/wiki/Capper",
+        "queen-chrysalis": "https://mlp.fandom.com/wiki/Queen_Chrysalis"
       }
     },
     {
@@ -1534,17 +1536,25 @@
       "description": "Tamers12345 continuity characters and variants.",
       "names": [
         "flawless-sparklemoon",
+        "fractured",
         "care-package",
         "future-soarin",
         "friendship",
         "arinos",
+        "dazzle-feather",
         "skye-silver",
+        "starsong",
         "parcelcore",
         "professor-kirin",
         "bobby-moonbeam",
         "professor-majorchord",
         "astro-novalite"
-      ]
+      ],
+      "sources": {
+        "fractured": "https://tamers12345.fandom.com/wiki/Tamers12345_My_Little_Pony_Characters",
+        "dazzle-feather": "https://tamers12345.fandom.com/wiki/Tamers12345_My_Little_Pony_Characters",
+        "starsong": "https://tamers12345.fandom.com/wiki/StarSong"
+      }
     },
     {
       "id": "princewhateverer",
