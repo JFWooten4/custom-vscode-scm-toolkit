@@ -39,6 +39,74 @@ function openSettings(context) {
   });
 }
 
+async function linkedGithubRepositories(query = '') {
+  const session = await vscode.authentication.getSession('github', ['repo'], { createIfNone: true });
+  const needle = String(query || '').trim().toLowerCase();
+  const repositories = [];
+
+  for (let page = 1; page <= 20; page += 1) {
+    const response = await fetch(
+      `https://api.github.com/user/repos?visibility=all&affiliation=owner,collaborator,organization_member&sort=updated&per_page=100&page=${page}`,
+      {
+        headers: {
+          Accept: 'application/vnd.github+json',
+          Authorization: `Bearer ${session.accessToken}`,
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`GitHub repository search failed (${response.status}).`);
+    }
+    const pageItems = await response.json();
+    if (!Array.isArray(pageItems)) break;
+    for (const repo of pageItems) {
+      const fullName = String(repo.full_name || '');
+      if (!fullName || (needle && !fullName.toLowerCase().includes(needle))) continue;
+      repositories.push({
+        fullName,
+        private: Boolean(repo.private),
+        htmlUrl: String(repo.html_url || ''),
+        permissions: repo.permissions || {}
+      });
+    }
+    if (pageItems.length < 100) break;
+  }
+
+  return repositories;
+}
+
+async function searchLinkedGithubRepositories(query) {
+  const supplied = typeof query === 'string';
+  const search = supplied
+    ? query
+    : await vscode.window.showInputBox({
+        prompt: 'Search repositories available through the linked GitHub account',
+        placeHolder: 'owner/repository'
+      });
+  if (search === undefined) return [];
+  const repositories = await linkedGithubRepositories(search);
+  if (supplied) return repositories;
+
+  if (!repositories.length) {
+    vscode.window.showInformationMessage('No accessible GitHub repositories matched that search.');
+    return [];
+  }
+
+  const pick = await vscode.window.showQuickPick(
+    repositories.map(repo => ({
+      label: repo.fullName,
+      description: repo.private ? 'private' : 'public',
+      repo
+    })),
+    { placeHolder: 'Repositories use the same linked GitHub authorization boundary.' }
+  );
+  if (pick?.repo?.htmlUrl) {
+    await vscode.env.openExternal(vscode.Uri.parse(pick.repo.htmlUrl));
+  }
+  return repositories;
+}
+
 function settings() {
   const cfg = vscode.workspace.getConfiguration(CONFIG_ROOT);
   return {
@@ -61,6 +129,9 @@ async function activate(context) {
   );
   context.subscriptions.push(vscode.commands.registerCommand('scmToolkit.openSettings', () => {
     openSettings(context);
+  }));
+  context.subscriptions.push(vscode.commands.registerCommand('scmToolkit.chatgpt.searchRepositories', query => {
+    return searchLinkedGithubRepositories(query);
   }));
 
   const watcher = vscode.workspace.createFileSystemWatcher('**/*');
