@@ -88,7 +88,6 @@ function scmToolkitEnableBlankStateRefresh(
     let refreshing = false;
     let disposed = false;
     let lastAutoPullState;
-    const progressRoot = widget.element.closest('.scm-view')?.parentElement;
 
     const hasChanges = () => provider.groups.some(group => group.resources.length > 0);
 
@@ -133,14 +132,12 @@ function scmToolkitEnableBlankStateRefresh(
             }
 
             refreshing = true;
-            progressRoot?.classList.add('scm-toolkit-refreshing');
             try {
                 await commands.executeCommand('git.refresh', repositoryArgument);
                 await maybeAutoPull();
             } catch {
                 // The built-in Git extension owns refresh errors; keep blank-state polling best-effort.
             } finally {
-                progressRoot?.classList.remove('scm-toolkit-refreshing');
                 refreshing = false;
                 if (!disposed && !hasChanges()) schedule(1500);
             }
@@ -170,7 +167,6 @@ function scmToolkitEnableBlankStateRefresh(
         dispose() {
             disposed = true;
             clearTimer();
-            progressRoot?.classList.remove('scm-toolkit-refreshing');
             resourceDisposable.dispose();
             doc.removeEventListener('visibilitychange', onVisibilityChange);
         }
@@ -536,18 +532,31 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             return;
         }
 
-        const originalMessage = currentInput.value ?? '';
-        if (!originalMessage.trim()) {
+        const input = currentInput;
+        const repositoryUri = currentRepositoryUri;
+        const originalMessage = input.value ?? '';
+        if (!originalMessage.trim() && !settings.codexCommitContext) {
             notifications.error('Enter a commit message before committing with Codex attribution.');
             return;
         }
 
-        const attributedMessage = scmToolkitWithCodexCoauthor(originalMessage);
+        let attributedMessage;
         committingWithCodex = true;
         refreshCodexCommit();
-        currentInput.value = attributedMessage;
 
         try {
+            await commands.executeCommand('scmToolkit.prepareCodexCommit', repositoryUri);
+            const message = originalMessage.trim() ? originalMessage : await commands.executeCommand(
+                'scmToolkit.generateCodexCommitMessage', repositoryUri
+            );
+            if (currentInput !== input || input.value !== originalMessage) {
+                throw new Error('The selected repository or commit message changed during local generation. Try again.');
+            }
+            if (typeof message !== 'string' || !message.trim()) {
+                throw new Error('Local Ollama returned an empty commit message.');
+            }
+            attributedMessage = scmToolkitWithCodexCoauthor(message);
+            input.setValue(attributedMessage, false);
             await commands.executeCommand(
                 currentCommitCommand.id,
                 ...(currentCommitCommand.arguments ?? [])
@@ -555,8 +564,8 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         } catch (error) {
             notifications.error(error);
         } finally {
-            if (currentInput?.value === attributedMessage) {
-                currentInput.value = originalMessage;
+            if (attributedMessage && input.value === attributedMessage) {
+                input.setValue(originalMessage, false);
             }
             committingWithCodex = false;
             refreshCodexCommit();
@@ -711,12 +720,11 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         refreshBranchControls();
 
         try {
-            const branchName = await commands.executeCommand('scmToolkit.createBranch', repository, {
+            await commands.executeCommand('scmToolkit.createBranch', repository, {
                 defaultBranch: settings.defaultBranch,
                 remote: settings.remote,
                 names: scmToolkitBranchNamePool(),
             });
-            notifications.info(`Created and switched to ${branchName}.`);
         } catch (error) {
             notifications.error(error);
         } finally {

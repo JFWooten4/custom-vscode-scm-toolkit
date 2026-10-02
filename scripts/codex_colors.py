@@ -9,6 +9,7 @@ COLOR_SETTINGS = (
     "codexSendBackground",
     "codexSendForeground",
     "codexComposerLabelColor",
+    "codexDropAccent",
 )
 
 
@@ -44,9 +45,13 @@ def transform(css, settings, remove=False):
         css = before + after
     if remove:
         return css
-    background, foreground, label = [validate_color(settings.get(key, '')) for key in COLOR_SETTINGS]
+    background, foreground, label, drop = [validate_color(settings.get(key, '')) for key in COLOR_SETTINGS]
     scope = ':root[data-codex-window-type=extension]'
     rules = []
+    if drop:
+        rules.append(f'{scope} {{ --color-codex-drop-overlay: {drop}; --color-codex-drop-prompt: {drop}; }}')
+        rules.append(f'{scope} [class*="bg-codex-drop-overlay"] {{ border-color: {drop} !important; }}')
+        rules.append(f'{scope} .bg-codex-drop-prompt {{ color: #ffffff !important; border-color: {drop} !important; }}')
     if background:
         rules.append(f'{scope} button.bg-composer-primary {{ background-color: {background} !important; }}')
     if foreground:

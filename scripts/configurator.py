@@ -44,11 +44,12 @@ SETTINGS = (
     Setting("branchCleanup", "scm-toolkit.branch-cleanup", "Branch cleanup", "Show guarded local-branch cleanup controls.", "Source control"),
     Setting("autocompleteToggle", "scm-toolkit.autocomplete-toggle", "Autocomplete toggle", "Show the inline-suggestion switch in the SCM message row.", "Source control"),
     Setting("codexCoauthor", "scm-toolkit.codex-coauthor", "Codex co-author button", "Show the attributed commit action.", "Source control"),
+    Setting("codexCommitContext", "scm-toolkit.codex-commit-context", "Local commit messages from Codex text", "When the co-author commit message is blank, use this window's current conversation and staged changes with local Ollama. Codex keeps running.", "Source control"),
     Setting("hideOutgoingSyncCount", "scm-toolkit.hide-outgoing-sync-count", "Hide outgoing count", "Remove the outgoing commit count from Sync.", "Source control"),
     Setting("blankStateRefresh", "scm-toolkit.blank-state-refresh", "Refresh blank repositories", "Refresh clean repositories so their first new change appears quickly.", "Source control"),
     Setting("graphOpenWorkingFile", "scm-toolkit.graph-open-working-file", "Open graph files from working tree", "Make Source Control Graph Open File target the checked-out working-tree file instead of the selected commit snapshot.", "Source control"),
     Setting("workspaceSearchActivityBar", "scm-toolkit.workspace-search-activity-bar", "Standalone Activity Bar", "Move Workspace Search into its own Activity Bar container instead of the Source Control view.", "Workspace Search"),
-    Setting("workspaceSearchLabel", "scm-toolkit.workspace-search-label", "Standalone label", "Label for the standalone Workspace Search Activity Bar container.", "Workspace Search", "text"),
+    Setting("workspaceSearchLabel", "scm-toolkit.workspace-search-label", "Search label", "Label for the Workspace Search panel and its standalone Activity Bar container.", "Workspace Search", "text"),
     Setting("defaultBranch", "scm-toolkit.default-branch", "Default branch", "Protected branch and pull-request base.", "Repository", "text"),
     Setting("remote", "scm-toolkit.remote", "Git remote", "Remote used for branch checks and repository discovery.", "Repository", "text"),
     Setting("branchNameDisabledPacks", "scm-toolkit.branch-name-disabled-packs", "Name packs", "Enable or disable built-in and imported branch-name packs.", "Branch names", "packs"),
@@ -67,10 +68,11 @@ SETTINGS = (
     Setting("codexSendBackground", "scm-toolkit.codex-send-background", "Send button background", "Hex color for the Codex send button. Leave blank to use the theme.", "Codex", "color"),
     Setting("codexSendForeground", "scm-toolkit.codex-send-foreground", "Send button icon", "Hex color for the Codex send icon. Leave blank to use the theme.", "Codex", "color"),
     Setting("codexComposerLabelColor", "scm-toolkit.codex-composer-label-color", "Composer label text", "Hex color for Full access and Work locally controls. Leave blank to use the theme.", "Codex", "color"),
-    Setting("chatgptCustomInstructions", "scm-toolkit.chatgpt-custom-instructions", "Custom instructions", "Keep a local copy of ChatGPT web custom instructions and mirror them into Codex global instructions.", "ChatGPT", "textarea"),
-    Setting("chatgptWebCodexCoauthor", "scm-toolkit.chatgpt-web-codex-coauthor", "Codex Web co-author", "Require the Codex Web co-author trailer on Git commits made through web or GitHub tools.", "ChatGPT"),
-    Setting("codexHideChatTimestamps", "scm-toolkit.codex-hide-chat-timestamps", "Hide chat timestamps", "Hide standalone date/time separators inside Codex conversations.", "Codex"),
+    Setting("codexDropAccent", "scm-toolkit.codex-drop-accent", "Image drop accent", "Hex color for the drop highlight, border, and attachment prompt. Leave blank to use the theme.", "Codex", "color"),
+    Setting("chatgptCustomInstructions", "scm-toolkit.chatgpt-custom-instructions", "Codex personalization", "Keep a local copy of your ChatGPT web instructions and mirror them into the global personalization used by the Codex VS Code extension.", "Codex", "textarea"),
     Setting("codexHideDictation", "scm-toolkit.codex-hide-dictation", "Hide dictation button", "Hide the microphone dictation control in Codex chat.", "Codex"),
+    Setting("chatgptWebCodexCoauthor", "scm-toolkit.chatgpt-web-codex-coauthor", "Codex Web co-author", "Require the Codex Web co-author trailer on Git commits made through web or GitHub tools.", "Codex"),
+    Setting("codexHideChatTimestamps", "scm-toolkit.codex-hide-chat-timestamps", "Hide chat timestamps", "Hide standalone date/time separators inside Codex conversations.", "Codex"),
 )
 
 
@@ -297,15 +299,15 @@ def render_form(
         )
         if section == "Branch names":
             controls = _pack_controls(current) + controls
-        if section == "ChatGPT":
+        if section == "Codex":
             controls += (
-                '<div class="setting textarea-row"><span><strong>Sync from ChatGPT web</strong>'
-                '<small>Copy the Custom Instructions text from ChatGPT Personalization, then use this button. '
-                'The localhost configurator reads only your clipboard after you click.</small></span>'
-                '<button type="button" id="sync-chatgpt-instructions">Sync from web</button></div>'
+                '<div class="setting textarea-row"><span><strong>Import ChatGPT personalization</strong>'
+                '<small>Copy Custom Instructions from ChatGPT Personalization, then import them here. Saving mirrors '
+                'the text into the global personalization used by the Codex VS Code extension.</small></span>'
+                '<button type="button" id="sync-chatgpt-instructions">Import from ChatGPT</button></div>'
                 '<label class="setting textarea-row"><span><strong>PGP secret key</strong>'
-                '<small>Optional. Imported directly into GnuPG through stdin. The private key is never saved '
-                'to Git config, rendered back into this page, or written to command output.</small></span>'
+                '<small>Optional signing key for Codex and VS Code Git commits. Imported directly into GnuPG through stdin. '
+                'The private key is never saved to Git config, rendered back into this page, or written to command output.</small></span>'
                 '<textarea name="pgpSecretKey" rows="6" spellcheck="false" autocomplete="off" '
                 'placeholder="-----BEGIN PGP PRIVATE KEY BLOCK-----"></textarea></label>'
             )
@@ -363,7 +365,7 @@ if (syncButton) {{
       if (!value.trim()) throw new Error('Clipboard is empty.');
       target.value = value.trim();
       target.dispatchEvent(new Event('input', {{ bubbles: true }}));
-      syncButton.textContent = 'Synced';
+      syncButton.textContent = 'Imported';
     }} catch (error) {{
       syncButton.textContent = 'Copy instructions, then retry';
       syncButton.title = String(error);
@@ -380,7 +382,9 @@ def _result_page(saved: bool) -> str:
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{title}</title><style>body{{margin:0;background:#0d1117;color:#f0f6fc;font:16px system-ui;display:grid;min-height:100vh;place-items:center}}main{{text-align:center;padding:32px}}p{{color:#8b949e}}</style></head><body><main><h1>{title}</h1><p>{detail} You may close this tab.</p></main></body></html>"""
 
 
-def run_configurator(current: dict[str, object], action_label: str = "Save configuration") -> bool:
+def run_configurator(
+    current: dict[str, object], action_label: str = "Save configuration", *, open_browser: bool = True
+) -> bool:
     models, ollama_status = fetch_ollama_models()
     token = secrets.token_urlsafe(24)
     outcome: dict[str, bool | None] = {"saved": None}
@@ -446,9 +450,12 @@ def run_configurator(current: dict[str, object], action_label: str = "Save confi
 
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     url = f"http://127.0.0.1:{server.server_port}/?token={urllib.parse.quote(token)}"
-    print(f"SCM Toolkit configurator: {url}")
-    if not webbrowser.open(url):
-        print("Open the URL above in a browser.")
+    if open_browser:
+        print(f"SCM Toolkit configurator: {url}")
+        if not webbrowser.open(url):
+            print("Open the URL above in a browser.")
+    else:
+        print(json.dumps({"url": url}), flush=True)
     try:
         server.serve_forever(poll_interval=0.1)
     except KeyboardInterrupt:
@@ -459,4 +466,9 @@ def run_configurator(current: dict[str, object], action_label: str = "Save confi
 
 
 if __name__ == "__main__":
-    run_configurator(load_settings())
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--no-browser", action="store_true", help="Send the URL to the calling extension.")
+    args = parser.parse_args()
+    run_configurator(load_settings(), open_browser=not args.no_browser)

@@ -7,11 +7,15 @@ import os
 import re
 import workspace_search
 import codex_colors
+import codex_context
+import codex_image_drop
 from pathlib import Path
 from toolkit_settings import DEFAULT_SETTINGS, load_settings, read_git_bool, read_git_string
 from branch_names import resolve_runtime_settings
 
 HERE = Path(__file__).resolve().parent
+WORKBENCH_ASSETS = HERE.parent / "assets/workbench"
+CODEX_ASSETS = HERE.parent / "assets/codex"
 START = '\n/* scm-toolkit:start */\n'
 END = '\n/* scm-toolkit:end */\n'
 CODEX_START = '\n/* scm-toolkit-codex-countdown:start */\n'
@@ -144,7 +148,10 @@ def source_control_label_edits(js, label):
     anchor_index = anchor_indexes[0]
     start = max(0, anchor_index - 800)
     segment = js[start : anchor_index + len(anchor)]
-    matches = list(re.finditer(r"""(["'])Source Control\1""", segment))
+    matches = list(re.finditer(
+        r"""title\s*:\s*[\w$]+\(\s*(?:\d+|"[^"]*"|'[^']*')\s*,\s*(["'])Source Control\1\s*\)""",
+        segment,
+    ))
     if len(matches) != 1:
         raise ValueError(
             "Unsupported VS Code build: Source Control app-bar label does not match."
@@ -153,8 +160,29 @@ def source_control_label_edits(js, label):
     match = matches[0]
     suffix = segment[match.end() :]
     original = match.group(0) + suffix
-    replacement = json.dumps(str(label)) + suffix
-    return [(original, replacement)]
+    # localize2 uses the numeric NLS entry before its fallback text. A custom
+    # label must supply both title fields directly to bypass that lookup.
+    replacement = "title:" + json.dumps({"value": str(label), "original": str(label)}) + suffix
+    edits = [(original, replacement)]
+    # Moving Changes into the panel uses its view title instead of the original
+    # container title. Follow the shared containerTitle variable in that view.
+    views = js[anchor_index:anchor_index + 4000]
+    identifier = r"[A-Za-z_$][\w$]*"
+    view = re.search(
+        rf'containerTitle:(?P<title>{identifier}),name:{identifier}\('
+        rf'(?:\d+|"[^"]*"),"Changes"\),singleViewPaneContainerTitle:(?P=title)',
+        views,
+    )
+    if view:
+        assignments = list(re.finditer(
+            rf'(?<![\w$]){re.escape(view.group("title"))}={identifier}\([^;]*?\)',
+            views[:view.start()],
+        ))
+        if len(assignments) != 1:
+            raise ValueError("Unsupported VS Code build: Source Control panel title does not match.")
+        original = assignments[0].group(0)
+        edits.append((original, view.group("title") + "=" + json.dumps(str(label))))
+    return edits
 
 
 def browser_chatgpt_home_edits(js):
@@ -314,6 +342,75 @@ def strip_codex_timestamps_payload(text):
     return before + after
 
 
+def codex_countdown_edits(js):
+    identifier = r"[A-Za-z_$][\w$]*"
+    pattern = re.compile(
+        rf"(?<![\w$])(?P<title>{identifier})=(?P<date>{identifier})==null\?"
+        rf"(?P<banner>{identifier})\.title:(?P=banner)\.title\.replaceAll\(`\{{time\}}`,(?P=date)\),"
+        rf"(?P<description>{identifier})=(?P=date)==null\?(?P=banner)\.description:"
+        rf"(?P=banner)\.description\.replaceAll\(`\{{time\}}`,(?P=date)\),"
+    )
+    matches = list(pattern.finditer(js))
+    if not matches:
+        return [codex_countdown_edit(js)]
+    if len(matches) != 1:
+        raise ValueError("Unsupported Codex extension build: usage-banner anchor is ambiguous.")
+    match = matches[0]
+    segment = js[match.end():match.end() + 8000]
+    jsx = re.search(rf"\(0,({identifier})\.jsx\)\(`span`,\{{[^}}]*children:", segment)
+    if jsx is None or "codex.rateLimitUpsellBanner.dismiss" not in segment:
+        raise ValueError("Unsupported Codex extension build: usage-banner JSX anchor does not match.")
+    banner = match.group("banner")
+    edits = [(match.group(0),
+        f'{match.group("title")}=scmToolkitUsageResetMessage({banner}.title,{banner}.reset_at,{jsx.group(1)}.jsx),'
+        f'{match.group("description")}=scmToolkitUsageResetMessage({banner}.description,{banner}.reset_at,{jsx.group(1)}.jsx),')]
+    weekly = re.compile(
+        rf"(?<![\w$])(?P<display>{identifier})=(?P<date>{identifier})==null\?"
+        rf"(?P<banner>{identifier})\.description:(?P=banner)\.description\.replace\(`\{{time\}}`,(?P=date)\),"
+    )
+    for match in weekly.finditer(js):
+        before = js[max(0, match.start() - 4000):match.start()]
+        reset = re.search(rf"({identifier}\.weeklyWindow\.resetsAt)==null\?null:", before)
+        jsx = re.search(rf"\(0,({identifier})\.jsx\)", before)
+        if reset is None or jsx is None:
+            raise ValueError("Unsupported Codex extension build: weekly-reset anchor does not match.")
+        edits.append((match.group(0),
+            f'{match.group("display")}=scmToolkitUsageResetMessage({match.group("banner")}.description,{reset.group(1)},{jsx.group(1)}.jsx),'))
+    edits.extend(codex_transcript_countdown_edits(js))
+    return edits
+
+
+def codex_transcript_countdown_edits(js):
+    anchor = 'localConversation.usageLimit.upgrade.noReset'
+    if anchor not in js:
+        return []  # Older builds have no separate transcript usage-limit message.
+    identifier = r"[A-Za-z_$][\w$]*"
+    start = js.index(anchor)
+    before = js[max(0, start - 3000):start]
+    formatter = list(re.finditer(
+        rf"(?P<display>{identifier})=(?P<reset>{identifier})==null\?null:"
+        rf"{identifier}\({identifier},(?P=reset)\)", before))
+    jsx = re.search(rf"\(0,({identifier})\.jsx\)", js[start:start + 5000])
+    if len(formatter) != 1 or jsx is None:
+        raise ValueError("Unsupported Codex extension build: transcript reset-time anchor does not match.")
+    match = formatter[0]
+    edits = [(match.group(0),
+        f'{match.group("display")}={match.group("reset")}==null?null:'
+        f'(0,{jsx.group(1)}.jsx)(`scm-toolkit-usage-reset-countdown`,'
+        f'{{"reset-at":{match.group("reset")}}})')]
+    messages = list(re.finditer(
+        r"id:`localConversation\.usageLimit\.(?:upgrade|upgradeOrAddCredits|addCredits|retry)`,"
+        r"defaultMessage:`[^`]*\bat \{resetDate\}[^`]*`", js))
+    if len(messages) != 4:
+        raise ValueError("Unsupported Codex extension build: transcript usage-limit messages do not match.")
+    for match in messages:
+        original = match.group(0)
+        replacement = original.replace('`,defaultMessage:', '.countdown`,defaultMessage:')
+        replacement = replacement.replace('at {resetDate}', 'in {resetDate}')
+        edits.append((original, replacement))
+    return edits
+
+
 def strip_codex_dictation_payload(text):
     if CODEX_DICTATION_START not in text:
         return text
@@ -360,14 +457,8 @@ def codex_countdown_edit(js):
     return original, replacement
 
 
-def transform_codex(
-    js,
-    enabled=False,
-    hide_promotions=False,
-    hide_timestamps=False,
-    hide_dictation=False,
-    remove=False,
-):
+def transform_codex(js, enabled=False, hide_promotions=False, hide_timestamps=False, hide_dictation=False, remove=False):
+    js = codex_image_drop.transform(js, remove=remove)
     if CODEX_DICTATION_START in js:
         js = strip_codex_dictation_payload(js)
     if CODEX_TIMESTAMPS_START in js:
@@ -381,47 +472,50 @@ def transform_codex(
         saved = re.search(r"^/\* edit:(.*?) \*/$", payload, re.MULTILINE)
         if saved is None:
             raise ValueError("Installed Codex countdown patch is missing its edit metadata.")
-        original, replacement = json.loads(saved.group(1))
+        metadata = json.loads(saved.group(1))
+        edits = metadata["edits"] if isinstance(metadata, dict) else [metadata]
         js = strip_codex_payload(js)
-        if js.count(replacement) != 1:
-            raise ValueError(
-                "Installed Codex countdown patch changed; refusing to remove unrelated edits."
-            )
-        js = js.replace(replacement, original, 1)
+        for original, replacement in reversed(edits):
+            if js.count(replacement) != 1:
+                raise ValueError(
+                    "Installed Codex countdown patch changed; refusing to remove unrelated edits."
+                )
+            js = js.replace(replacement, original, 1)
 
     if not remove and enabled:
-        original, replacement = codex_countdown_edit(js)
-        if js.count(original) != 1:
-            raise ValueError("Unsupported Codex extension build: reset-time anchor is ambiguous.")
-        js = js.replace(original, replacement, 1)
+        edits = codex_countdown_edits(js)
+        for original, replacement in edits:
+            if js.count(original) != 1:
+                raise ValueError("Unsupported Codex extension build: reset-time anchor is ambiguous.")
+            js = js.replace(original, replacement, 1)
         js = (
             js
             + CODEX_START
             + "/* edit:"
-            + json.dumps([original, replacement])
+            + json.dumps({"edits": edits})
             + " */\n"
-            + (HERE / "codex-countdown.js").read_text()
+            + (CODEX_ASSETS / "codex-countdown.js").read_text()
             + CODEX_END
         )
 
     if not remove and hide_promotions:
         js += (
             CODEX_PROMOTIONS_START
-            + (HERE / "codex-hide-promotions.js").read_text()
+            + (CODEX_ASSETS / "codex-hide-promotions.js").read_text()
             + CODEX_PROMOTIONS_END
         )
 
     if not remove and hide_timestamps:
         js += (
             CODEX_TIMESTAMPS_START
-            + (HERE / "codex-hide-chat-timestamps.js").read_text()
+            + (CODEX_ASSETS / "codex-hide-chat-timestamps.js").read_text()
             + CODEX_TIMESTAMPS_END
         )
 
     if not remove and hide_dictation:
         js += (
             CODEX_DICTATION_START
-            + (HERE / "codex-hide-dictation.js").read_text()
+            + (CODEX_ASSETS / "codex-hide-dictation.js").read_text()
             + CODEX_DICTATION_END
         )
 
@@ -466,12 +560,12 @@ def transform(js, css, remove=False, settings=None):
         + "/* edits:"
         + json.dumps(changes)
         + " */\n"
-        + (HERE / "picker.js").read_text()
+        + (WORKBENCH_ASSETS / "picker.js").read_text()
         + END
     )
-    toolkit_css = (HERE / "picker.css").read_text()
+    toolkit_css = (WORKBENCH_ASSETS / "picker.css").read_text()
     if not settings["filledButtons"]:
-        toolkit_css += "\n" + (HERE / "outlined_buttons.css").read_text()
+        toolkit_css += "\n" + (WORKBENCH_ASSETS / "outlined_buttons.css").read_text()
     css += START + toolkit_css + END
     return js, css
 
@@ -488,17 +582,12 @@ def application_paths(app_path):
 
 
 def codex_bundle_matches(text):
-    if (
-        CODEX_START in text
-        or CODEX_PROMOTIONS_START in text
-        or CODEX_TIMESTAMPS_START in text
-        or CODEX_DICTATION_START in text
-    ):
+    if CODEX_START in text or CODEX_PROMOTIONS_START in text or CODEX_TIMESTAMPS_START in text or CODEX_DICTATION_START in text:
         return True
 
-    if "You’re out of Codex messages" in text:
+    if "You’re out of Codex messages" in text or "codex.rateLimitUpsellBanner.dismiss" in text:
         try:
-            codex_countdown_edit(text)
+            codex_countdown_edits(text)
         except ValueError:
             pass
         else:
@@ -521,12 +610,7 @@ def codex_bundle_path(extension_path=None):
         patched = []
         for path in assets.glob("*.js"):
             text = path.read_text()
-            if (
-        CODEX_START in text
-        or CODEX_PROMOTIONS_START in text
-        or CODEX_TIMESTAMPS_START in text
-        or CODEX_DICTATION_START in text
-    ):
+            if CODEX_START in text or CODEX_PROMOTIONS_START in text or CODEX_TIMESTAMPS_START in text or CODEX_DICTATION_START in text:
                 patched.append(path)
         if len(patched) == 1:
             return patched[0]
@@ -640,6 +724,13 @@ def main():
     elif any(settings.get(key) for key in codex_colors.COLOR_SETTINGS):
         raise ValueError("The installed Codex composer stylesheet could not be identified.")
 
+    for path, context_old, context_new in codex_context.patch_files(
+        args.codex_extension, enabled=settings.get("codexCommitContext", False) and not args.uninstall
+    ):
+        paths.append(path)
+        old.append(context_old)
+        new.append(context_new)
+
     codex_path = codex_bundle_path(args.codex_extension)
     should_find_codex = (
         settings["codexUsageResetCountdown"]
@@ -654,7 +745,8 @@ def main():
             raise ValueError(message)
         print(f"Warning: {message} Skipping optional Codex customizations.")
     if codex_path is not None:
-        codex_old = codex_path.read_text()
+        existing_index = paths.index(codex_path) if codex_path in paths else None
+        codex_old = new[existing_index] if existing_index is not None else codex_path.read_text()
         try:
             codex_new = transform_codex(
                 codex_old,
@@ -675,9 +767,12 @@ def main():
                 raise
             print(f"Warning: {error} Skipping optional Codex customizations.")
         else:
-            paths.append(codex_path)
-            old.append(codex_old)
-            new.append(codex_new)
+            if existing_index is not None:
+                new[existing_index] = codex_new
+            else:
+                paths.append(codex_path)
+                old.append(codex_old)
+                new.append(codex_new)
 
     if (
         old == list(new)
