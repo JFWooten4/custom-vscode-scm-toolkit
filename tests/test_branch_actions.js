@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { createBranch, deleteBranch, syncBranch, registerBranchCommands } = require('../workspace-search-extension/branch_actions');
+const { createBranch, publishBranch, deleteBranch, syncBranch, registerBranchCommands } = require('../workspace-search-extension/branch_actions');
 
 const options = { defaultBranch: 'main', remote: 'origin', names: ['used', 'remote-used', 'fresh'] };
 
@@ -98,6 +98,25 @@ async function run() {
   }
   {
     const { repository, calls } = fixture();
+    assert.equal(await publishBranch(repository, { branch: 'topic', remote: 'origin' }), true);
+    assert.deepEqual(calls.at(-1), ['push', 'origin', 'topic', true]);
+  }
+  {
+    const { repository, calls } = fixture();
+    repository.state.HEAD.upstream = { remote: 'origin', name: 'topic' };
+    assert.equal(await publishBranch(repository, { branch: 'topic', remote: 'origin' }), false);
+    assert(!calls.some(call => call[0] === 'push'));
+  }
+  {
+    const { repository, calls } = fixture();
+    await assert.rejects(
+      publishBranch(repository, { branch: 'other', remote: 'origin' }),
+      /active branch changed/
+    );
+    assert(!calls.some(call => call[0] === 'push'));
+  }
+  {
+    const { repository, calls } = fixture();
     await deleteBranch(repository, { ...options, branch: 'topic' });
     assert.deepEqual(calls[1], ['fetch', { remote: 'origin', prune: true }]);
     assert.deepEqual(calls.at(-1), ['delete', 'topic', false]);
@@ -146,10 +165,14 @@ async function run() {
     };
     const context = { subscriptions: [] };
     registerBranchCommands(vscode, context);
-    assert.equal(context.subscriptions.length, 3);
+    assert.equal(context.subscriptions.length, 4);
     assert.equal(await commands.get('scmToolkit.createBranch')(uri, options), 'fresh');
     assert.equal(await commands.get('scmToolkit.createBranch')({ ...uri }, options), 'fresh');
     assert.equal(await commands.get('scmToolkit.createBranch')({ rootUri: uri }, options), 'fresh');
+    repository.state.HEAD = { name: 'topic' };
+    assert.equal(await commands.get('scmToolkit.publishBranch')({ rootUri: uri }, {
+      branch: 'topic', remote: 'origin'
+    }), true);
     repository.state.HEAD = { name: 'topic' };
     assert.equal(await commands.get('scmToolkit.syncBranch')({ rootUri: uri }, {
       ...options, branch: 'topic'

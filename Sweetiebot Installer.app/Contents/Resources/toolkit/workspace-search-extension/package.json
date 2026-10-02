@@ -16,6 +16,7 @@
     "onCommand:scmToolkit.prepareCodexCommit",
     "onCommand:scmToolkit.generateCodexCommitMessage",
     "onCommand:scmToolkit.createBranch",
+    "onCommand:scmToolkit.publishBranch",
     "onCommand:scmToolkit.deleteBranch",
     "onCommand:scmToolkit.syncBranch",
     "onView:scmToolkit.workspaceSearch",
@@ -65,6 +66,11 @@
     "configuration": {
       "title": "SCM Toolkit Workspace Search",
       "properties": {
+        "scmToolkit.autoPublishNewBranches": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically publish newly selected local branches to the configured Git remote."
+        },
         "scmToolkit.codexKeepAwake": {
           "type": "boolean",
           "default": true,

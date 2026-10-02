@@ -203,7 +203,6 @@
     height: 26px;
     padding: 0;
     border: 0;
-    border-left: 1px solid var(--vscode-widget-border, transparent);
     border-radius: 0 3px 3px 0;
     background: var(--vscode-input-background);
     color: var(--vscode-descriptionForeground);
@@ -286,7 +285,6 @@
     height: 26px;
     padding: 0;
     border: 0;
-    border-left: 1px solid var(--vscode-widget-border, transparent);
     border-radius: 0 3px 3px 0;
     background: var(--vscode-input-background);
     color: var(--vscode-descriptionForeground);
@@ -446,4 +444,68 @@
 .scm-view .monaco-list-row:hover .monaco-action-bar .action-item:not(.disabled) .action-label.codicon:not(.disabled),
 .scm-view .monaco-action-bar .action-item:not(.disabled):hover .action-label.codicon:not(.disabled) {
     color: #FFFFFF !important;
+}
+
+.scm-view .scm-editor > .scm-toolkit-divider {
+    display: block;
+    flex: 0 0 1px;
+    width: 1px;
+    height: 18px;
+    margin: 4px 1px;
+    background: var(--vscode-widget-border, transparent);
+    pointer-events: none;
+}
+
+.scm-view .scm-editor > .scm-toolkit-divider[hidden] {
+    display: none;
+}
+
+.scm-view .scm-editor > .scm-toolkit-auto-publish {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 27px;
+    width: 27px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: var(--vscode-input-background);
+    color: var(--vscode-descriptionForeground);
+    cursor: pointer;
+}
+
+.scm-view .scm-editor > .scm-toolkit-auto-publish[hidden] {
+    display: none;
+}
+
+.scm-view .scm-editor > .scm-toolkit-auto-publish:hover:not(:disabled) {
+    background: var(--vscode-toolbar-hoverBackground);
+}
+
+.scm-view .scm-editor > .scm-toolkit-auto-publish:focus-visible {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+.scm-view .scm-editor > .scm-toolkit-auto-publish:disabled {
+    opacity: .6;
+    cursor: default;
+}
+
+.scm-view .scm-editor > .scm-toolkit-auto-publish-active::after {
+    content: '✓';
+    position: absolute;
+    right: 2px;
+    bottom: 0;
+    font-size: 9px;
+    line-height: 10px;
+}
+
+.scm-toolkit-auto-publish:hover > .scm-toolkit-tooltip,
+.scm-toolkit-auto-publish:focus-visible > .scm-toolkit-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: .4s;
 }
