@@ -61,7 +61,7 @@ class WorkspaceSearchInstallerTests(unittest.TestCase):
         self.assertEqual(DEFAULTS["workspaceSearchLabel"], "EFS")
         self.assertEqual(container["id"], workspace_search.STANDALONE_CONTAINER_ID)
         self.assertEqual(container["title"], "EFS")
-        self.assertEqual(container["icon"], "$(search)")
+        self.assertEqual(container["icon"], "media/efs.svg")
         self.assertEqual(
             list(package["contributes"]["views"]),
             [workspace_search.STANDALONE_CONTAINER_ID],
@@ -113,6 +113,8 @@ class WorkspaceSearchInstallerTests(unittest.TestCase):
             self.assertTrue((destination / "branch_names.py").is_file())
             self.assertTrue((destination / "branch_name_packs.json").is_file())
             self.assertTrue((destination / "chatgpt_integration.py").is_file())
+            self.assertTrue((destination / "media" / "efs.svg").is_file())
+            self.assertTrue((destination / "THIRD_PARTY_NOTICES.md").is_file())
             self.assertFalse(
                 workspace_search.sync_extension(
                     check=True,

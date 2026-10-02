@@ -250,6 +250,8 @@ The normal installer also installs a small companion VS Code extension into `~/.
 
 Set `scm-toolkit.workspace-search-activity-bar` to `true` to move the same Workspace Search view into its own Activity Bar container. The panel title and container label use `scm-toolkit.workspace-search-label` and default to **EFS**. Rerun `python3 scripts/install.py` and reload VS Code after changing either setting.
 
+The EFS Activity Bar icon is adapted from Fallout: Equestria Game imagery credited to The Overmare Studios. The source and attribution are recorded in `workspace-search-extension/THIRD_PARTY_NOTICES.md`.
+
 Install the default local embedding model once:
 
 ```sh
