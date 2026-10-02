@@ -9,9 +9,15 @@ async function run() {
   const commands = new Map();
   let additions = 0;
   const repository = {
+    rootUri: { fsPath: '/selected' },
     state: { indexChanges: ['staged'], workingTreeChanges: ['unstaged'], untrackedChanges: ['new'], mergeChanges: [] },
     async status() {},
-    async add(paths) { assert.equal(paths.join(','), '.'); additions++; this.state.indexChanges = ['staged']; }
+    async add(paths) {
+      assert.equal(paths.length, 1);
+      assert.equal(paths[0], this.rootUri.fsPath, 'Git API staging receives the absolute selected repository root');
+      additions++;
+      this.state.indexChanges = ['staged'];
+    }
   };
   const child = {
     stdout: { setEncoding() {}, on(event, callback) { this.callback = callback; } },
