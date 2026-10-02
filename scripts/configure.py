@@ -7,4 +7,4 @@ from toolkit_settings import load_settings
 
 if __name__ == "__main__":
     if run_configurator(load_settings()):
-        print("Saved SCM Toolkit settings. Run python3 install.py to apply them.")
+        print("Saved SCM Toolkit settings. Run python3 scripts/install.py to apply them.")

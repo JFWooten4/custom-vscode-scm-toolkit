@@ -15,6 +15,7 @@ import webbrowser
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from toolkit_settings import load_settings
+from codex_colors import validate_color
 from branch_names import load_catalog, merge_catalog, parse_imported_packs, parse_name_list, parse_pack_id_list
 from chatgpt_integration import import_pgp_secret_key, sync_codex_instructions
 
@@ -43,11 +44,12 @@ SETTINGS = (
     Setting("branchCleanup", "scm-toolkit.branch-cleanup", "Branch cleanup", "Show guarded local-branch cleanup controls.", "Source control"),
     Setting("autocompleteToggle", "scm-toolkit.autocomplete-toggle", "Autocomplete toggle", "Show the inline-suggestion switch in the SCM message row.", "Source control"),
     Setting("codexCoauthor", "scm-toolkit.codex-coauthor", "Codex co-author button", "Show the attributed commit action.", "Source control"),
+    Setting("codexCommitContext", "scm-toolkit.codex-commit-context", "Local commit messages from Codex text", "When the co-author commit message is blank, use this window's current conversation and staged changes with local Ollama. Codex keeps running.", "Source control"),
     Setting("hideOutgoingSyncCount", "scm-toolkit.hide-outgoing-sync-count", "Hide outgoing count", "Remove the outgoing commit count from Sync.", "Source control"),
     Setting("blankStateRefresh", "scm-toolkit.blank-state-refresh", "Refresh blank repositories", "Refresh clean repositories so their first new change appears quickly.", "Source control"),
     Setting("graphOpenWorkingFile", "scm-toolkit.graph-open-working-file", "Open graph files from working tree", "Make Source Control Graph Open File target the checked-out working-tree file instead of the selected commit snapshot.", "Source control"),
     Setting("workspaceSearchActivityBar", "scm-toolkit.workspace-search-activity-bar", "Standalone Activity Bar", "Move Workspace Search into its own Activity Bar container instead of the Source Control view.", "Workspace Search"),
-    Setting("workspaceSearchLabel", "scm-toolkit.workspace-search-label", "Standalone label", "Label for the standalone Workspace Search Activity Bar container.", "Workspace Search", "text"),
+    Setting("workspaceSearchLabel", "scm-toolkit.workspace-search-label", "Search label", "Label for the Workspace Search panel and its standalone Activity Bar container.", "Workspace Search", "text"),
     Setting("defaultBranch", "scm-toolkit.default-branch", "Default branch", "Protected branch and pull-request base.", "Repository", "text"),
     Setting("remote", "scm-toolkit.remote", "Git remote", "Remote used for branch checks and repository discovery.", "Repository", "text"),
     Setting("branchNameDisabledPacks", "scm-toolkit.branch-name-disabled-packs", "Name packs", "Enable or disable built-in and imported branch-name packs.", "Branch names", "packs"),
@@ -63,8 +65,17 @@ SETTINGS = (
     Setting("mcpPrServer", "scm-toolkit.mcp-pr-server", "MCP server", "Configured VS Code MCP server name.", "Pull requests", "text"),
     Setting("mcpPrTool", "scm-toolkit.mcp-pr-tool", "MCP tool", "Tool invoked to create a pull request.", "Pull requests", "text"),
     Setting("codexUsageResetCountdown", "scm-toolkit.codex-usage-reset-countdown", "Codex reset countdown", "Show the live usage-reset countdown in Codex limit banners.", "Codex"),
+<<<<<<< HEAD:configurator.py
     Setting("chatgptCustomInstructions", "scm-toolkit.chatgpt-custom-instructions", "Codex personalization", "Keep a local copy of your ChatGPT web instructions and mirror them into the global personalization used by the Codex VS Code extension.", "Codex", "textarea"),
     Setting("chatgptWebCodexCoauthor", "scm-toolkit.chatgpt-web-codex-coauthor", "Codex Web co-author", "Require the Codex Web co-author trailer on Git commits made through web or GitHub tools.", "Codex"),
+=======
+    Setting("codexSendBackground", "scm-toolkit.codex-send-background", "Send button background", "Hex color for the Codex send button. Leave blank to use the theme.", "Codex", "color"),
+    Setting("codexSendForeground", "scm-toolkit.codex-send-foreground", "Send button icon", "Hex color for the Codex send icon. Leave blank to use the theme.", "Codex", "color"),
+    Setting("codexComposerLabelColor", "scm-toolkit.codex-composer-label-color", "Composer label text", "Hex color for Full access and Work locally controls. Leave blank to use the theme.", "Codex", "color"),
+    Setting("codexDropAccent", "scm-toolkit.codex-drop-accent", "Image drop accent", "Hex color for the drop highlight, border, and attachment prompt. Leave blank to use the theme.", "Codex", "color"),
+    Setting("chatgptCustomInstructions", "scm-toolkit.chatgpt-custom-instructions", "Custom instructions", "Keep a local copy of ChatGPT web custom instructions and mirror them into Codex global instructions.", "ChatGPT", "textarea"),
+    Setting("chatgptWebCodexCoauthor", "scm-toolkit.chatgpt-web-codex-coauthor", "Codex Web co-author", "Require the Codex Web co-author trailer on Git commits made through web or GitHub tools.", "ChatGPT"),
+>>>>>>> origin/main:Sweetiebot Installer.app/Contents/Resources/toolkit/scripts/configurator.py
     Setting("codexHideChatTimestamps", "scm-toolkit.codex-hide-chat-timestamps", "Hide chat timestamps", "Hide standalone date/time separators inside Codex conversations.", "Codex"),
 )
 
@@ -116,6 +127,9 @@ def parse_submission(values: dict[str, list[str]]) -> dict[str, bool | str]:
             continue
 
         raw_value = values.get(setting.name, [""])[0]
+        if setting.kind == "color":
+            parsed[setting.name] = validate_color(raw_value)
+            continue
         if setting.kind == "textarea":
             if "\x00" in raw_value:
                 raise ValueError(f"{setting.label} contains an invalid null byte.")
@@ -264,10 +278,11 @@ def _setting_control(setting: Setting, current: object) -> str:
     if setting.kind == "number":
         attrs = ' type="number" min="0.1" step="0.1" inputmode="decimal"'
     list_attr = ' list="ollama-models"' if setting.kind == "model" else ""
+    required = ' placeholder="#43AF49"' if setting.kind == "color" else " required"
     return (
         '<label class="setting field-row">'
         f'<span><strong>{label}</strong><small>{description}</small></span>'
-        f'<input{attrs} name="{name}" value="{value}"{list_attr} required></label>'
+        f'<input{attrs} name="{name}" value="{value}"{list_attr}{required}></label>'
     )
 
 
@@ -371,7 +386,9 @@ def _result_page(saved: bool) -> str:
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{title}</title><style>body{{margin:0;background:#0d1117;color:#f0f6fc;font:16px system-ui;display:grid;min-height:100vh;place-items:center}}main{{text-align:center;padding:32px}}p{{color:#8b949e}}</style></head><body><main><h1>{title}</h1><p>{detail} You may close this tab.</p></main></body></html>"""
 
 
-def run_configurator(current: dict[str, object], action_label: str = "Save configuration") -> bool:
+def run_configurator(
+    current: dict[str, object], action_label: str = "Save configuration", *, open_browser: bool = True
+) -> bool:
     models, ollama_status = fetch_ollama_models()
     token = secrets.token_urlsafe(24)
     outcome: dict[str, bool | None] = {"saved": None}
@@ -437,9 +454,12 @@ def run_configurator(current: dict[str, object], action_label: str = "Save confi
 
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     url = f"http://127.0.0.1:{server.server_port}/?token={urllib.parse.quote(token)}"
-    print(f"SCM Toolkit configurator: {url}")
-    if not webbrowser.open(url):
-        print("Open the URL above in a browser.")
+    if open_browser:
+        print(f"SCM Toolkit configurator: {url}")
+        if not webbrowser.open(url):
+            print("Open the URL above in a browser.")
+    else:
+        print(json.dumps({"url": url}), flush=True)
     try:
         server.serve_forever(poll_interval=0.1)
     except KeyboardInterrupt:
@@ -450,4 +470,9 @@ def run_configurator(current: dict[str, object], action_label: str = "Save confi
 
 
 if __name__ == "__main__":
-    run_configurator(load_settings())
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--no-browser", action="store_true", help="Send the URL to the calling extension.")
+    args = parser.parse_args()
+    run_configurator(load_settings(), open_browser=not args.no_browser)

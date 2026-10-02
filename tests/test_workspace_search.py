@@ -33,6 +33,7 @@ class WorkspaceSearchInstallerTests(unittest.TestCase):
         self.assertFalse(DEFAULTS["workspaceSearchActivityBar"])
         self.assertEqual(list(package["contributes"]["views"]), ["scm"])
         self.assertNotIn("viewsContainers", package["contributes"])
+        self.assertEqual(package["contributes"]["views"]["scm"][0]["name"], "EFS")
 
     def test_standalone_manifest_uses_activity_bar_and_efs_label(self):
         settings = dict(DEFAULTS, workspaceSearchActivityBar=True)
@@ -60,6 +61,9 @@ class WorkspaceSearchInstallerTests(unittest.TestCase):
             package["contributes"]["viewsContainers"]["activitybar"][0]["title"],
             "Research",
         )
+        view = package["contributes"]["views"][workspace_search.STANDALONE_CONTAINER_ID][0]
+        self.assertEqual(view["name"], "Research")
+        self.assertEqual(view["contextualTitle"], "Research")
 
     def test_installs_exact_extension_tree(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -1,5 +1,6 @@
 import json
 import threading
+import urllib.error
 import urllib.parse
 import urllib.request
 import unittest
@@ -30,6 +31,21 @@ def form_values():
 
 
 class SubmissionTests(unittest.TestCase):
+    def test_parses_optional_composer_colors(self):
+        values = form_values()
+        values['codexSendBackground'] = ['#43AF49']
+        values['codexComposerLabelColor'] = ['#43AF49']
+        parsed = configurator.parse_submission(values)
+        self.assertEqual(parsed['codexSendBackground'], '#43AF49')
+        self.assertEqual(parsed['codexComposerLabelColor'], '#43AF49')
+        self.assertEqual(parsed['codexSendForeground'], '')
+
+    def test_rejects_invalid_composer_color(self):
+        values = form_values()
+        values['codexSendBackground'] = ['#fff;display:none']
+        with self.assertRaisesRegex(ValueError, 'hexadecimal'):
+            configurator.parse_submission(values)
+
     def test_parses_checked_and_unchecked_switches(self):
         values = form_values()
         values.pop("branchPicker")
@@ -39,7 +55,7 @@ class SubmissionTests(unittest.TestCase):
         self.assertFalse(parsed["branchPicker"])
         self.assertTrue(parsed["commitAndPush"])
         self.assertEqual(parsed["aiCommitModel"], "qwen2.5-coder:7b")
-        self.assertEqual(parsed["sourceControlLabel"], "Sweetiebot")
+        self.assertEqual(parsed["sourceControlLabel"], "Sweetie Bot")
         self.assertFalse(parsed["workspaceSearchActivityBar"])
         self.assertEqual(parsed["workspaceSearchLabel"], "EFS")
         self.assertEqual(parsed["branchNameDisabledPacks"], "")
@@ -179,7 +195,7 @@ class ServerTests(unittest.TestCase):
         def run_server():
             result["saved"] = configurator.run_configurator(install.DEFAULT_SETTINGS)
 
-        with patch("configurator.webbrowser.open", side_effect=open_browser):
+        with patch("configurator.webbrowser.open", side_effect=open_browser), patch("configurator.print"):
             thread = threading.Thread(target=run_server)
             thread.start()
             self.assertTrue(opened.wait(5))
@@ -200,6 +216,46 @@ class ServerTests(unittest.TestCase):
                 self.assertIn("Configuration cancelled", response.read().decode())
             thread.join(5)
 
+        self.assertFalse(thread.is_alive())
+        self.assertFalse(result["saved"])
+
+    @patch("configurator.fetch_ollama_models", return_value=([], "Ollama offline"))
+    def test_extension_mode_emits_url_without_opening_external_browser(self, _models):
+        ready = threading.Event()
+        captured = {}
+        result = {}
+
+        def capture_output(line, **kwargs):
+            captured["url"] = json.loads(line)["url"]
+            captured["flushed"] = kwargs.get("flush")
+            ready.set()
+
+        def run_server():
+            result["saved"] = configurator.run_configurator(
+                install.DEFAULT_SETTINGS, open_browser=False
+            )
+
+        with patch("configurator.print", side_effect=capture_output), patch("configurator.webbrowser.open") as browser:
+            thread = threading.Thread(target=run_server)
+            thread.start()
+            self.assertTrue(ready.wait(5))
+            parsed = urllib.parse.urlsplit(captured["url"])
+            try:
+                self.assertTrue(captured["flushed"])
+                with urllib.request.urlopen(captured["url"], timeout=5) as response:
+                    self.assertIn("SCM Toolkit Setup", response.read().decode())
+                unauthorized = urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, "/", "", ""))
+                with self.assertRaises(urllib.error.HTTPError) as denied:
+                    urllib.request.urlopen(unauthorized, timeout=5)
+                self.assertEqual(denied.exception.code, 404)
+                denied.exception.close()
+            finally:
+                cancel_url = urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, "/save", parsed.query, ""))
+                request = urllib.request.Request(cancel_url, data=b"action=cancel", method="POST")
+                with urllib.request.urlopen(request, timeout=5) as response:
+                    self.assertIn("Configuration cancelled", response.read().decode())
+                thread.join(5)
+            browser.assert_not_called()
         self.assertFalse(thread.is_alive())
         self.assertFalse(result["saved"])
 
