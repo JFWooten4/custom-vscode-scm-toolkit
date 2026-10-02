@@ -245,22 +245,6 @@ function scmToolkitBranchNamePool() {
 }
 
 
-function scmToolkitPickPonyBranchName(refs, remote) {
-    const localPrefix = 'refs/heads/';
-    const remotePrefix = `refs/remotes/${remote}/`;
-    const used = new Set();
-
-    for (const ref of refs) {
-        const id = String(ref?.id ?? '');
-        if (id.startsWith(localPrefix)) used.add(id.slice(localPrefix.length));
-        if (id.startsWith(remotePrefix)) used.add(id.slice(remotePrefix.length));
-    }
-
-    const available = scmToolkitBranchNamePool().filter(name => !used.has(name));
-    if (available.length === 0) return undefined;
-    return available[Math.floor(Math.random() * available.length)];
-}
-
 async function scmToolkitPushWithPullRetry(repository, originalPush) {
     try {
         await originalPush.call(repository);
@@ -452,8 +436,8 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     let currentCommand;
     let currentCommitCommand;
     let currentBranch;
-    let currentHistoryProvider;
     let currentRepositoryArgument;
+    let currentRepositoryUri;
     let currentInput;
     let pending = false;
     let deletingBranch = false;
@@ -691,7 +675,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     };
 
     const refreshPonyBranch = () => {
-        const unavailable = !settings.ponyBranch || !currentRepositoryArgument || !currentHistoryProvider;
+        const unavailable = !settings.ponyBranch || !currentRepositoryUri;
         ponyBranchButton.hidden = !settings.ponyBranch;
         ponyBranchButton.disabled =
             pending
@@ -709,12 +693,10 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     const createPonyBranch = async event => {
         event.stopPropagation();
 
-        const repository = currentRepositoryArgument;
-        const historyProvider = currentHistoryProvider;
+        const repository = currentRepositoryUri;
         if (
             !settings.ponyBranch
             || !repository
-            || !historyProvider
             || pending
             || deletingBranch
             || creatingPullRequest
@@ -728,27 +710,11 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         refreshBranchControls();
 
         try {
-            await commands.executeCommand('git.checkout', repository, settings.defaultBranch);
-            await commands.executeCommand('git.sync', repository);
-
-            const refs = await historyProvider.provideHistoryItemRefs([
-                'refs/heads',
-                `refs/remotes/${settings.remote}`,
-            ]);
-            const branchName = scmToolkitPickPonyBranchName(
-                Array.isArray(refs) ? refs : [],
-                settings.remote
-            );
-            if (!branchName) {
-                notifications.error('All configured pony branch names are already in use.');
-                return;
-            }
-
-            if (typeof repository.branch !== 'function') {
-                throw new Error('The current VS Code Git repository cannot create branches directly.');
-            }
-
-            await repository.branch(branchName, true, 'HEAD');
+            const branchName = await commands.executeCommand('scmToolkit.createBranch', repository, {
+                defaultBranch: settings.defaultBranch,
+                remote: settings.remote,
+                names: scmToolkitBranchNamePool(),
+            });
             notifications.info(`Created and switched to ${branchName}.`);
         } catch (error) {
             notifications.error(error);
@@ -832,8 +798,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         const unavailable =
             !settings.branchCleanup
             || !currentBranch
-            || !currentHistoryProvider
-            || !currentRepositoryArgument;
+            || !currentRepositoryUri;
 
         deleteButton.hidden = !settings.branchCleanup || !currentBranch;
         deleteButton.disabled =
@@ -885,13 +850,11 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         event.stopPropagation();
 
         const branch = currentBranch;
-        const historyProvider = currentHistoryProvider;
-        const repositoryArgument = currentRepositoryArgument;
+        const repositoryArgument = currentRepositoryUri;
 
         if (
             !settings.branchCleanup
             || !branch
-            || !historyProvider
             || !repositoryArgument
             || deletingBranch
             || creatingPullRequest
@@ -911,32 +874,12 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         refreshBranchControls();
 
         try {
-            await commands.executeCommand('git.fetchPrune', repositoryArgument);
-
-            const remotePrefix = `refs/remotes/${settings.remote}`;
-            const remoteRefs = await historyProvider.provideHistoryItemRefs([remotePrefix]);
-
-            if (!Array.isArray(remoteRefs) || remoteRefs.length === 0) {
-                notifications.error(
-                    `Cannot delete ${branch}: ${settings.remote} could not be verified.`
-                );
-                return;
-            }
-
-            if (remoteRefs.some(ref => ref.id === `${remotePrefix}/${branch}`)) {
-                notifications.error(
-                    `Cannot delete ${branch}: it still exists on ${settings.remote}.`
-                );
-                return;
-            }
-
-            await commands.executeCommand(
-                'git.checkout',
-                repositoryArgument,
-                settings.defaultBranch
-            );
-            await commands.executeCommand('git.deleteBranch', repositoryArgument, branch);
-            await commands.executeCommand('git.sync', repositoryArgument);
+            await commands.executeCommand('scmToolkit.deleteBranch', repositoryArgument, {
+                branch,
+                defaultBranch: settings.defaultBranch,
+                remote: settings.remote,
+            });
+            notifications.info(`Deleted local branch ${branch}.`);
         } catch (error) {
             notifications.error(error);
         } finally {
@@ -1022,8 +965,8 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             currentCommand = undefined;
             currentCommitCommand = undefined;
             currentBranch = undefined;
-            currentHistoryProvider = undefined;
             currentRepositoryArgument = undefined;
+            currentRepositoryUri = undefined;
             currentInput = undefined;
             branchButton.hidden = true;
             branchButton.disabled = true;
@@ -1046,6 +989,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             currentInput = input;
             settingsButton.hidden = false;
             const provider = input.repository.provider;
+            currentRepositoryUri = provider.rootUri;
             currentCommitCommand = provider.acceptInputCommand;
 
             if (settings.commitAndPush) {
@@ -1155,7 +1099,6 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
 
                 const historyProvider = provider.historyProvider.read(reader);
                 const historyItemRef = historyProvider?.historyItemRef.read(reader);
-                currentHistoryProvider = historyProvider;
                 currentBranch = historyItemRef?.id?.startsWith('refs/heads/')
                     ? historyItemRef.name
                     : undefined;

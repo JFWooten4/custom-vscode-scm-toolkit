@@ -13,6 +13,8 @@
   ],
   "main": "./extension.js",
   "activationEvents": [
+    "onCommand:scmToolkit.createBranch",
+    "onCommand:scmToolkit.deleteBranch",
     "onView:scmToolkit.workspaceSearch",
     "onCommand:scmToolkit.openSettings",
     "onCommand:scmToolkit.workspaceSearch.reindex",
