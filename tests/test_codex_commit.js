@@ -14,7 +14,10 @@ function callback(name) {
 
 async function run() {
   const provider = {};
-  const input = { repository: { provider }, value: 'Fix button' };
+  const input = { repository: { provider }, _value: 'Fix button',
+    get value() { return this._value; },
+    setValue(value) { this._value = value; }
+  };
   const calls = [];
   const errors = [];
   const context = vm.createContext({
@@ -37,22 +40,23 @@ async function run() {
   assert.equal(context.codexButton.disabled, false, 'Git registration after bind enables the button');
   provider.acceptInputCommand = { id: 'provider.updatedCommit', arguments: ['updated-repository'] };
   await context.commit({ stopPropagation() {} });
-  assert.equal(calls[0].id, 'provider.updatedCommit', 'click uses the latest provider command');
-  assert.deepEqual(calls[0].args, ['updated-repository']);
-  assert.match(calls[0].message, /Co-authored-by: Codex <noreply@openai.com>/);
+  assert.equal(calls[0].id, 'scmToolkit.prepareCodexCommit');
+  assert.equal(calls[1].id, 'provider.updatedCommit', 'click uses the latest provider command');
+  assert.deepEqual(calls[1].args, ['updated-repository']);
+  assert.match(calls[1].message, /Co-authored-by: Codex <noreply@openai.com>/);
   assert.equal(input.value, 'Fix button');
   assert.equal(context.codexButton.disabled, false);
   assert.deepEqual(errors, []);
   calls.length = 0;
-  input.value = '';
+  input.setValue('');
   context.settings.codexCommitContext = true;
   context.commands.executeCommand = async (id, ...args) => {
     calls.push({ id, args, message: input.value });
     if (id === 'scmToolkit.generateCodexCommitMessage') return 'Fix local commit generation';
   };
   await context.commit({ stopPropagation() {} });
-  assert.deepEqual(calls.map(call => call.id), ['scmToolkit.generateCodexCommitMessage', 'provider.updatedCommit']);
-  assert.match(calls[1].message, /^Fix local commit generation\n\nCo-authored-by: Codex/);
+  assert.deepEqual(calls.map(call => call.id), ['scmToolkit.prepareCodexCommit', 'scmToolkit.generateCodexCommitMessage', 'provider.updatedCommit']);
+  assert.match(calls[2].message, /^Fix local commit generation\n\nCo-authored-by: Codex/);
   assert.equal(input.value, '');
   calls.length = 0;
   context.commands.executeCommand = async id => {
@@ -66,11 +70,12 @@ async function run() {
   calls.length = 0;
   context.commands.executeCommand = async id => {
     calls.push({ id });
-    input.value = 'A newer manual message';
+    if (id === 'scmToolkit.prepareCodexCommit') return;
+    input.setValue('A newer manual message');
     return 'Generated message';
   };
   await context.commit({ stopPropagation() {} });
-  assert.equal(calls.length, 1, 'editing the message while generating stops the commit');
+  assert.equal(calls.length, 2, 'editing the message while generating stops the commit');
   assert.equal(input.value, 'A newer manual message');
   console.log('Codex commit startup regression checks passed.');
 }
