@@ -719,12 +719,11 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         refreshBranchControls();
 
         try {
-            const branchName = await commands.executeCommand('scmToolkit.createBranch', repository, {
+            await commands.executeCommand('scmToolkit.createBranch', repository, {
                 defaultBranch: settings.defaultBranch,
                 remote: settings.remote,
                 names: scmToolkitBranchNamePool(),
             });
-            notifications.info(`Created and switched to ${branchName}.`);
         } catch (error) {
             notifications.error(error);
         } finally {

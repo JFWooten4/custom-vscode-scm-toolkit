@@ -273,6 +273,17 @@ class TransformTests(unittest.TestCase):
 
         self.assertEqual(restored, (original_js, original_css))
 
+    def test_source_control_label_follows_changes_into_panel(self):
+        original = workbench_fixture() + (
+            ';panelTitle=d(21169,null);'
+            'views.registerViews([{id:changes,containerTitle:panelTitle,'
+            'name:O(21159,"Changes"),singleViewPaneContainerTitle:panelTitle}],container);'
+        )
+        patched = install.transform(original, "base-css", settings=SETTINGS)
+        self.assertIn('panelTitle="Sweetiebot"', patched[0].split(install.START, 1)[0])
+        self.assertEqual(install.transform(*patched, settings=SETTINGS), patched)
+        self.assertEqual(install.transform(*patched, remove=True, settings=SETTINGS), (original, "base-css"))
+
     def test_cmd_click_close_others_is_off_by_default(self):
         self.assertFalse(install.DEFAULT_SETTINGS["cmdClickCloseOthers"])
 

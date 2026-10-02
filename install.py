@@ -158,7 +158,26 @@ def source_control_label_edits(js, label):
     # localize2 uses the numeric NLS entry before its fallback text. A custom
     # label must supply both title fields directly to bypass that lookup.
     replacement = "title:" + json.dumps({"value": str(label), "original": str(label)}) + suffix
-    return [(original, replacement)]
+    edits = [(original, replacement)]
+    # Moving Changes into the panel uses its view title instead of the original
+    # container title. Follow the shared containerTitle variable in that view.
+    views = js[anchor_index:anchor_index + 4000]
+    identifier = r"[A-Za-z_$][\w$]*"
+    view = re.search(
+        rf'containerTitle:(?P<title>{identifier}),name:{identifier}\('
+        rf'(?:\d+|"[^"]*"),"Changes"\),singleViewPaneContainerTitle:(?P=title)',
+        views,
+    )
+    if view:
+        assignments = list(re.finditer(
+            rf'(?<![\w$]){re.escape(view.group("title"))}={identifier}\([^;]*?\)',
+            views[:view.start()],
+        ))
+        if len(assignments) != 1:
+            raise ValueError("Unsupported VS Code build: Source Control panel title does not match.")
+        original = assignments[0].group(0)
+        edits.append((original, view.group("title") + "=" + json.dumps(str(label))))
+    return edits
 
 
 def browser_chatgpt_home_edits(js):
