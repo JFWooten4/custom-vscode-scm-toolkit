@@ -8,6 +8,7 @@ import re
 import workspace_search
 import codex_colors
 import codex_context
+import codex_keep_awake
 import codex_image_drop
 from pathlib import Path
 from toolkit_settings import DEFAULT_SETTINGS, load_settings, read_git_bool, read_git_string
@@ -732,6 +733,26 @@ def main():
         new.append(context_new)
 
     codex_path = codex_bundle_path(args.codex_extension)
+    try:
+        awake_patch = codex_keep_awake.patch_file(
+            args.codex_extension, enabled=settings.get("codexKeepAwake", True), remove=args.uninstall
+        )
+    except ValueError as error:
+        if args.codex_only or not str(error).startswith('Unsupported Codex build:'):
+            raise
+        print(f"Warning: {error} Skipping optional Codex keep-awake customization.")
+        awake_patch = None
+    if awake_patch is not None:
+        awake_path, awake_old, awake_new = awake_patch
+        if awake_path in paths:
+            index = paths.index(awake_path)
+            new[index] = codex_keep_awake.transform(
+                new[index], settings.get("codexKeepAwake", True), args.uninstall
+            )
+        else:
+            paths.append(awake_path)
+            old.append(awake_old)
+            new.append(awake_new)
     should_find_codex = (
         settings["codexUsageResetCountdown"]
         or settings["codexHidePromotions"]

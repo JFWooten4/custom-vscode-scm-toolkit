@@ -13,6 +13,7 @@
   ],
   "main": "./extension.js",
   "activationEvents": [
+    "onCommand:scmToolkit.prepareCodexCommit",
     "onCommand:scmToolkit.generateCodexCommitMessage",
     "onCommand:scmToolkit.createBranch",
     "onCommand:scmToolkit.deleteBranch",
@@ -74,6 +75,12 @@
     "configuration": {
       "title": "SCM Toolkit Workspace Search",
       "properties": {
+        "scmToolkit.codexKeepAwake": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "Keep macOS awake while Codex is working. Releases idle-sleep prevention when all tasks finish; the display can still turn off."
+        },
         "scmToolkit.workspaceSearch.embeddingModel": {
           "type": "string",
           "default": "qwen3-embedding:0.6b",
