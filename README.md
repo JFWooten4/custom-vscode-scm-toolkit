@@ -467,8 +467,8 @@ as SCM reports a change and automatically resumes after the repository becomes
 clean again. Hidden windows back off instead of polling at the foreground rate.
 
 This uses VS Code's existing `git.refresh` command; the toolkit does not run its
-own Git status implementation. Toolkit-triggered refreshes suppress the SCM progress
-bar so the frequent polling does not flash a distracting animation.
+own Git status implementation. The SCM progress bar stays hidden, including during
+background Git fetches, so updates do not flash a distracting animation.
 
 When `auto-pull-clean` is enabled, each blank-state refresh also checks the current
 branch against its tracked upstream. The toolkit pulls only when the working tree is

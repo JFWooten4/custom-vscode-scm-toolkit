@@ -88,7 +88,6 @@ function scmToolkitEnableBlankStateRefresh(
     let refreshing = false;
     let disposed = false;
     let lastAutoPullState;
-    const progressRoot = widget.element.closest('.scm-view')?.parentElement;
 
     const hasChanges = () => provider.groups.some(group => group.resources.length > 0);
 
@@ -133,14 +132,12 @@ function scmToolkitEnableBlankStateRefresh(
             }
 
             refreshing = true;
-            progressRoot?.classList.add('scm-toolkit-refreshing');
             try {
                 await commands.executeCommand('git.refresh', repositoryArgument);
                 await maybeAutoPull();
             } catch {
                 // The built-in Git extension owns refresh errors; keep blank-state polling best-effort.
             } finally {
-                progressRoot?.classList.remove('scm-toolkit-refreshing');
                 refreshing = false;
                 if (!disposed && !hasChanges()) schedule(1500);
             }
@@ -170,7 +167,6 @@ function scmToolkitEnableBlankStateRefresh(
         dispose() {
             disposed = true;
             clearTimer();
-            progressRoot?.classList.remove('scm-toolkit-refreshing');
             resourceDisposable.dispose();
             doc.removeEventListener('visibilitychange', onVisibilityChange);
         }
