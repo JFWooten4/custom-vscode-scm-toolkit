@@ -45,6 +45,7 @@ SETTINGS = (
     Setting("autocompleteToggle", "scm-toolkit.autocomplete-toggle", "Autocomplete toggle", "Show the inline-suggestion switch in the SCM message row.", "Source control"),
     Setting("codexCoauthor", "scm-toolkit.codex-coauthor", "Codex co-author button", "Show the attributed commit action.", "Source control"),
     Setting("codexCommitContext", "scm-toolkit.codex-commit-context", "Local commit messages from Codex text", "When the co-author commit message is blank, use this window's current conversation and staged changes with local Ollama. Codex keeps running.", "Source control"),
+    Setting("codexKeepAwake", "scm-toolkit.codex-keep-awake", "Keep awake while Codex works", "Prevent idle sleep on macOS while Codex tasks are running. The display can still turn off. Enabled by default; VS Code's Codex Keep Awake setting can override it.", "Codex"),
     Setting("hideOutgoingSyncCount", "scm-toolkit.hide-outgoing-sync-count", "Hide outgoing count", "Remove the outgoing commit count from Sync.", "Source control"),
     Setting("blankStateRefresh", "scm-toolkit.blank-state-refresh", "Refresh blank repositories", "Refresh clean repositories so their first new change appears quickly.", "Source control"),
     Setting("graphOpenWorkingFile", "scm-toolkit.graph-open-working-file", "Open graph files from working tree", "Make Source Control Graph Open File target the checked-out working-tree file instead of the selected commit snapshot.", "Source control"),
@@ -71,8 +72,9 @@ SETTINGS = (
     Setting("codexSendForeground", "scm-toolkit.codex-send-foreground", "Send button icon", "Hex color for the Codex send icon. Leave blank to use the theme.", "Codex", "color"),
     Setting("codexComposerLabelColor", "scm-toolkit.codex-composer-label-color", "Composer label text", "Hex color for Full access and Work locally controls. Leave blank to use the theme.", "Codex", "color"),
     Setting("codexDropAccent", "scm-toolkit.codex-drop-accent", "Image drop accent", "Hex color for the drop highlight, border, and attachment prompt. Leave blank to use the theme.", "Codex", "color"),
-    Setting("chatgptCustomInstructions", "scm-toolkit.chatgpt-custom-instructions", "Custom instructions", "Keep a local copy of ChatGPT web custom instructions and mirror them into Codex global instructions.", "ChatGPT", "textarea"),
-    Setting("chatgptWebCodexCoauthor", "scm-toolkit.chatgpt-web-codex-coauthor", "Codex Web co-author", "Require the Codex Web co-author trailer on Git commits made through web or GitHub tools.", "ChatGPT"),
+    Setting("chatgptCustomInstructions", "scm-toolkit.chatgpt-custom-instructions", "Codex personalization", "Keep a local copy of your ChatGPT web instructions and mirror them into the global personalization used by the Codex VS Code extension.", "Codex", "textarea"),
+    Setting("codexHideDictation", "scm-toolkit.codex-hide-dictation", "Hide dictation button", "Hide the microphone dictation control in Codex chat.", "Codex"),
+    Setting("chatgptWebCodexCoauthor", "scm-toolkit.chatgpt-web-codex-coauthor", "Codex Web co-author", "Require the Codex Web co-author trailer on Git commits made through web or GitHub tools.", "Codex"),
     Setting("codexHideChatTimestamps", "scm-toolkit.codex-hide-chat-timestamps", "Hide chat timestamps", "Hide standalone date/time separators inside Codex conversations.", "Codex"),
 )
 
@@ -312,15 +314,15 @@ def render_form(
         )
         if section == "Branch names":
             controls = _pack_controls(current) + controls
-        if section == "ChatGPT":
+        if section == "Codex":
             controls += (
-                '<div class="setting textarea-row"><span><strong>Sync from ChatGPT web</strong>'
-                '<small>Copy the Custom Instructions text from ChatGPT Personalization, then use this button. '
-                'The localhost configurator reads only your clipboard after you click.</small></span>'
-                '<button type="button" id="sync-chatgpt-instructions">Sync from web</button></div>'
+                '<div class="setting textarea-row"><span><strong>Import ChatGPT personalization</strong>'
+                '<small>Copy Custom Instructions from ChatGPT Personalization, then import them here. Saving mirrors '
+                'the text into the global personalization used by the Codex VS Code extension.</small></span>'
+                '<button type="button" id="sync-chatgpt-instructions">Import from ChatGPT</button></div>'
                 '<label class="setting textarea-row"><span><strong>PGP secret key</strong>'
-                '<small>Optional. Imported directly into GnuPG through stdin. The private key is never saved '
-                'to Git config, rendered back into this page, or written to command output.</small></span>'
+                '<small>Optional signing key for Codex and VS Code Git commits. Imported directly into GnuPG through stdin. '
+                'The private key is never saved to Git config, rendered back into this page, or written to command output.</small></span>'
                 '<textarea name="pgpSecretKey" rows="6" spellcheck="false" autocomplete="off" '
                 'placeholder="-----BEGIN PGP PRIVATE KEY BLOCK-----"></textarea></label>'
             )
@@ -370,14 +372,14 @@ if (packSearch) {{
 }}
 const askOllamaToggle = document.querySelector('input[name="workspaceSearchAskOllama"]');
 const askOllamaModel = document.querySelector('input[name="workspaceSearchChatModel"]');
-function updateAskOllamaRequirement() {
+function updateAskOllamaRequirement() {{
   if (!askOllamaToggle || !askOllamaModel) return;
   askOllamaModel.required = askOllamaToggle.checked;
-}
-if (askOllamaToggle && askOllamaModel) {
+}}
+if (askOllamaToggle && askOllamaModel) {{
   askOllamaToggle.addEventListener('change', updateAskOllamaRequirement);
   updateAskOllamaRequirement();
-}
+}}
 const syncButton = document.getElementById('sync-chatgpt-instructions');
 if (syncButton) {{
   syncButton.addEventListener('click', async () => {{
@@ -388,7 +390,7 @@ if (syncButton) {{
       if (!value.trim()) throw new Error('Clipboard is empty.');
       target.value = value.trim();
       target.dispatchEvent(new Event('input', {{ bubbles: true }}));
-      syncButton.textContent = 'Synced';
+      syncButton.textContent = 'Imported';
     }} catch (error) {{
       syncButton.textContent = 'Copy instructions, then retry';
       syncButton.title = String(error);

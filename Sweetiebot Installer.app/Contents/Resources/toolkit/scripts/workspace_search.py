@@ -51,7 +51,7 @@ def render_package(settings: dict[str, object] | None = None) -> dict[str, objec
                 {
                     "id": STANDALONE_CONTAINER_ID,
                     "title": str(settings["workspaceSearchLabel"]),
-                    "icon": "$(search)",
+                    "icon": "media/efs.svg",
                 }
             ]
         }

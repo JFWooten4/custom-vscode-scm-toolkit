@@ -13,12 +13,14 @@
   ],
   "main": "./extension.js",
   "activationEvents": [
+    "onCommand:scmToolkit.prepareCodexCommit",
     "onCommand:scmToolkit.generateCodexCommitMessage",
     "onCommand:scmToolkit.createBranch",
     "onCommand:scmToolkit.deleteBranch",
+    "onCommand:scmToolkit.syncBranch",
     "onView:scmToolkit.workspaceSearch",
     "onCommand:scmToolkit.openSettings",
-    "onCommand:scmToolkit.workspaceSearch.reindex",
+    "onStartupFinished",
     "onCommand:scmToolkit.workspaceSearch.clearIndex",
     "onCommand:scmToolkit.chatgpt.searchRepositories"
   ],
@@ -41,11 +43,6 @@
         "icon": "$(gear)"
       },
       {
-        "command": "scmToolkit.workspaceSearch.reindex",
-        "title": "Rebuild Workspace Search Index",
-        "icon": "$(refresh)"
-      },
-      {
         "command": "scmToolkit.workspaceSearch.clearIndex",
         "title": "Clear Workspace Search Index",
         "icon": "$(trash)"
@@ -59,20 +56,21 @@
     "menus": {
       "view/title": [
         {
-          "command": "scmToolkit.workspaceSearch.reindex",
-          "when": "view == scmToolkit.workspaceSearch",
-          "group": "navigation@1"
-        },
-        {
           "command": "scmToolkit.workspaceSearch.clearIndex",
           "when": "view == scmToolkit.workspaceSearch",
-          "group": "navigation@2"
+          "group": "navigation@1"
         }
       ]
     },
     "configuration": {
       "title": "SCM Toolkit Workspace Search",
       "properties": {
+        "scmToolkit.codexKeepAwake": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "Keep macOS awake while Codex is working. Releases idle-sleep prevention when all tasks finish; the display can still turn off."
+        },
         "scmToolkit.workspaceSearch.embeddingModel": {
           "type": "string",
           "default": "qwen3-embedding:0.6b",

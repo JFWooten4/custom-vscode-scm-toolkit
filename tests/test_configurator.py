@@ -135,6 +135,7 @@ class SubmissionTests(unittest.TestCase):
         self.assertIn('name="branchNameImports"', page)
         self.assertIn('name="sourceControlLabel"', page)
         self.assertIn('name="codexHideChatTimestamps"', page)
+        self.assertIn('name="codexHideDictation"', page)
         self.assertIn('name="workspaceSearchActivityBar"', page)
         self.assertIn('name="workspaceSearchLabel"', page)
         self.assertIn('name="workspaceSearchAskOllama"', page)

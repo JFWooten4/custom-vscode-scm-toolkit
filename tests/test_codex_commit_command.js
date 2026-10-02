@@ -5,6 +5,9 @@ const vm = require('node:vm');
 const path = require('node:path');
 
 async function run() {
+  const manifest = require('../workspace-search-extension/package.json');
+  assert(manifest.activationEvents.includes('onCommand:scmToolkit.prepareCodexCommit'),
+    'The first Codex commit command must activate the extension in a fresh window');
   let command, active = false, bridgeInstalled = false, progress = 0;
   const commands = new Map();
   let additions = 0;

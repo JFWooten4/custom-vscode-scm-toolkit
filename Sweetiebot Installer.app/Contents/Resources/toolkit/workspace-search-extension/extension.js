@@ -10,6 +10,7 @@ const { registerCodexCommitCommand } = require('./codex_commit');
 const VIEW_ID = 'scmToolkit.workspaceSearch';
 const CONFIG_ROOT = 'scmToolkit.workspaceSearch';
 const SETTINGS_BROWSER_COMMAND = 'workbench.action.browser.open';
+const AUTO_REINDEX_INTERVAL_MS = 2 * 60 * 1000;
 let configuratorProcess;
 let configuratorURL;
 
@@ -188,19 +189,17 @@ async function activate(context) {
     watcher.onDidDelete(uri => index.remove(uri))
   );
 
-  context.subscriptions.push(vscode.commands.registerCommand('scmToolkit.workspaceSearch.reindex', async () => {
-    try {
-      const result = await vscode.window.withProgress({
-        location: vscode.ProgressLocation.Notification,
-        title: 'Rebuilding workspace search index',
-        cancellable: false
-      }, progress => index.refresh({ force: true, progress }));
-      provider.post({ type: 'results', query: provider.lastQuery, results: [], warning: result.warning, mode: settings().mode });
-      vscode.window.showInformationMessage(`Workspace Search indexed ${result.files} files.`);
-    } catch (error) {
-      vscode.window.showErrorMessage(`Workspace Search: ${error.message}`);
-    }
-  }));
+  let autoReindexRunning = false;
+  const autoReindexTimer = setInterval(() => {
+    if (autoReindexRunning) return;
+    autoReindexRunning = true;
+    void index.refresh({ force: true }).catch(error => {
+      console.error('Workspace Search automatic reindex failed:', error);
+    }).finally(() => {
+      autoReindexRunning = false;
+    });
+  }, AUTO_REINDEX_INTERVAL_MS);
+  context.subscriptions.push({ dispose: () => clearInterval(autoReindexTimer) });
 
   context.subscriptions.push(vscode.commands.registerCommand('scmToolkit.workspaceSearch.clearIndex', async () => {
     await index.clear();
