@@ -352,6 +352,38 @@ def codex_countdown_edits(js):
             raise ValueError("Unsupported Codex extension build: weekly-reset anchor does not match.")
         edits.append((match.group(0),
             f'{match.group("display")}=scmToolkitUsageResetMessage({match.group("banner")}.description,{reset.group(1)},{jsx.group(1)}.jsx),'))
+    edits.extend(codex_transcript_countdown_edits(js))
+    return edits
+
+
+def codex_transcript_countdown_edits(js):
+    anchor = 'localConversation.usageLimit.upgrade.noReset'
+    if anchor not in js:
+        return []  # Older builds have no separate transcript usage-limit message.
+    identifier = r"[A-Za-z_$][\w$]*"
+    start = js.index(anchor)
+    before = js[max(0, start - 3000):start]
+    formatter = list(re.finditer(
+        rf"(?P<display>{identifier})=(?P<reset>{identifier})==null\?null:"
+        rf"{identifier}\({identifier},(?P=reset)\)", before))
+    jsx = re.search(rf"\(0,({identifier})\.jsx\)", js[start:start + 5000])
+    if len(formatter) != 1 or jsx is None:
+        raise ValueError("Unsupported Codex extension build: transcript reset-time anchor does not match.")
+    match = formatter[0]
+    edits = [(match.group(0),
+        f'{match.group("display")}={match.group("reset")}==null?null:'
+        f'(0,{jsx.group(1)}.jsx)(`scm-toolkit-usage-reset-countdown`,'
+        f'{{"reset-at":{match.group("reset")}}})')]
+    messages = list(re.finditer(
+        r"id:`localConversation\.usageLimit\.(?:upgrade|upgradeOrAddCredits|addCredits|retry)`,"
+        r"defaultMessage:`[^`]*\bat \{resetDate\}[^`]*`", js))
+    if len(messages) != 4:
+        raise ValueError("Unsupported Codex extension build: transcript usage-limit messages do not match.")
+    for match in messages:
+        original = match.group(0)
+        replacement = original.replace('`,defaultMessage:', '.countdown`,defaultMessage:')
+        replacement = replacement.replace('at {resetDate}', 'in {resetDate}')
+        edits.append((original, replacement))
     return edits
 
 
