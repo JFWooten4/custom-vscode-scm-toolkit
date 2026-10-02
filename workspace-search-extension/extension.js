@@ -5,6 +5,7 @@ const { spawn } = require('child_process');
 const { SearchIndex } = require('./search_index');
 const { WorkspaceSearchViewProvider } = require('./view');
 const { registerBranchCommands } = require('./branch_actions');
+const { registerCodexCommitCommand } = require('./codex_commit');
 
 const VIEW_ID = 'scmToolkit.workspaceSearch';
 const CONFIG_ROOT = 'scmToolkit.workspaceSearch';
@@ -124,6 +125,7 @@ function settings() {
 
 async function activate(context) {
   registerBranchCommands(vscode, context);
+  registerCodexCommitCommand(vscode, context);
   const index = new SearchIndex(context, settings);
   const provider = new WorkspaceSearchViewProvider(index, settings);
   context.subscriptions.push(

@@ -536,18 +536,30 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             return;
         }
 
-        const originalMessage = currentInput.value ?? '';
-        if (!originalMessage.trim()) {
+        const input = currentInput;
+        const repositoryUri = currentRepositoryUri;
+        const originalMessage = input.value ?? '';
+        if (!originalMessage.trim() && !settings.codexCommitContext) {
             notifications.error('Enter a commit message before committing with Codex attribution.');
             return;
         }
 
-        const attributedMessage = scmToolkitWithCodexCoauthor(originalMessage);
+        let attributedMessage;
         committingWithCodex = true;
         refreshCodexCommit();
-        currentInput.value = attributedMessage;
 
         try {
+            const message = originalMessage.trim() ? originalMessage : await commands.executeCommand(
+                'scmToolkit.generateCodexCommitMessage', repositoryUri
+            );
+            if (currentInput !== input || input.value !== originalMessage) {
+                throw new Error('The selected repository or commit message changed during local generation. Try again.');
+            }
+            if (typeof message !== 'string' || !message.trim()) {
+                throw new Error('Local Ollama returned an empty commit message.');
+            }
+            attributedMessage = scmToolkitWithCodexCoauthor(message);
+            input.value = attributedMessage;
             await commands.executeCommand(
                 currentCommitCommand.id,
                 ...(currentCommitCommand.arguments ?? [])
@@ -555,8 +567,8 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         } catch (error) {
             notifications.error(error);
         } finally {
-            if (currentInput?.value === attributedMessage) {
-                currentInput.value = originalMessage;
+            if (attributedMessage && input.value === attributedMessage) {
+                input.value = originalMessage;
             }
             committingWithCodex = false;
             refreshCodexCommit();
