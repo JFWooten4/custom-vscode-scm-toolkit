@@ -1,4 +1,21 @@
 // Runs as part of the Codex webview bundle when the optional countdown is enabled.
+function scmToolkitUsageResetMessage(message, resetAt, jsx) {
+    if (resetAt == null || !Number.isFinite(Number(resetAt)) || !message.includes('{time}')) {
+        return message;
+    }
+    const parts = message.split('{time}');
+    return parts.flatMap((part, index) => {
+        if (index === parts.length - 1) return [part];
+        const prefix = part
+            .replace(/\b(resets?|renews?) (?:on|at)\s*$/i, '$1 in ')
+            .replace(/\b(?:after|at|on)\s*$/i, 'in ')
+            .replace(/\b(wait) until\s*$/i, '$1 ');
+        return [prefix, jsx('scm-toolkit-usage-reset-countdown', {
+            'reset-at': resetAt,
+        }, `usage-reset-${index}`)];
+    });
+}
+
 (() => {
     const tagName = 'scm-toolkit-usage-reset-countdown';
     if (customElements.get(tagName)) return;
@@ -27,7 +44,7 @@
                 prefix.textContent = prefix.textContent
                     .replace(/\b(resets?|renews?) on $/i, '$1 in ')
                     .replace(/\bafter $/i, 'in ')
-                    .replace(/\bwait until $/i, 'wait ');
+                    .replace(/\b(wait) until $/i, '$1 ');
             }
 
             const resetAt = Number(this.getAttribute('reset-at')) * 1000;

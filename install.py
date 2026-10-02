@@ -313,6 +313,43 @@ def strip_codex_timestamps_payload(text):
     return before + after
 
 
+def codex_countdown_edits(js):
+    identifier = r"[A-Za-z_$][\w$]*"
+    pattern = re.compile(
+        rf"(?<![\w$])(?P<title>{identifier})=(?P<date>{identifier})==null\?"
+        rf"(?P<banner>{identifier})\.title:(?P=banner)\.title\.replaceAll\(`\{{time\}}`,(?P=date)\),"
+        rf"(?P<description>{identifier})=(?P=date)==null\?(?P=banner)\.description:"
+        rf"(?P=banner)\.description\.replaceAll\(`\{{time\}}`,(?P=date)\),"
+    )
+    matches = list(pattern.finditer(js))
+    if not matches:
+        return [codex_countdown_edit(js)]
+    if len(matches) != 1:
+        raise ValueError("Unsupported Codex extension build: usage-banner anchor is ambiguous.")
+    match = matches[0]
+    segment = js[match.end():match.end() + 8000]
+    jsx = re.search(rf"\(0,({identifier})\.jsx\)\(`span`,\{{[^}}]*children:", segment)
+    if jsx is None or "codex.rateLimitUpsellBanner.dismiss" not in segment:
+        raise ValueError("Unsupported Codex extension build: usage-banner JSX anchor does not match.")
+    banner = match.group("banner")
+    edits = [(match.group(0),
+        f'{match.group("title")}=scmToolkitUsageResetMessage({banner}.title,{banner}.reset_at,{jsx.group(1)}.jsx),'
+        f'{match.group("description")}=scmToolkitUsageResetMessage({banner}.description,{banner}.reset_at,{jsx.group(1)}.jsx),')]
+    weekly = re.compile(
+        rf"(?<![\w$])(?P<display>{identifier})=(?P<date>{identifier})==null\?"
+        rf"(?P<banner>{identifier})\.description:(?P=banner)\.description\.replace\(`\{{time\}}`,(?P=date)\),"
+    )
+    for match in weekly.finditer(js):
+        before = js[max(0, match.start() - 4000):match.start()]
+        reset = re.search(rf"({identifier}\.weeklyWindow\.resetsAt)==null\?null:", before)
+        jsx = re.search(rf"\(0,({identifier})\.jsx\)", before)
+        if reset is None or jsx is None:
+            raise ValueError("Unsupported Codex extension build: weekly-reset anchor does not match.")
+        edits.append((match.group(0),
+            f'{match.group("display")}=scmToolkitUsageResetMessage({match.group("banner")}.description,{reset.group(1)},{jsx.group(1)}.jsx),'))
+    return edits
+
+
 def codex_countdown_edit(js):
     matches = []
     pattern = re.compile(
@@ -361,24 +398,27 @@ def transform_codex(js, enabled=False, hide_promotions=False, hide_timestamps=Fa
         saved = re.search(r"^/\* edit:(.*?) \*/$", payload, re.MULTILINE)
         if saved is None:
             raise ValueError("Installed Codex countdown patch is missing its edit metadata.")
-        original, replacement = json.loads(saved.group(1))
+        metadata = json.loads(saved.group(1))
+        edits = metadata["edits"] if isinstance(metadata, dict) else [metadata]
         js = strip_codex_payload(js)
-        if js.count(replacement) != 1:
-            raise ValueError(
-                "Installed Codex countdown patch changed; refusing to remove unrelated edits."
-            )
-        js = js.replace(replacement, original, 1)
+        for original, replacement in reversed(edits):
+            if js.count(replacement) != 1:
+                raise ValueError(
+                    "Installed Codex countdown patch changed; refusing to remove unrelated edits."
+                )
+            js = js.replace(replacement, original, 1)
 
     if not remove and enabled:
-        original, replacement = codex_countdown_edit(js)
-        if js.count(original) != 1:
-            raise ValueError("Unsupported Codex extension build: reset-time anchor is ambiguous.")
-        js = js.replace(original, replacement, 1)
+        edits = codex_countdown_edits(js)
+        for original, replacement in edits:
+            if js.count(original) != 1:
+                raise ValueError("Unsupported Codex extension build: reset-time anchor is ambiguous.")
+            js = js.replace(original, replacement, 1)
         js = (
             js
             + CODEX_START
             + "/* edit:"
-            + json.dumps([original, replacement])
+            + json.dumps({"edits": edits})
             + " */\n"
             + (HERE / "codex-countdown.js").read_text()
             + CODEX_END
@@ -464,9 +504,9 @@ def codex_bundle_matches(text):
     if CODEX_START in text or CODEX_PROMOTIONS_START in text or CODEX_TIMESTAMPS_START in text:
         return True
 
-    if "You’re out of Codex messages" in text:
+    if "You’re out of Codex messages" in text or "codex.rateLimitUpsellBanner.dismiss" in text:
         try:
-            codex_countdown_edit(text)
+            codex_countdown_edits(text)
         except ValueError:
             pass
         else:

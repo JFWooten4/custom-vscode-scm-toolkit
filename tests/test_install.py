@@ -448,6 +448,35 @@ class GitConfigTests(unittest.TestCase):
 
 
 class CodexCountdownTests(unittest.TestCase):
+    def modern_fixture(self):
+        return (
+            'let e=n.reset_at==null?null:format(d,n.reset_at,true);'
+            'x=e==null?n.title:n.title.replaceAll(`{time}`,e),'
+            'b=e==null?n.description:n.description.replaceAll(`{time}`,e),other=true;'
+            '(0,J.jsx)(`span`,{children:b});'
+            'const id=`codex.rateLimitUpsellBanner.dismiss`;'
+            'let f=a.weeklyWindow.resetsAt==null?null:format(d,a.weeklyWindow.resetsAt,true);'
+            '(0,J.jsx)(Button,{});'
+            'pe=f==null?S.description:S.description.replace(`{time}`,f),unused=true;'
+        )
+
+    def test_backend_banner_and_weekly_reset_round_trip(self):
+        original = self.modern_fixture()
+        patched = install.transform_codex(original, enabled=True)
+        self.assertIn('scmToolkitUsageResetMessage(n.title,n.reset_at,J.jsx)', patched)
+        self.assertIn('scmToolkitUsageResetMessage(n.description,n.reset_at,J.jsx)', patched)
+        self.assertIn('scmToolkitUsageResetMessage(S.description,a.weeklyWindow.resetsAt,J.jsx)', patched)
+        self.assertEqual(install.transform_codex(patched, remove=True), original)
+        self.assertTrue(install.codex_bundle_matches(original))
+        self.assertEqual(install.transform_codex(patched, enabled=True), patched)
+
+    def test_legacy_countdown_metadata_can_still_be_removed(self):
+        original = self.fixture()
+        before, after = install.codex_countdown_edit(original)
+        patched = original.replace(before, after) + install.CODEX_START
+        patched += '/* edit:' + json.dumps([before, after]) + ' */\n' + install.CODEX_END
+        self.assertEqual(install.transform_codex(patched, remove=True), original)
+
     def fixture(self):
         return (
             "function banner(){let V={},ne=123,We=false,Ge="
