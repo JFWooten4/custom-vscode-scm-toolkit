@@ -18,7 +18,7 @@
     "onCommand:scmToolkit.deleteBranch",
     "onView:scmToolkit.workspaceSearch",
     "onCommand:scmToolkit.openSettings",
-    "onCommand:scmToolkit.workspaceSearch.reindex",
+    "onStartupFinished",
     "onCommand:scmToolkit.workspaceSearch.clearIndex",
     "onCommand:scmToolkit.chatgpt.searchRepositories"
   ],
@@ -41,11 +41,6 @@
         "icon": "$(gear)"
       },
       {
-        "command": "scmToolkit.workspaceSearch.reindex",
-        "title": "Rebuild Workspace Search Index",
-        "icon": "$(refresh)"
-      },
-      {
         "command": "scmToolkit.workspaceSearch.clearIndex",
         "title": "Clear Workspace Search Index",
         "icon": "$(trash)"
@@ -59,14 +54,9 @@
     "menus": {
       "view/title": [
         {
-          "command": "scmToolkit.workspaceSearch.reindex",
-          "when": "view == scmToolkit.workspaceSearch",
-          "group": "navigation@1"
-        },
-        {
           "command": "scmToolkit.workspaceSearch.clearIndex",
           "when": "view == scmToolkit.workspaceSearch",
-          "group": "navigation@2"
+          "group": "navigation@1"
         }
       ]
     },

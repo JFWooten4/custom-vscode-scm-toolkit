@@ -27,6 +27,24 @@ class WorkspaceSearchInstallerTests(unittest.TestCase):
             (workspace_search.SOURCE / "extension.js").read_text(),
         )
 
+    def test_workspace_search_reindexes_automatically(self):
+        package = json.loads((workspace_search.SOURCE / "package.json").read_text())
+        command_ids = {command["command"] for command in package["contributes"]["commands"]}
+        extension = (workspace_search.SOURCE / "extension.js").read_text()
+
+        self.assertIn("onStartupFinished", package["activationEvents"])
+        self.assertNotIn(
+            "onCommand:scmToolkit.workspaceSearch.reindex",
+            package["activationEvents"],
+        )
+        self.assertNotIn("scmToolkit.workspaceSearch.reindex", command_ids)
+        self.assertIn("const AUTO_REINDEX_INTERVAL_MS = 2 * 60 * 1000;", extension)
+        self.assertIn("index.refresh({ force: true })", extension)
+        self.assertNotIn(
+            "registerCommand('scmToolkit.workspaceSearch.reindex'",
+            extension,
+        )
+
     def test_default_manifest_stays_in_source_control(self):
         package = workspace_search.render_package(DEFAULTS)
 
