@@ -434,7 +434,6 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     );
 
     let currentCommand;
-    let currentCommitCommand;
     let currentBranch;
     let currentRepositoryArgument;
     let currentRepositoryUri;
@@ -514,6 +513,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     }));
 
     const refreshCodexCommit = () => {
+        const currentCommitCommand = currentInput?.repository.provider.acceptInputCommand;
         codexButton.disabled =
             pending
             || deletingBranch
@@ -524,6 +524,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
 
     const commitWithCodex = async event => {
         event.stopPropagation();
+        const currentCommitCommand = currentInput?.repository.provider.acceptInputCommand;
         if (
             !settings.codexCoauthor
             || !currentInput
@@ -963,7 +964,6 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
 
         bind(input) {
             currentCommand = undefined;
-            currentCommitCommand = undefined;
             currentBranch = undefined;
             currentRepositoryArgument = undefined;
             currentRepositoryUri = undefined;
@@ -990,7 +990,6 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             settingsButton.hidden = false;
             const provider = input.repository.provider;
             currentRepositoryUri = provider.rootUri;
-            currentCommitCommand = provider.acceptInputCommand;
 
             if (settings.commitAndPush) {
                 pushControl.hidden = false;
@@ -1057,6 +1056,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
 
             let blankStateRefreshDisposable;
             widget.repositoryDisposables.add(observe(reader => {
+                provider.actionButton?.read(reader);
                 const items = provider.statusBarCommands.read(reader) ?? [];
                 // Keep the first Git status command and its original arguments so the
                 // built-in branch picker remains the source of truth.
