@@ -147,7 +147,7 @@ class SearchIndex {
       const uri = vscode.Uri.parse(file.uri);
       const relative = vscode.workspace.asRelativePath(uri, false);
       for (const chunk of file.chunks || []) {
-        const exact = keywordScore(query, `${relative}\n${chunk.text}`);
+        const exact = keywordScore(query, `${relative}\n${chunk.text}`, { fuzzy: selectedMode === 'hybrid' });
         const semantic = queryVector && chunk.vector ? Math.max(0, cosine(queryVector, chunk.vector)) : 0;
         const score = selectedMode === 'exact'
             ? exact
