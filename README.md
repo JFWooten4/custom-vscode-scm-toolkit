@@ -24,6 +24,7 @@ Current features:
 - optionally spellcheck manually entered commit subjects with the configured local model
 - optionally show a live, minute-precision countdown in Codex usage-limit banners
 - optionally hide Codex promotional cards such as the Fast mode upsell
+- optionally hide the Codex dictation microphone button
 - mirror ChatGPT web custom instructions into the global personalization used by the Codex VS Code extension
 - optionally require the Codex Web co-author trailer for web/GitHub-tool commits
 - import a PGP secret key directly into GnuPG without persisting the private material in toolkit settings
@@ -158,6 +159,7 @@ git config --global scm-toolkit.codex-hide-promotions true
 git config --global scm-toolkit.chatgpt-custom-instructions ""
 git config --global scm-toolkit.chatgpt-web-codex-coauthor true
 git config --global scm-toolkit.codex-hide-chat-timestamps true
+git config --global scm-toolkit.codex-hide-dictation true
 git config --global scm-toolkit.default-branch main
 git config --global scm-toolkit.remote origin
 git config --global scm-toolkit.branch-name-disabled-packs ""
@@ -201,6 +203,7 @@ The equivalent `~/.gitconfig` block is:
     chatgpt-custom-instructions =
     chatgpt-web-codex-coauthor = true
     codex-hide-chat-timestamps = true
+    codex-hide-dictation = true
     default-branch = main
     remote = origin
     branch-name-disabled-packs =
@@ -208,7 +211,11 @@ The equivalent `~/.gitconfig` block is:
     branch-name-imports = []
 ```
 
+<<<<<<< HEAD
+The filled-button style, standalone Workspace Search Activity Bar, Cmd-click close-others gesture, Codex usage-reset countdown, Codex promotion hiding, Codex chat timestamp hiding, Codex dictation hiding, and ChatGPT browser homepage default to `false`; the other boolean SCM feature switches default to `true`. The Source Control app-bar label defaults to `Sweetiebot`, and the optional standalone Workspace Search container label defaults to `EFS`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
+=======
 The filled-button style, standalone Workspace Search Activity Bar, Cmd-click close-others gesture, Codex usage-reset countdown, Codex promotion hiding, Codex chat timestamp hiding, and ChatGPT browser homepage default to `false`; the other boolean SCM feature switches default to `true`. The Source Control app-bar label defaults to `Sweetie Bot`, and the optional standalone Workspace Search container label defaults to `EFS`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
+>>>>>>> origin/main
 
 After changing toolkit Git config, rerun:
 
