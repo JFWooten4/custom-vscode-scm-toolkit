@@ -30,6 +30,22 @@ function generateMessage(script, cwd, context) {
 }
 
 function registerCodexCommitCommand(vscode, extensionContext) {
+  extensionContext.subscriptions.push(vscode.commands.registerCommand('scmToolkit.prepareCodexCommit', async uri => {
+    const extension = vscode.extensions.getExtension('vscode.git');
+    if (!extension) throw new Error('The VS Code Git extension is unavailable.');
+    const git = await extension.activate();
+    const repository = git.getAPI(1).getRepository(vscode.Uri.from(uri?.rootUri ?? uri));
+    if (!repository) throw new Error('The selected Git repository is unavailable.');
+    await repository.status();
+    if (repository.state.mergeChanges.length) throw new Error('Resolve merge conflicts before committing.');
+    if (repository.state.indexChanges.length) return;
+    if (!repository.state.workingTreeChanges.length && !repository.state.untrackedChanges.length) {
+      throw new Error('There are no changes to commit.');
+    }
+    await repository.add(['.']);
+    await repository.status();
+    if (!repository.state.indexChanges.length) throw new Error('No changes were staged.');
+  }));
   extensionContext.subscriptions.push(vscode.commands.registerCommand('scmToolkit.generateCodexCommitMessage', async uri => {
     const root = vscode.Uri.from(uri?.rootUri ?? uri);
     if (root.scheme !== 'file') throw new Error('Local commit generation requires a local repository.');

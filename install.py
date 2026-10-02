@@ -8,6 +8,7 @@ import re
 import workspace_search
 import codex_colors
 import codex_context
+import codex_image_drop
 from pathlib import Path
 from toolkit_settings import DEFAULT_SETTINGS, load_settings, read_git_bool, read_git_string
 from branch_names import resolve_runtime_settings
@@ -158,7 +159,26 @@ def source_control_label_edits(js, label):
     # localize2 uses the numeric NLS entry before its fallback text. A custom
     # label must supply both title fields directly to bypass that lookup.
     replacement = "title:" + json.dumps({"value": str(label), "original": str(label)}) + suffix
-    return [(original, replacement)]
+    edits = [(original, replacement)]
+    # Moving Changes into the panel uses its view title instead of the original
+    # container title. Follow the shared containerTitle variable in that view.
+    views = js[anchor_index:anchor_index + 4000]
+    identifier = r"[A-Za-z_$][\w$]*"
+    view = re.search(
+        rf'containerTitle:(?P<title>{identifier}),name:{identifier}\('
+        rf'(?:\d+|"[^"]*"),"Changes"\),singleViewPaneContainerTitle:(?P=title)',
+        views,
+    )
+    if view:
+        assignments = list(re.finditer(
+            rf'(?<![\w$]){re.escape(view.group("title"))}={identifier}\([^;]*?\)',
+            views[:view.start()],
+        ))
+        if len(assignments) != 1:
+            raise ValueError("Unsupported VS Code build: Source Control panel title does not match.")
+        original = assignments[0].group(0)
+        edits.append((original, view.group("title") + "=" + json.dumps(str(label))))
+    return edits
 
 
 def browser_chatgpt_home_edits(js):
@@ -352,6 +372,38 @@ def codex_countdown_edits(js):
             raise ValueError("Unsupported Codex extension build: weekly-reset anchor does not match.")
         edits.append((match.group(0),
             f'{match.group("display")}=scmToolkitUsageResetMessage({match.group("banner")}.description,{reset.group(1)},{jsx.group(1)}.jsx),'))
+    edits.extend(codex_transcript_countdown_edits(js))
+    return edits
+
+
+def codex_transcript_countdown_edits(js):
+    anchor = 'localConversation.usageLimit.upgrade.noReset'
+    if anchor not in js:
+        return []  # Older builds have no separate transcript usage-limit message.
+    identifier = r"[A-Za-z_$][\w$]*"
+    start = js.index(anchor)
+    before = js[max(0, start - 3000):start]
+    formatter = list(re.finditer(
+        rf"(?P<display>{identifier})=(?P<reset>{identifier})==null\?null:"
+        rf"{identifier}\({identifier},(?P=reset)\)", before))
+    jsx = re.search(rf"\(0,({identifier})\.jsx\)", js[start:start + 5000])
+    if len(formatter) != 1 or jsx is None:
+        raise ValueError("Unsupported Codex extension build: transcript reset-time anchor does not match.")
+    match = formatter[0]
+    edits = [(match.group(0),
+        f'{match.group("display")}={match.group("reset")}==null?null:'
+        f'(0,{jsx.group(1)}.jsx)(`scm-toolkit-usage-reset-countdown`,'
+        f'{{"reset-at":{match.group("reset")}}})')]
+    messages = list(re.finditer(
+        r"id:`localConversation\.usageLimit\.(?:upgrade|upgradeOrAddCredits|addCredits|retry)`,"
+        r"defaultMessage:`[^`]*\bat \{resetDate\}[^`]*`", js))
+    if len(messages) != 4:
+        raise ValueError("Unsupported Codex extension build: transcript usage-limit messages do not match.")
+    for match in messages:
+        original = match.group(0)
+        replacement = original.replace('`,defaultMessage:', '.countdown`,defaultMessage:')
+        replacement = replacement.replace('at {resetDate}', 'in {resetDate}')
+        edits.append((original, replacement))
     return edits
 
 
@@ -392,6 +444,7 @@ def codex_countdown_edit(js):
 
 
 def transform_codex(js, enabled=False, hide_promotions=False, hide_timestamps=False, remove=False):
+    js = codex_image_drop.transform(js, remove=remove)
     if CODEX_TIMESTAMPS_START in js:
         js = strip_codex_timestamps_payload(js)
     if CODEX_PROMOTIONS_START in js:

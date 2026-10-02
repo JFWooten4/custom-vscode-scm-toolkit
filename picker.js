@@ -545,6 +545,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         refreshCodexCommit();
 
         try {
+            await commands.executeCommand('scmToolkit.prepareCodexCommit', repositoryUri);
             const message = originalMessage.trim() ? originalMessage : await commands.executeCommand(
                 'scmToolkit.generateCodexCommitMessage', repositoryUri
             );
@@ -555,7 +556,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
                 throw new Error('Local Ollama returned an empty commit message.');
             }
             attributedMessage = scmToolkitWithCodexCoauthor(message);
-            input.value = attributedMessage;
+            input.setValue(attributedMessage, false);
             await commands.executeCommand(
                 currentCommitCommand.id,
                 ...(currentCommitCommand.arguments ?? [])
@@ -564,7 +565,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             notifications.error(error);
         } finally {
             if (attributedMessage && input.value === attributedMessage) {
-                input.value = originalMessage;
+                input.setValue(originalMessage, false);
             }
             committingWithCodex = false;
             refreshCodexCommit();
@@ -719,12 +720,11 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         refreshBranchControls();
 
         try {
-            const branchName = await commands.executeCommand('scmToolkit.createBranch', repository, {
+            await commands.executeCommand('scmToolkit.createBranch', repository, {
                 defaultBranch: settings.defaultBranch,
                 remote: settings.remote,
                 names: scmToolkitBranchNamePool(),
             });
-            notifications.info(`Created and switched to ${branchName}.`);
         } catch (error) {
             notifications.error(error);
         } finally {

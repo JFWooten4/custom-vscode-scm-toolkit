@@ -273,6 +273,17 @@ class TransformTests(unittest.TestCase):
 
         self.assertEqual(restored, (original_js, original_css))
 
+    def test_source_control_label_follows_changes_into_panel(self):
+        original = workbench_fixture() + (
+            ';panelTitle=d(21169,null);'
+            'views.registerViews([{id:changes,containerTitle:panelTitle,'
+            'name:O(21159,"Changes"),singleViewPaneContainerTitle:panelTitle}],container);'
+        )
+        patched = install.transform(original, "base-css", settings=SETTINGS)
+        self.assertIn('panelTitle="Sweetiebot"', patched[0].split(install.START, 1)[0])
+        self.assertEqual(install.transform(*patched, settings=SETTINGS), patched)
+        self.assertEqual(install.transform(*patched, remove=True, settings=SETTINGS), (original, "base-css"))
+
     def test_cmd_click_close_others_is_off_by_default(self):
         self.assertFalse(install.DEFAULT_SETTINGS["cmdClickCloseOthers"])
 
@@ -486,6 +497,24 @@ class CodexCountdownTests(unittest.TestCase):
         self.assertIn('scmToolkitUsageResetMessage(S.description,a.weeklyWindow.resetsAt,J.jsx)', patched)
         self.assertEqual(install.transform_codex(patched, remove=True), original)
         self.assertTrue(install.codex_bundle_matches(original))
+        self.assertEqual(install.transform_codex(patched, enabled=True), patched)
+
+    def test_transcript_reset_uses_live_countdown_and_restores_original(self):
+        transcript = (
+            'u=e==null?null:format(r,e);'
+            '(0,J.jsx)(Message,{id:`localConversation.usageLimit.upgrade.noReset`});'
+        )
+        for variant in ('upgrade', 'upgradeOrAddCredits', 'addCredits', 'retry'):
+            transcript += (
+                '(0,J.jsx)(Message,{id:`localConversation.usageLimit.' + variant + '`, '
+                'defaultMessage:`Try again at {resetDate}.`,values:{resetDate:r}});'
+            ).replace('`, defaultMessage:', '`,defaultMessage:')
+        original = self.modern_fixture() + transcript
+        patched = install.transform_codex(original, enabled=True)
+        self.assertIn('u=e==null?null:(0,J.jsx)(`scm-toolkit-usage-reset-countdown`,{"reset-at":e})', patched)
+        self.assertIn('usageLimit.upgradeOrAddCredits.countdown', patched)
+        self.assertIn('defaultMessage:`Try again in {resetDate}.`', patched)
+        self.assertEqual(install.transform_codex(patched, remove=True), original)
         self.assertEqual(install.transform_codex(patched, enabled=True), patched)
 
     def test_legacy_countdown_metadata_can_still_be_removed(self):
