@@ -379,7 +379,9 @@ def _result_page(saved: bool) -> str:
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{title}</title><style>body{{margin:0;background:#0d1117;color:#f0f6fc;font:16px system-ui;display:grid;min-height:100vh;place-items:center}}main{{text-align:center;padding:32px}}p{{color:#8b949e}}</style></head><body><main><h1>{title}</h1><p>{detail} You may close this tab.</p></main></body></html>"""
 
 
-def run_configurator(current: dict[str, object], action_label: str = "Save configuration") -> bool:
+def run_configurator(
+    current: dict[str, object], action_label: str = "Save configuration", *, open_browser: bool = True
+) -> bool:
     models, ollama_status = fetch_ollama_models()
     token = secrets.token_urlsafe(24)
     outcome: dict[str, bool | None] = {"saved": None}
@@ -445,9 +447,12 @@ def run_configurator(current: dict[str, object], action_label: str = "Save confi
 
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     url = f"http://127.0.0.1:{server.server_port}/?token={urllib.parse.quote(token)}"
-    print(f"SCM Toolkit configurator: {url}")
-    if not webbrowser.open(url):
-        print("Open the URL above in a browser.")
+    if open_browser:
+        print(f"SCM Toolkit configurator: {url}")
+        if not webbrowser.open(url):
+            print("Open the URL above in a browser.")
+    else:
+        print(json.dumps({"url": url}), flush=True)
     try:
         server.serve_forever(poll_interval=0.1)
     except KeyboardInterrupt:
@@ -458,4 +463,9 @@ def run_configurator(current: dict[str, object], action_label: str = "Save confi
 
 
 if __name__ == "__main__":
-    run_configurator(load_settings())
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--no-browser", action="store_true", help="Send the URL to the calling extension.")
+    args = parser.parse_args()
+    run_configurator(load_settings(), open_browser=not args.no_browser)

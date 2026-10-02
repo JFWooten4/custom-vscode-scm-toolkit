@@ -8,30 +8,71 @@ const { registerBranchCommands } = require('./branch_actions');
 
 const VIEW_ID = 'scmToolkit.workspaceSearch';
 const CONFIG_ROOT = 'scmToolkit.workspaceSearch';
+const SETTINGS_BROWSER_COMMAND = 'workbench.action.browser.open';
 let configuratorProcess;
+let configuratorURL;
 
-function openSettings(context) {
+async function openSettings(context) {
+  if (!(await vscode.commands.getCommands(true)).includes(SETTINGS_BROWSER_COMMAND)) {
+    vscode.window.showErrorMessage('Update VS Code to a version with the Integrated Browser to open SCM Toolkit settings.');
+    return;
+  }
+
+  const openBrowser = async (url, session = configuratorProcess) => {
+    try {
+      await vscode.commands.executeCommand(SETTINGS_BROWSER_COMMAND, {
+        url, openToSide: false, reuseUrlFilter: url
+      });
+    } catch {
+      session?.kill();
+      vscode.window.showErrorMessage('Unable to open SCM Toolkit settings in the Integrated Browser. Try again.');
+    }
+  };
   if (configuratorProcess && configuratorProcess.exitCode === null) {
-    vscode.window.showInformationMessage('SCM Toolkit settings are already open.');
+    if (configuratorURL) await openBrowser(configuratorURL);
     return;
   }
 
   const script = vscode.Uri.joinPath(context.extensionUri, 'configurator.py').fsPath;
   const python = process.platform === 'win32' ? 'python' : 'python3';
-  let stderr = '';
-  const child = spawn(python, [script], {
+  const child = spawn(python, [script, '--no-browser'], {
     cwd: context.extensionPath,
-    stdio: ['ignore', 'ignore', 'pipe']
+    stdio: ['ignore', 'pipe', 'pipe']
   });
   configuratorProcess = child;
+  configuratorURL = undefined;
+  let output = '';
+  let stderr = '';
+  child.stdout.setEncoding('utf8');
+  child.stdout.on('data', chunk => {
+    output += chunk;
+    let newline;
+    while ((newline = output.indexOf('\n')) !== -1) {
+      const line = output.slice(0, newline);
+      output = output.slice(newline + 1);
+      if (configuratorURL) continue;
+      try {
+        const { url } = JSON.parse(line);
+        const parsed = new URL(url);
+        if (parsed.protocol !== 'http:' || parsed.hostname !== '127.0.0.1' || !parsed.port) continue;
+        configuratorURL = url;
+        void openBrowser(url);
+      } catch { /* Ignore non-protocol output without displaying the private URL. */ }
+    }
+  });
   child.stderr.setEncoding('utf8');
   child.stderr.on('data', chunk => { stderr += chunk; });
-  child.on('error', error => {
+  const clear = () => {
+    if (configuratorProcess !== child) return;
     configuratorProcess = undefined;
+    configuratorURL = undefined;
+  };
+  child.on('error', error => {
+    clear();
     vscode.window.showErrorMessage(`Unable to open SCM Toolkit settings: ${error.message}`);
   });
   child.on('exit', code => {
-    configuratorProcess = undefined;
+    clear();
     if (code && code !== 0) {
       vscode.window.showErrorMessage(
         `SCM Toolkit settings exited with code ${code}${stderr.trim() ? `: ${stderr.trim()}` : '.'}`
@@ -130,7 +171,7 @@ async function activate(context) {
     vscode.window.registerWebviewViewProvider(VIEW_ID, provider, { webviewOptions: { retainContextWhenHidden: true } })
   );
   context.subscriptions.push(vscode.commands.registerCommand('scmToolkit.openSettings', () => {
-    openSettings(context);
+    return openSettings(context);
   }));
   context.subscriptions.push(vscode.commands.registerCommand('scmToolkit.chatgpt.searchRepositories', query => {
     return searchLinkedGithubRepositories(query);
@@ -166,6 +207,10 @@ async function activate(context) {
   }));
 }
 
-function deactivate() {}
+function deactivate() {
+  configuratorProcess?.kill();
+  configuratorProcess = undefined;
+  configuratorURL = undefined;
+}
 
 module.exports = { activate, deactivate };

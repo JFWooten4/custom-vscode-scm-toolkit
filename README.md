@@ -99,7 +99,7 @@ python3 configure.py
 
 It opens an app-like settings page in the default browser, prefilled with the current Git configuration. The page includes every toolkit switch plus the Ollama model choices and low-memory threshold. The **Branch names** section lets you toggle individual packs, add custom names, and paste third-party packs as JSON. If Ollama is running on `127.0.0.1:11434`, locally installed models appear as suggestions; model tags can still be entered manually when it is offline.
 
-After installation, the gear at the right end of the Source Control message row opens the same local settings page directly. The companion extension starts the loopback configurator and opens the browser automatically, so the repository checkout and manual URL entry are not required.
+After installation, the gear at the right end of the Source Control message row opens the same local settings page directly. The companion extension starts the loopback configurator and opens it in VS Code’s native Integrated Browser in the current window. Clicking the gear again focuses the existing settings tab. This requires a VS Code version with the Integrated Browser; older versions show an update message. The repository checkout and manual URL entry are not required.
 
 The configurator uses only the Python standard library, binds to a random loopback port, requires a one-time URL token, and sends no settings off the computer. Its UI is cross-platform; the workbench installer remains macOS-specific because it currently targets the Visual Studio Code application-bundle layout.
 
