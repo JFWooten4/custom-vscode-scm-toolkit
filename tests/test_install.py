@@ -231,7 +231,7 @@ class TransformTests(unittest.TestCase):
         js, _ = install.transform(workbench_fixture(), "base-css", settings=SETTINGS)
 
         self.assertIn(
-            'title:localize2("source control","Sweetiebot"),'
+            'title:{"value": "Sweetiebot", "original": "Sweetiebot"},'
             'storageId:"workbench.scm.views.state"',
             js.split(install.START, 1)[0],
         )
@@ -244,6 +244,24 @@ class TransformTests(unittest.TestCase):
             'title:localize2("source control","Source Control"),'
             'storageId:"workbench.scm.views.state"',
             js.split(install.START, 1)[0],
+        )
+
+    def test_source_control_label_bypasses_numeric_localization(self):
+        original = workbench_fixture().replace(
+            'localize2("source control","Source Control")',
+            'O(21166,"Source Control")',
+        )
+        settings = dict(SETTINGS, sourceControlLabel='My "SCM"')
+        patched = install.transform(original, "base-css", settings=settings)
+        self.assertIn(
+            'title:' + json.dumps({"value": 'My "SCM"', "original": 'My "SCM"'}),
+            patched[0].split(install.START, 1)[0],
+        )
+        self.assertNotIn('O(21166,', patched[0].split(install.START, 1)[0])
+        self.assertEqual(install.transform(*patched, settings=settings), patched)
+        self.assertEqual(
+            install.transform(*patched, remove=True, settings=settings),
+            (original, "base-css"),
         )
 
     def test_source_control_label_round_trip(self):

@@ -143,7 +143,10 @@ def source_control_label_edits(js, label):
     anchor_index = anchor_indexes[0]
     start = max(0, anchor_index - 800)
     segment = js[start : anchor_index + len(anchor)]
-    matches = list(re.finditer(r"""(["'])Source Control\1""", segment))
+    matches = list(re.finditer(
+        r"""title\s*:\s*[\w$]+\(\s*(?:\d+|"[^"]*"|'[^']*')\s*,\s*(["'])Source Control\1\s*\)""",
+        segment,
+    ))
     if len(matches) != 1:
         raise ValueError(
             "Unsupported VS Code build: Source Control app-bar label does not match."
@@ -152,7 +155,9 @@ def source_control_label_edits(js, label):
     match = matches[0]
     suffix = segment[match.end() :]
     original = match.group(0) + suffix
-    replacement = json.dumps(str(label)) + suffix
+    # localize2 uses the numeric NLS entry before its fallback text. A custom
+    # label must supply both title fields directly to bypass that lookup.
+    replacement = "title:" + json.dumps({"value": str(label), "original": str(label)}) + suffix
     return [(original, replacement)]
 
 

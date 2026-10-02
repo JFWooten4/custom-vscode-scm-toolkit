@@ -35,6 +35,8 @@ def render_package(settings: dict[str, object] | None = None) -> dict[str, objec
     package = json.loads((SOURCE / "package.json").read_text())
     contributes = package["contributes"]
     workspace_view = contributes["views"]["scm"][0]
+    workspace_view["name"] = str(settings["workspaceSearchLabel"])
+    workspace_view["contextualTitle"] = str(settings["workspaceSearchLabel"])
 
     if settings["workspaceSearchActivityBar"]:
         contributes["viewsContainers"] = {

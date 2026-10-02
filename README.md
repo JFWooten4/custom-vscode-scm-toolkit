@@ -219,7 +219,7 @@ Built-in community packs also include a dedicated **Convention mascots** set and
 
 The normal installer also installs a small companion VS Code extension into `~/.vscode/extensions`. By default, after reloading VS Code, Source Control contains a **Workspace Search** section with an in-sidebar query box, Hybrid/Semantic/Exact modes, ranked snippets, click-to-open results, and an optional **Ask Ollama** action. It does not open Open WebUI or a separate browser window.
 
-Set `scm-toolkit.workspace-search-activity-bar` to `true` to move the same Workspace Search view into its own Activity Bar container. The container label is independently configurable with `scm-toolkit.workspace-search-label` and defaults to **EFS**. Rerun `python3 install.py` and reload VS Code after changing either setting.
+Set `scm-toolkit.workspace-search-activity-bar` to `true` to move the same Workspace Search view into its own Activity Bar container. The panel title and container label use `scm-toolkit.workspace-search-label` and default to **EFS**. Rerun `python3 install.py` and reload VS Code after changing either setting.
 
 Install the default local embedding model once:
 
