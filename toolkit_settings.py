@@ -12,7 +12,7 @@ DEFAULT_SETTINGS = {
     "branchCustomNames": "",
     "branchNameImports": "[]",
     "shortPlaceholder": True,
-    "sourceControlLabel": "Sweetiebot",
+    "sourceControlLabel": "Sweetie Bot",
     "workspaceSearchActivityBar": False,
     "workspaceSearchLabel": "EFS",
     "filledButtons": False,

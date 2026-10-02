@@ -17,7 +17,7 @@ SETTINGS = {
     "branchCustomNames": "",
     "branchNameImports": "[]",
     "shortPlaceholder": True,
-    "sourceControlLabel": "Sweetiebot",
+    "sourceControlLabel": "Sweetie Bot",
     "filledButtons": False,
     "commitAndPush": True,
     "branchCleanup": True,
@@ -225,13 +225,13 @@ class TransformTests(unittest.TestCase):
         self.assertEqual(css.count(install.END), 1)
 
     def test_source_control_label_defaults_to_sweetiebot(self):
-        self.assertEqual(install.DEFAULT_SETTINGS["sourceControlLabel"], "Sweetiebot")
+        self.assertEqual(install.DEFAULT_SETTINGS["sourceControlLabel"], "Sweetie Bot")
 
     def test_source_control_label_patches_view_container_title(self):
         js, _ = install.transform(workbench_fixture(), "base-css", settings=SETTINGS)
 
         self.assertIn(
-            'title:{"value": "Sweetiebot", "original": "Sweetiebot"},'
+            'title:{"value": "Sweetie Bot", "original": "Sweetie Bot"},'
             'storageId:"workbench.scm.views.state"',
             js.split(install.START, 1)[0],
         )
@@ -280,7 +280,7 @@ class TransformTests(unittest.TestCase):
             'name:O(21159,"Changes"),singleViewPaneContainerTitle:panelTitle}],container);'
         )
         patched = install.transform(original, "base-css", settings=SETTINGS)
-        self.assertIn('panelTitle="Sweetiebot"', patched[0].split(install.START, 1)[0])
+        self.assertIn('panelTitle="Sweetie Bot"', patched[0].split(install.START, 1)[0])
         self.assertEqual(install.transform(*patched, settings=SETTINGS), patched)
         self.assertEqual(install.transform(*patched, remove=True, settings=SETTINGS), (original, "base-css"))
 

@@ -109,7 +109,7 @@ Set options with `git config --global`:
 git config --global scm-toolkit.branch-picker true
 git config --global scm-toolkit.pony-branch true
 git config --global scm-toolkit.short-placeholder true
-git config --global scm-toolkit.source-control-label Sweetiebot
+git config --global scm-toolkit.source-control-label "Sweetie Bot"
 git config --global scm-toolkit.workspace-search-activity-bar false
 git config --global scm-toolkit.workspace-search-label EFS
 git config --global scm-toolkit.filled-buttons false
@@ -152,7 +152,7 @@ The equivalent `~/.gitconfig` block is:
     branch-picker = true
     pony-branch = true
     short-placeholder = true
-    source-control-label = Sweetiebot
+    source-control-label = Sweetie Bot
     workspace-search-activity-bar = false
     workspace-search-label = EFS
     filled-buttons = false
@@ -188,7 +188,7 @@ The equivalent `~/.gitconfig` block is:
     branch-name-imports = []
 ```
 
-The filled-button style, standalone Workspace Search Activity Bar, Cmd-click close-others gesture, Codex usage-reset countdown, Codex promotion hiding, Codex chat timestamp hiding, and ChatGPT browser homepage default to `false`; the other boolean SCM feature switches default to `true`. The Source Control app-bar label defaults to `Sweetiebot`, and the optional standalone Workspace Search container label defaults to `EFS`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
+The filled-button style, standalone Workspace Search Activity Bar, Cmd-click close-others gesture, Codex usage-reset countdown, Codex promotion hiding, Codex chat timestamp hiding, and ChatGPT browser homepage default to `false`; the other boolean SCM feature switches default to `true`. The Source Control app-bar label defaults to `Sweetie Bot`, and the optional standalone Workspace Search container label defaults to `EFS`. With filled buttons disabled, the branch selector and native Commit button use a transparent background and a theme-aware border instead of VS Code's accent fill. The default AI models are `qwen2.5-coder:7b` for normal operation and `qwen2.5-coder:3b` for low-memory operation. The low-memory threshold defaults to 4 GiB of estimated available memory. The default protected branch is `main`, and the default remote is `origin`.
 
 After changing toolkit Git config, rerun:
 
@@ -428,7 +428,7 @@ through the sparkle means inline autocomplete is off.
 ### Source Control label
 
 The toolkit can replace VS Code's built-in **Source Control** view-container label
-with a custom app-bar name. It defaults to **Sweetiebot**.
+with a custom app-bar name. It defaults to **Sweetie Bot**.
 
 Set another label and reinstall:
 
