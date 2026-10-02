@@ -208,46 +208,6 @@ function scmToolkitWithCodexCoauthor(message) {
     return alreadyAttributed ? base : `${base}\n\n${SCM_TOOLKIT_CODEX_COAUTHOR}`;
 }
 
-function scmToolkitParseGitHubRemote(remoteUrl) {
-    const value = String(remoteUrl ?? '').trim();
-    if (!value) return undefined;
-
-    const patterns = [
-        /^https?:\/\/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/i,
-        /^git@github\.com:([^/]+)\/([^/]+?)(?:\.git)?$/i,
-        /^ssh:\/\/git@github\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/i,
-    ];
-
-    for (const pattern of patterns) {
-        const match = value.match(pattern);
-        if (match) return { owner: match[1], repo: match[2] };
-    }
-    return undefined;
-}
-
-function scmToolkitPullRequestTitle(branch) {
-    const tail = String(branch ?? '').split('/').filter(Boolean).pop() ?? '';
-    const words = tail.replace(/[-_]+/g, ' ').trim();
-    return words ? words[0].toUpperCase() + words.slice(1) : `Open ${branch}`;
-}
-
-function scmToolkitMcpError(result) {
-    const message = result?.content?.find(
-        item => item?.type === 'text' && typeof item.text === 'string'
-    )?.text;
-    return message || 'The MCP pull-request tool returned an error.';
-}
-
-async function scmToolkitWaitForMcpTool(doc, server, toolName) {
-    const win = doc.defaultView;
-    for (let attempt = 0; attempt < 50; attempt += 1) {
-        const tool = server.tools?.get?.().find(candidate => candidate.definition?.name === toolName);
-        if (tool) return tool;
-        await new Promise(resolve => win ? win.setTimeout(resolve, 100) : setTimeout(resolve, 100));
-    }
-    return undefined;
-}
-
 // Named G4 pony entries from the full MLP pony roster. Explicitly unnamed placeholders,
 // G5 entries, and non-pony kirin are intentionally excluded from this branch-name pool.
 function scmToolkitBranchNamePool() {
@@ -697,29 +657,21 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             !settings.mcpPullRequest
             || !branch
             || branch === settings.defaultBranch
-            || !currentRepositoryArgument;
+            || !currentRepositoryUri;
 
         pullRequestButton.hidden = !settings.mcpPullRequest;
         pullRequestButton.disabled =
             pending || deletingBranch || creatingPullRequest || creatingPonyBranch || unavailable;
-
-        if (!branch) {
-            pullRequestTooltip.textContent = 'Open a pull request for the current branch';
-        } else if (branch === settings.defaultBranch) {
-            pullRequestTooltip.textContent =
-                `${settings.defaultBranch} is the pull-request base branch`;
-        } else {
-            pullRequestTooltip.textContent =
-                `Open a pull request for ${branch} with ${settings.mcpPrServer}`;
-        }
+        pullRequestTooltip.textContent = branch === settings.defaultBranch
+            ? `${settings.defaultBranch} is the pull-request base branch`
+            : `Draft a pull request for ${branch ?? 'the current branch'} in ChatGPT`;
         pullRequestButton.setAttribute('aria-label', pullRequestTooltip.textContent);
     };
 
     const createPullRequest = async event => {
         event.stopPropagation();
-
         const branch = currentBranch;
-        const repository = currentRepositoryArgument;
+        const repository = currentRepositoryUri;
         if (
             !settings.mcpPullRequest
             || !branch
@@ -729,72 +681,16 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             || deletingBranch
             || creatingPullRequest
             || creatingPonyBranch
-        ) {
-            return;
-        }
-
-        const remote = repository.state?.remotes?.find(
-            candidate => candidate.name === settings.remote
-        );
-        const github = scmToolkitParseGitHubRemote(remote?.pushUrl || remote?.fetchUrl);
-        if (!github) {
-            notifications.error(
-                `Cannot create a pull request: ${settings.remote} is not a GitHub remote.`
-            );
-            return;
-        }
-
-        try {
-            await mcpService.activateCollections();
-        } catch (error) {
-            notifications.error(error);
-            return;
-        }
-
-        const wantedServer = String(settings.mcpPrServer).toLowerCase();
-        const server = mcpService.servers.get().find(candidate => {
-            const metadata = candidate.serverMetadata?.get?.();
-            return [
-                candidate.definition?.id,
-                candidate.definition?.label,
-                metadata?.serverName,
-            ].some(name => String(name ?? '').toLowerCase() === wantedServer);
-        });
-        if (!server) {
-            notifications.error(
-                `MCP server "${settings.mcpPrServer}" is not configured in VS Code.`
-            );
-            return;
-        }
+        ) return;
 
         creatingPullRequest = true;
         refreshBranchControls();
         try {
-            await server.start({ promptType: 'all-untrusted' });
-            const tool = await scmToolkitWaitForMcpTool(doc, server, settings.mcpPrTool);
-            if (!tool) {
-                throw new Error(
-                    `MCP tool "${settings.mcpPrTool}" was not found on ${settings.mcpPrServer}.`
-                );
-            }
-
-            const result = await tool.call({
-                owner: github.owner,
-                repo: github.repo,
-                title: scmToolkitPullRequestTitle(branch),
-                prompt: `Open a pull request for branch ${branch}.`,
-                body: `Opens \`${branch}\` against \`${settings.defaultBranch}\`.`,
-                head: branch,
+            await commands.executeCommand('scmToolkit.openPullRequestChat', repository, {
+                branch,
                 base: settings.defaultBranch,
+                remote: settings.remote,
             });
-            if (result?.isError) throw new Error(scmToolkitMcpError(result));
-
-            const url = result?.structuredContent?.url;
-            notifications.info(
-                url
-                    ? `Created pull request: ${url}`
-                    : `Created pull request for ${branch}.`
-            );
         } catch (error) {
             notifications.error(error);
         } finally {

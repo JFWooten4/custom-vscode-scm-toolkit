@@ -555,19 +555,11 @@ The trailer is added after a blank line and is not duplicated if it is already
 present. If the commit fails and VS Code leaves the message untouched, the toolkit
 restores the original message.
 
-### MCP pull requests
+### Pull requests in ChatGPT
 
-When `mcp-pull-request` is enabled, a pull-request button appears at the end of
-the SCM message row for non-default branches. The control resolves the current
-GitHub repository from the configured `remote`, finds the MCP server named by
-`mcp-pr-server` in VS Code, starts it if necessary, and calls the tool named by
-`mcp-pr-tool`.
+The pull-request button immediately left of the new-branch button opens ChatGPT in VS Code's Integrated Browser with the selected branch, local repository path, GitHub repository, and base branch in its prompt. It asks ChatGPT to read the branch diff and explain the work's intent and effects in natural paragraphs, across code, prose, research, and brainstorming. The prompt avoids file inventories, procedural narration, and routine verification boilerplate, and ends the description with a centered pony image linking to Kefania. Its alt text attributes only the automatically written PR description.
 
-The defaults target Codex Drafter's `github_create_pull_request` tool. The
-tool receives the current GitHub owner/repository, branch as `head`, the
-configured `default-branch` as `base`, a title derived from the branch name,
-and a minimal generated prompt/body. Authentication and transport stay owned by
-VS Code's MCP configuration rather than the SCM patch.
+The button uses the existing `mcp-pull-request` visibility setting and no longer needs an MCP server or tool. ChatGPT needs access to the repository to read its changes; the prompt asks for access when the repository is unavailable. Opening the chat does not stage, commit, or push local changes.
 
 ### Pony branch
 
