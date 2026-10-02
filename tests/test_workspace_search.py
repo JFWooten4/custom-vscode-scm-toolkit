@@ -11,6 +11,10 @@ DEFAULTS = dict(toolkit_settings.DEFAULT_SETTINGS)
 
 
 class WorkspaceSearchInstallerTests(unittest.TestCase):
+    def test_embedding_selection_reaches_installed_manifest(self):
+        package = workspace_search.render_package(dict(DEFAULTS, workspaceSearchEmbeddingModel="custom:embed"))
+        self.assertEqual(package["contributes"]["configuration"]["properties"]["scmToolkit.workspaceSearch.embeddingModel"]["default"], "custom:embed")
+
     def test_extension_registers_settings_launcher(self):
         package = json.loads((workspace_search.SOURCE / "package.json").read_text())
         command_ids = {command["command"] for command in package["contributes"]["commands"]}

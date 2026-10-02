@@ -102,7 +102,7 @@
 		</data>
 		<key>Resources/toolkit/scripts/configurator.py</key>
 		<data>
-		bpnoBgA0fauNuhG/nzwvBqryHHA=
+		kJKEfqMVo/m+VuTo/wKbglb7Pjs=
 		</data>
 		<key>Resources/toolkit/scripts/configure.py</key>
 		<data>
@@ -122,11 +122,11 @@
 		</data>
 		<key>Resources/toolkit/scripts/toolkit_settings.py</key>
 		<data>
-		D5X9nuTW4wS0SdlKQ92RlScLv4U=
+		Oyx2FMwPt7gV7FpU7P7Yn34Fqk8=
 		</data>
 		<key>Resources/toolkit/scripts/workspace_search.py</key>
 		<data>
-		+gjHULZL/rvw/cBm18qpTwF8kwg=
+		A2GrNBnaf4SkIXYqhPoLhq8Vkvs=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/THIRD_PARTY_NOTICES.md</key>
 		<data>
@@ -146,7 +146,7 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/extension.js</key>
 		<data>
-		5egX7IQsmW3tdwKbha4CSrNFs9w=
+		xUHLx3VVTogTLGlQCEFC9mVJpDM=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/extract.js</key>
 		<data>
@@ -170,7 +170,7 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/search_index.js</key>
 		<data>
-		GdfF/0rktO10sfsvAEfE4h94Bfk=
+		o2CcBwaX8ava7JNX+XM/0vB2zlI=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/view.js</key>
 		<data>
@@ -447,11 +447,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			bpnoBgA0fauNuhG/nzwvBqryHHA=
+			kJKEfqMVo/m+VuTo/wKbglb7Pjs=
 			</data>
 			<key>hash2</key>
 			<data>
-			9TeLs/B2hXvvlrhSoE4IBREIydDbfCo4Zj8IMNH1f/I=
+			jb7t/SZ1nd/fAOsmxPacKXkjubFEMHSnujNI3INHhFs=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/configure.py</key>
@@ -502,22 +502,22 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			D5X9nuTW4wS0SdlKQ92RlScLv4U=
+			Oyx2FMwPt7gV7FpU7P7Yn34Fqk8=
 			</data>
 			<key>hash2</key>
 			<data>
-			ymTkjtx8YyNiFozeE684ODn9E0puPiumRLzcAaMTqa4=
+			2BuIqhbAG9nXX6Vxx84wHdkUY3p96gPxEg67J4EpJ4U=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/workspace_search.py</key>
 		<dict>
 			<key>hash</key>
 			<data>
-			+gjHULZL/rvw/cBm18qpTwF8kwg=
+			A2GrNBnaf4SkIXYqhPoLhq8Vkvs=
 			</data>
 			<key>hash2</key>
 			<data>
-			JvmwV7T+8lu0Gukt5jxdTF/s+T9gZk8Xz66Pc1DzZMo=
+			OxjSFIzpMQcGdaXPnGugN9IZ0Rn51ePRiWdg86WqN4U=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/THIRD_PARTY_NOTICES.md</key>
@@ -568,11 +568,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			5egX7IQsmW3tdwKbha4CSrNFs9w=
+			xUHLx3VVTogTLGlQCEFC9mVJpDM=
 			</data>
 			<key>hash2</key>
 			<data>
-			AOjLoP5nO+VxLaaaArNkksYRjt1C1ghd3LqiyZqKSHc=
+			lxD6yIPZpUOysbsN1sAHRT/laT5/0BSSQ4W1laMbgXw=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/extract.js</key>
@@ -634,11 +634,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			GdfF/0rktO10sfsvAEfE4h94Bfk=
+			o2CcBwaX8ava7JNX+XM/0vB2zlI=
 			</data>
 			<key>hash2</key>
 			<data>
-			6Rr4mxXsYrGQrf4jZSu69TEcYpWLfLiQNefwPMrm9W8=
+			fKKEPYI2WEats/HCZyJV+pmiWq946Nfim08eEaR79vQ=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/view.js</key>

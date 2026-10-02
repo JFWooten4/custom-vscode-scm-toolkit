@@ -20,6 +20,7 @@ class SearchIndex {
     this.files = new Map();
     this.dirty = new Set();
     this.loaded = false;
+    this.embeddingModel = this.getSettings().embeddingModel;
     this.embeddingWarning = '';
     this.embeddingAvailable = true;
     this.persistTimer = undefined;
@@ -35,7 +36,7 @@ class SearchIndex {
     try {
       const raw = await vscode.workspace.fs.readFile(this.storageUri);
       const payload = JSON.parse(Buffer.from(raw).toString('utf8'));
-      if (payload.version !== INDEX_VERSION || !Array.isArray(payload.files)) return;
+      if (payload.version !== INDEX_VERSION || payload.embeddingModel !== this.embeddingModel || !Array.isArray(payload.files)) return;
       for (const file of payload.files) this.files.set(file.uri, file);
     } catch {
       // A missing or stale index starts clean.
@@ -45,7 +46,7 @@ class SearchIndex {
   async persist() {
     if (!this.loaded) return;
     await vscode.workspace.fs.createDirectory(this.context.globalStorageUri);
-    const payload = JSON.stringify({ version: INDEX_VERSION, files: [...this.files.values()] });
+    const payload = JSON.stringify({ version: INDEX_VERSION, embeddingModel: this.embeddingModel, files: [...this.files.values()] });
     const temp = vscode.Uri.joinPath(this.context.globalStorageUri, `workspace-search-${workspaceKey()}.tmp`);
     await vscode.workspace.fs.writeFile(temp, Buffer.from(payload));
     try { await vscode.workspace.fs.delete(this.storageUri, { useTrash: false }); } catch {}
@@ -101,6 +102,11 @@ class SearchIndex {
 
   async refresh({ force = false, progress } = {}) {
     await this.load();
+    if (this.embeddingModel !== this.getSettings().embeddingModel) {
+      this.files.clear();
+      this.embeddingModel = this.getSettings().embeddingModel;
+      force = true;
+    }
     if (force) {
       this.embeddingAvailable = true;
       this.embeddingWarning = '';
@@ -130,13 +136,17 @@ class SearchIndex {
 
   async search(query, mode) {
     await this.load();
-    if (!this.files.size || this.dirty.size) await this.refresh();
+    if (!this.files.size || this.dirty.size || this.embeddingModel !== this.getSettings().embeddingModel) await this.refresh();
     const settings = this.getSettings();
     const selectedMode = mode || settings.mode;
     let queryVector = null;
     if (selectedMode !== 'exact') {
       try {
         [queryVector] = await embedTexts(settings, [query]);
+        // Recover passages indexed before the selected model was installed.
+        if ([...this.files.values()].some(file => file.chunks.some(chunk => !chunk.vector))) {
+          await this.refresh({ force: true });
+        }
         this.embeddingAvailable = true;
       } catch (error) {
         this.embeddingWarning = `Semantic search unavailable: ${error.message}`;

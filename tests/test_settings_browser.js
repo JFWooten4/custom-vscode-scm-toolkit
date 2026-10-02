@@ -5,9 +5,14 @@ const vm = require('node:vm');
 const { EventEmitter } = require('node:events');
 
 async function run() {
-  const children = [], calls = [], errors = [];
+  const children = [], calls = [], errors = [], updates = [];
   let available = true, failOpen = false;
   const vscode = {
+    ConfigurationTarget: { Global: 1 },
+    workspace: { getConfiguration(root) {
+      assert.equal(root, 'scmToolkit.workspaceSearch');
+      return { async update(key, value, target) { updates.push({key, value, target}); } };
+    } },
     Uri: { joinPath: (_, file) => ({ fsPath: `/extension/${file}` }) },
     window: { showErrorMessage: message => errors.push(message) },
     commands: {
@@ -66,6 +71,11 @@ async function run() {
   await open();
   assert.equal(calls.length, 2, 'Repeated click must refocus the native browser');
   assert.equal(children.length, 1);
+  const saved = {embeddingModel: 'custom:embed', chatModel: 'custom:chat', askOllama: true};
+  children[0].stdout.emit('data', JSON.stringify({workspaceSearch: saved}) + '\n');
+  await tick();
+  assert.deepEqual(updates, Object.entries(saved).map(([key, value]) => ({key, value, target: 1})));
+  assert.equal(calls.length, 2, 'Saving models must apply settings without reopening the browser');
   children[0].exitCode = 0;
   children[0].emit('exit', 0);
   await open();

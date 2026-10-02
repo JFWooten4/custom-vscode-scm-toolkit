@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import html
 import json
+import re
 import secrets
 import shutil
 import subprocess
@@ -53,6 +54,7 @@ SETTINGS = (
     Setting("graphOpenWorkingFile", "scm-toolkit.graph-open-working-file", "Open graph files from working tree", "Make Source Control Graph Open File target the checked-out working-tree file instead of the selected commit snapshot.", "Source control"),
     Setting("workspaceSearchActivityBar", "scm-toolkit.workspace-search-activity-bar", "Standalone Activity Bar", "Move Workspace Search into its own Activity Bar container instead of the Source Control view.", "Workspace Search"),
     Setting("workspaceSearchLabel", "scm-toolkit.workspace-search-label", "Search label", "Label for the Workspace Search panel and its standalone Activity Bar container.", "Workspace Search", "text"),
+    Setting("workspaceSearchEmbeddingModel", "scm-toolkit.workspace-search-embedding-model", "Search embedding model", "Turns workspace passages into searchable meaning. Choose an embedding model, separate from chat models.", "Workspace Search", "model"),
     Setting("workspaceSearchAskOllama", "scm-toolkit.workspace-search-ask-ollama", "Ask Ollama", "Show the Ask Ollama action in EFS search results.", "Workspace Search"),
     Setting("workspaceSearchChatModel", "scm-toolkit.workspace-search-chat-model", "Ask Ollama chat model", "Ollama chat model used by Ask Ollama. Required when Ask Ollama is enabled.", "Workspace Search", "optional_model"),
     Setting("defaultBranch", "scm-toolkit.default-branch", "Default branch", "Protected branch and pull-request base.", "Repository", "text"),
@@ -97,6 +99,45 @@ def fetch_ollama_models() -> tuple[list[str], str]:
     if names:
         return names, f"Detected {len(names)} local Ollama model{'s' if len(names) != 1 else ''}."
     return [], "Ollama is running locally, but it reported no installed models."
+
+
+def model_tag(value: str) -> str:
+    value = value.strip()
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}", value):
+        raise ValueError("Enter a valid Ollama model tag.")
+    return value
+
+
+def ollama_request(endpoint: str, payload: dict, timeout: int = 30):
+    request = urllib.request.Request(
+        OLLAMA_URL + endpoint, data=json.dumps(payload).encode(),
+        headers={"Content-Type": "application/json"}, method="POST",
+    )
+    return urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request, timeout=timeout)
+
+
+def validate_models(settings: dict) -> None:
+    models, status = fetch_ollama_models()
+    installed = {name if ":" in name.rsplit("/", 1)[-1] else name + ":latest" for name in models}
+    required = ["workspaceSearchEmbeddingModel"]
+    if settings.get("workspaceSearchAskOllama"):
+        required.append("workspaceSearchChatModel")
+    if settings.get("aiCommit"):
+        required.extend(["aiCommitModel", "aiCommitLowMemoryModel"])
+    labels = {setting.name: setting.label for setting in SETTINGS}
+    for key in required:
+        name = model_tag(str(settings[key]))
+        normalized = name if ":" in name.rsplit("/", 1)[-1] else name + ":latest"
+        if normalized not in installed:
+            raise ValueError(f"{labels[key]} ({name}) is not installed. Use its Download button before saving. {status}")
+    name = str(settings["workspaceSearchEmbeddingModel"])
+    try:
+        with ollama_request("/api/show", {"model": name}) as response:
+            info = json.loads(response.read())
+    except Exception as error:
+        raise ValueError(f"Could not check the search embedding model: {error}") from error
+    if "embedding" not in info.get("capabilities", []):
+        raise ValueError(f"{name} does not support embeddings. Choose an embedding model such as qwen3-embedding:0.6b.")
 
 
 def parse_submission(values: dict[str, list[str]]) -> dict[str, bool | str]:
@@ -290,6 +331,14 @@ def _setting_control(setting: Setting, current: object) -> str:
         required = ' placeholder="Choose a chat model"'
     else:
         required = " required"
+    if setting.kind in {"model", "optional_model"}:
+        return (
+            '<div class="setting field-row model-row">'
+            f'<span><label for="{name}"><strong>{label}</strong></label><small>{description}</small>'
+            f'<small class="model-status" data-model="{name}" role="status"></small></span>'
+            f'<input id="{name}"{attrs} name="{name}" value="{value}"{list_attr}{required}>'
+            f'<button type="button" class="download-model" data-model="{name}">Download</button></div>'
+        )
     return (
         '<label class="setting field-row">'
         f'<span><strong>{label}</strong><small>{description}</small></span>'
@@ -327,7 +376,7 @@ def render_form(
                 'placeholder="-----BEGIN PGP PRIVATE KEY BLOCK-----"></textarea></label>'
             )
         status = ""
-        if section == "Ollama":
+        if section in {"Ollama", "Workspace Search"}:
             status = f'<p class="status">{html.escape(ollama_status)}</p>'
         sections.append(f'<section><h2>{html.escape(section)}</h2>{status}{controls}</section>')
 
@@ -341,7 +390,7 @@ def render_form(
 *{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}}
 main{{width:min(880px,calc(100% - 32px));margin:40px auto 96px}}header{{margin-bottom:24px}}h1{{margin:0 0 8px;font-size:30px}}header p,.status{{color:var(--muted)}}
 section{{margin:16px 0;padding:8px 20px;background:var(--panel);border:1px solid var(--line);border-radius:12px}}h2{{font-size:16px;margin:10px 0}}
-.setting{{display:flex;align-items:center;gap:20px;min-height:62px;padding:10px 0;border-top:1px solid var(--line)}}.setting:first-of-type{{border-top:0}}.setting>span:first-child{{flex:1;min-width:0}}strong,small{{display:block}}small{{margin-top:2px;color:var(--muted)}}
+.setting{{display:flex;align-items:center;gap:20px;min-height:62px;padding:10px 0;border-top:1px solid var(--line)}}.setting:first-of-type{{border-top:0}}.setting>span:first-child{{flex:1;min-width:0}}strong,small{{display:block}}small{{margin-top:2px;color:var(--muted)}}.model-row{{gap:12px}}.model-row input{{width:min(280px,38%)}}.model-row button{{flex:none}}button:disabled{{opacity:.6;cursor:default}}
 .field-row input,.textarea-row textarea{{width:min(440px,52%);padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text);font:inherit}}.textarea-row textarea{{resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}}
 .toggle-row input{{position:absolute;opacity:0;pointer-events:none}}.toggle{{position:relative;width:42px;height:24px;flex:none;border-radius:99px;background:#484f58;transition:.15s}}.toggle:after{{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:white;transition:.15s}}input:checked+.toggle{{background:var(--accent)}}input:checked+.toggle:after{{transform:translateX(18px)}}input:focus-visible+.toggle,.field-row input:focus,.textarea-row textarea:focus{{outline:2px solid var(--accent);outline-offset:2px}}
 .actions{{position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:10px;margin-top:24px;padding:16px;background:color-mix(in srgb,var(--bg) 92%,transparent);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(12px)}}button{{padding:9px 15px;border:1px solid var(--line);border-radius:7px;background:transparent;color:var(--text);font:inherit;cursor:pointer}}button.primary{{border-color:var(--accent);background:var(--accent);font-weight:600}}.error{{margin-bottom:16px;padding:12px;border:1px solid var(--danger);border-radius:8px;color:#ffb3ad}}
@@ -370,6 +419,62 @@ if (packSearch) {{
   for (const card of packCards) card.addEventListener('change', updatePacks);
   updatePacks();
 }}
+
+let installedModels = {json.dumps(models).replace("<", "\\u003c")};
+const normalizeModel = name => name.split('/').pop().includes(':') ? name : name + ':latest';
+function updateModelRows() {{
+  for (const button of document.querySelectorAll('.download-model')) {{
+    const input = document.getElementById(button.dataset.model);
+    const status = document.querySelector('.model-status[data-model="' + button.dataset.model + '"]');
+    if (button.dataset.busy) continue;
+    const installed = installedModels.map(normalizeModel).includes(normalizeModel(input.value.trim()));
+    status.textContent = !input.value.trim() ? 'Choose a model' : installed ? 'Installed locally' : 'Not installed — download to finish setup';
+    button.disabled = installed || !input.value.trim();
+    button.textContent = installed ? 'Installed' : 'Download';
+  }}
+}}
+for (const button of document.querySelectorAll('.download-model')) {{
+  document.getElementById(button.dataset.model).addEventListener('input', updateModelRows);
+  button.addEventListener('click', async () => {{
+    const input = document.getElementById(button.dataset.model);
+    const status = document.querySelector('.model-status[data-model="' + button.dataset.model + '"]');
+    button.dataset.busy = 'true'; button.disabled = true; input.disabled = true;
+    const saveButton = document.querySelector('button[value="save"]');
+    if (saveButton) saveButton.disabled = true;
+    try {{
+      status.textContent = 'Starting download…';
+      const response = await fetch('/pull' + location.search, {{method: 'POST', body: new URLSearchParams({{model: input.value}})}});
+      if (!response.ok) throw new Error((await response.json()).error);
+      const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = ''; let success = false;
+      while (true) {{
+        const {{value, done}} = await reader.read();
+        buffer += decoder.decode(value || new Uint8Array(), {{stream: !done}});
+        const lines = buffer.split('\\n'); buffer = lines.pop();
+        for (const line of lines) {{
+          if (!line.trim()) continue;
+          const event = JSON.parse(line);
+          if (event.error) throw new Error(event.error);
+          status.textContent = event.total ? 'Downloading ' + Math.round(100 * (event.completed || 0) / event.total) + '%' : event.status === 'success' ? 'Installed locally' : 'Preparing model…';
+          success ||= event.status === 'success';
+        }}
+        if (done) break;
+      }}
+      if (!success) throw new Error('Download interrupted. Retry to resume.');
+      const list = await fetch('/models' + location.search).then(r => r.json());
+      installedModels = list.models;
+      const choices = document.getElementById('ollama-models'); choices.replaceChildren();
+      for (const name of installedModels) {{ const option = document.createElement('option'); option.value = name; choices.append(option); }}
+      delete button.dataset.busy;
+      updateModelRows();
+    }} catch (error) {{ status.textContent = 'Could not download: ' + error.message; button.disabled = false; }}
+    finally {{
+      delete button.dataset.busy; input.disabled = false;
+      if (saveButton) saveButton.disabled = !!document.querySelector('.download-model[data-busy]');
+    }}
+  }});
+}}
+updateModelRows();
+
 const askOllamaToggle = document.querySelector('input[name="workspaceSearchAskOllama"]');
 const askOllamaModel = document.querySelector('input[name="workspaceSearchChatModel"]');
 function updateAskOllamaRequirement() {{
@@ -410,7 +515,6 @@ def _result_page(saved: bool) -> str:
 def run_configurator(
     current: dict[str, object], action_label: str = "Save configuration", *, open_browser: bool = True
 ) -> bool:
-    models, ollama_status = fetch_ollama_models()
     token = secrets.token_urlsafe(24)
     outcome: dict[str, bool | None] = {"saved": None}
 
@@ -421,7 +525,16 @@ def run_configurator(
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
-            self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; form-action 'self'; base-uri 'none'")
+            self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; form-action 'self'; base-uri 'none'")
+            self.end_headers()
+            self.wfile.write(body)
+
+        def _send_json(self, payload: dict, status: int = 200) -> None:
+            body = json.dumps(payload).encode()
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
             self.end_headers()
             self.wfile.write(body)
 
@@ -433,7 +546,12 @@ def run_configurator(
             if not self._authorized():
                 self._send("<h1>Not found</h1>", 404)
                 return
-            self._send(render_form(current, models, ollama_status, token, action_label))
+            if urllib.parse.urlsplit(self.path).path == "/models":
+                names, status = fetch_ollama_models()
+                self._send_json({"models": names, "status": status})
+                return
+            names, status = fetch_ollama_models()
+            self._send(render_form(current, names, status, token, action_label))
 
         def do_POST(self) -> None:
             if not self._authorized():
@@ -444,19 +562,42 @@ def run_configurator(
             except ValueError:
                 self._send("<h1>Invalid request</h1>", 400)
                 return
-            if length > MAX_FORM_BYTES:
+            if length < 0 or length > MAX_FORM_BYTES:
                 self._send("<h1>Request too large</h1>", 413)
                 return
             values = urllib.parse.parse_qs(
                 self.rfile.read(length).decode("utf-8"), keep_blank_values=True
             )
+            if urllib.parse.urlsplit(self.path).path == "/pull":
+                try:
+                    name = model_tag(values.get("model", [""])[0])
+                    response = ollama_request("/api/pull", {"model": name, "stream": True}, timeout=3600)
+                except Exception as error:
+                    self._send_json({"error": str(error)}, 400)
+                    return
+                self.send_response(200)
+                self.send_header("Content-Type", "application/x-ndjson")
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                try:
+                    with response:
+                        for line in response:
+                            self.wfile.write(line)
+                            self.wfile.flush()
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
+                except Exception:
+                    self.wfile.write(b'{"error":"Download interrupted. Retry the download."}\n')
+                return
             if values.get("action", [""])[0] == "cancel":
                 outcome["saved"] = False
                 self._send(_result_page(False))
                 threading.Thread(target=self.server.shutdown, daemon=True).start()
                 return
+            parsed = {}
             try:
                 parsed = parse_submission(values)
+                validate_models(parsed)
                 save_settings(parsed)
                 sync_codex_instructions(
                     str(parsed["chatgptCustomInstructions"]),
@@ -464,9 +605,18 @@ def run_configurator(
                 )
                 import_pgp_secret_key(values.get("pgpSecretKey", [""])[0])
             except (RuntimeError, ValueError) as error:
-                self._send(render_form(current, models, ollama_status, token, action_label, str(error)), 400)
+                names, status = fetch_ollama_models()
+                submitted = dict(current)
+                submitted.update(parsed)
+                self._send(render_form(submitted, names, status, token, action_label, str(error)), 400)
                 return
             outcome["saved"] = True
+            if not open_browser:
+                print(json.dumps({"workspaceSearch": {
+                    "embeddingModel": parsed["workspaceSearchEmbeddingModel"],
+                    "chatModel": parsed["workspaceSearchChatModel"],
+                    "askOllama": parsed["workspaceSearchAskOllama"],
+                }}), flush=True)
             self._send(_result_page(True))
             threading.Thread(target=self.server.shutdown, daemon=True).start()
 

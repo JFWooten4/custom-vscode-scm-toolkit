@@ -1,4 +1,5 @@
 import json
+import io
 import threading
 import urllib.error
 import urllib.parse
@@ -208,6 +209,43 @@ class OllamaTests(unittest.TestCase):
         )
 
 
+class ModelSetupTests(unittest.TestCase):
+    def test_missing_embedding_model_blocks_save_even_with_chat_models(self):
+        settings = dict(install.DEFAULT_SETTINGS)
+        with patch("configurator.fetch_ollama_models", return_value=(["qwen2.5-coder:7b", "qwen2.5-coder:3b"], "Ollama ready")):
+            with self.assertRaisesRegex(ValueError, "Search embedding model.*not installed"):
+                configurator.validate_models(settings)
+
+    def test_chat_model_cannot_be_used_for_embeddings(self):
+        settings = dict(install.DEFAULT_SETTINGS, workspaceSearchEmbeddingModel="qwen2.5-coder:3b")
+        with patch("configurator.fetch_ollama_models", return_value=(["qwen2.5-coder:7b", "qwen2.5-coder:3b"], "Ready")), patch("configurator.ollama_request", return_value=io.BytesIO(b'{"capabilities":["completion"]}')):
+            with self.assertRaisesRegex(ValueError, "does not support embeddings"):
+                configurator.validate_models(settings)
+
+    def test_optional_chat_model_need_not_be_installed_when_disabled(self):
+        settings = dict(install.DEFAULT_SETTINGS, aiCommit=False, workspaceSearchEmbeddingModel="embed", workspaceSearchChatModel="missing:chat")
+        with patch("configurator.fetch_ollama_models", return_value=(["embed:latest"], "Ready")), patch("configurator.ollama_request", return_value=io.BytesIO(b'{"capabilities":["embedding"]}')):
+            configurator.validate_models(settings)
+
+    def test_rejects_empty_or_invalid_download_tag(self):
+        for value in ["", "name\nother", "-option", "name;command"]:
+            with self.assertRaises(ValueError):
+                configurator.model_tag(value)
+
+    def test_rendered_setup_script_is_valid_javascript(self):
+        import subprocess
+        import tempfile
+        from pathlib import Path
+        page = configurator.render_form(install.DEFAULT_SETTINGS, ["</script>"], "Ready", "test-token", "Save")
+        script = page.split("<script>")[1].split("</script>")[0]
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "setup.js"
+            path.write_text(script)
+            subprocess.run(["node", "--check", str(path)], check=True, capture_output=True)
+        self.assertIn('name="workspaceSearchEmbeddingModel"', page)
+        self.assertIn('class="download-model"', page)
+
+
 class ServerTests(unittest.TestCase):
     @patch("configurator.fetch_ollama_models", return_value=([], "Ollama offline"))
     def test_local_server_serves_form_and_can_cancel(self, _models):
@@ -230,6 +268,17 @@ class ServerTests(unittest.TestCase):
             with urllib.request.urlopen(captured["url"], timeout=5) as response:
                 page = response.read().decode()
             self.assertIn("SCM Toolkit Setup", page)
+            setup_url = urllib.parse.urlsplit(captured["url"])
+            def endpoint(path):
+                return urllib.parse.urlunsplit((setup_url.scheme, setup_url.netloc, path, setup_url.query, ""))
+            with urllib.request.urlopen(endpoint("/models"), timeout=5) as response:
+                self.assertEqual(json.load(response)["models"], [])
+            request = urllib.request.Request(endpoint("/pull"), data=b"model=embed:test", method="POST")
+            with patch("configurator.ollama_request", return_value=io.BytesIO(b'{"status":"downloading","completed":1,"total":2}\n{"status":"success"}\n')) as pull:
+                with urllib.request.urlopen(request, timeout=5) as response:
+                    events = [json.loads(line) for line in response]
+                self.assertEqual(events[-1]["status"], "success")
+                pull.assert_called_once_with("/api/pull", {"model": "embed:test", "stream": True}, timeout=3600)
 
             parsed_url = urllib.parse.urlsplit(captured["url"])
             cancel_url = urllib.parse.urlunsplit(

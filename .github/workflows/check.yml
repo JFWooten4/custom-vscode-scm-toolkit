@@ -37,6 +37,7 @@ jobs:
           node --check workspace-search-extension/view.js
           node --check workspace-search-extension/extension.js
           node tests/test_workspace_search_core.js
+          node tests/test_workspace_search_index.js
           node tests/test_settings_browser.js
           node tests/test_branch_actions.js
           node tests/test_pull_request.js

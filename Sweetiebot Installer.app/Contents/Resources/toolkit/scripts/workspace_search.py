@@ -45,6 +45,10 @@ def render_package(settings: dict[str, object] | None = None) -> dict[str, objec
         settings["workspaceSearchChatModel"]
     )
 
+    properties["scmToolkit.workspaceSearch.embeddingModel"]["default"] = str(
+        settings["workspaceSearchEmbeddingModel"]
+    )
+
     if settings["workspaceSearchActivityBar"]:
         contributes["viewsContainers"] = {
             "activitybar": [

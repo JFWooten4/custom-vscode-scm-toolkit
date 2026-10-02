@@ -53,9 +53,17 @@ async function openSettings(context) {
     while ((newline = output.indexOf('\n')) !== -1) {
       const line = output.slice(0, newline);
       output = output.slice(newline + 1);
-      if (configuratorURL) continue;
       try {
-        const { url } = JSON.parse(line);
+        const message = JSON.parse(line);
+        if (message.workspaceSearch) {
+          const cfg = vscode.workspace.getConfiguration(CONFIG_ROOT);
+          void Promise.all(Object.entries(message.workspaceSearch).map(([key, value]) =>
+            cfg.update(key, value, vscode.ConfigurationTarget.Global)
+          )).catch(error => vscode.window.showErrorMessage(`Unable to apply search settings: ${error.message}`));
+          continue;
+        }
+        if (configuratorURL) continue;
+        const { url } = message;
         const parsed = new URL(url);
         if (parsed.protocol !== 'http:' || parsed.hostname !== '127.0.0.1' || !parsed.port) continue;
         configuratorURL = url;
