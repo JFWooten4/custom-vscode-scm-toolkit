@@ -13,6 +13,7 @@
   ],
   "main": "./extension.js",
   "activationEvents": [
+    "onCommand:scmToolkit.openPullRequestChat",
     "onCommand:scmToolkit.prepareCodexCommit",
     "onCommand:scmToolkit.generateCodexCommitMessage",
     "onCommand:scmToolkit.createBranch",
