@@ -54,6 +54,16 @@ Run Python tests from the repository root with `PYTHONPATH=scripts python3 -m un
 
 ## Install
 
+On macOS, double-click **Sweetiebot Installer.app** to install without typing a Terminal command. The app includes its installer files, so you can move it to your Applications folder. Close and reopen your VS Code windows afterward, and run the app again after VS Code updates.
+
+On the first run, macOS may require you to allow **Sweetiebot Installer** in **System Settings → Privacy & Security → App Management**. The app offers an **Open Settings** button when access is blocked; grant access and double-click the app again.
+
+To rebuild the app from this checkout:
+
+```sh
+python3 scripts/build_installer_app.py
+```
+
 Clone the repository and enter it:
 
 ```sh
