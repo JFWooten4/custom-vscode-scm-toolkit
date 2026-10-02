@@ -20,7 +20,7 @@
     "onCommand:scmToolkit.syncBranch",
     "onView:scmToolkit.workspaceSearch",
     "onCommand:scmToolkit.openSettings",
-    "onCommand:scmToolkit.workspaceSearch.reindex",
+    "onStartupFinished",
     "onCommand:scmToolkit.workspaceSearch.clearIndex",
     "onCommand:scmToolkit.chatgpt.searchRepositories"
   ],
@@ -43,11 +43,6 @@
         "icon": "$(gear)"
       },
       {
-        "command": "scmToolkit.workspaceSearch.reindex",
-        "title": "Rebuild Workspace Search Index",
-        "icon": "$(refresh)"
-      },
-      {
         "command": "scmToolkit.workspaceSearch.clearIndex",
         "title": "Clear Workspace Search Index",
         "icon": "$(trash)"
@@ -61,14 +56,9 @@
     "menus": {
       "view/title": [
         {
-          "command": "scmToolkit.workspaceSearch.reindex",
-          "when": "view == scmToolkit.workspaceSearch",
-          "group": "navigation@1"
-        },
-        {
           "command": "scmToolkit.workspaceSearch.clearIndex",
           "when": "view == scmToolkit.workspaceSearch",
-          "group": "navigation@2"
+          "group": "navigation@1"
         }
       ]
     },
@@ -86,10 +76,15 @@
           "default": "qwen3-embedding:0.6b",
           "description": "Ollama embedding model used to index and search workspace content."
         },
+        "scmToolkit.workspaceSearch.askOllama": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the Ask Ollama action. Requires an explicit chat model."
+        },
         "scmToolkit.workspaceSearch.chatModel": {
           "type": "string",
           "default": "",
-          "description": "Optional Ollama model for Ask Ollama. Empty reuses a loaded non-embedding model when possible, then the SCM toolkit AI commit model."
+          "description": "Ollama chat model used by Ask Ollama. Required when Ask Ollama is enabled."
         },
         "scmToolkit.workspaceSearch.ollamaUrl": {
           "type": "string",

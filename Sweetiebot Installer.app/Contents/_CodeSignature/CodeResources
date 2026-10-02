@@ -102,7 +102,7 @@
 		</data>
 		<key>Resources/toolkit/scripts/configurator.py</key>
 		<data>
-		u9VOrX2q9fqGSEFqhHSfrnlSCZ4=
+		5UrVnVjJQVRSikVP7IgjYrPhuck=
 		</data>
 		<key>Resources/toolkit/scripts/configure.py</key>
 		<data>
@@ -122,11 +122,11 @@
 		</data>
 		<key>Resources/toolkit/scripts/toolkit_settings.py</key>
 		<data>
-		XVwJYKs6k26dyA8UIMNEFo/bjKw=
+		AEgLqgcN4dZF9nTZVoQU1NMt+kE=
 		</data>
 		<key>Resources/toolkit/scripts/workspace_search.py</key>
 		<data>
-		C7wFMSB5tRTTpTqDAQsB1jrVPGw=
+		+gjHULZL/rvw/cBm18qpTwF8kwg=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/branch_actions.js</key>
 		<data>
@@ -142,7 +142,7 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/extension.js</key>
 		<data>
-		ySoCufRYBGG2Yojr5H0qYNfFL5E=
+		KtIFo5XR2F9Dv4VDwqCEZFKkbs4=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/extract.js</key>
 		<data>
@@ -154,7 +154,7 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/package.json</key>
 		<data>
-		q+XQvbYXNzQS3l8EDy6atJZZfvQ=
+		Hn5m6rL0dmj+t/oXkYtp7Vm/LX8=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/search_index.js</key>
 		<data>
@@ -162,7 +162,7 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/view.js</key>
 		<data>
-		RV2ylS+dbc9lT+3Nzmjk7LKoIl4=
+		YiEPA1xveVK+S0XStfi8vsTkVOs=
 		</data>
 	</dict>
 	<key>files2</key>
@@ -435,11 +435,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			u9VOrX2q9fqGSEFqhHSfrnlSCZ4=
+			5UrVnVjJQVRSikVP7IgjYrPhuck=
 			</data>
 			<key>hash2</key>
 			<data>
-			jXZT7HaIldgZetaO4j1tYgU4sy/p+X1AEjTjQKZXylo=
+			p/CepjTOziItI8MEX7HhjydAYLVINEVYvEnAYt7Hbzw=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/configure.py</key>
@@ -490,22 +490,22 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			XVwJYKs6k26dyA8UIMNEFo/bjKw=
+			AEgLqgcN4dZF9nTZVoQU1NMt+kE=
 			</data>
 			<key>hash2</key>
 			<data>
-			F0Mp4Lr7beKC1Mte0t2fUzDh9fRyTmx+rquujPJluAU=
+			kMSqcjb94EkDaSCleotEE3gZ4AiNJtBSu9bkCV2m1UA=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/workspace_search.py</key>
 		<dict>
 			<key>hash</key>
 			<data>
-			C7wFMSB5tRTTpTqDAQsB1jrVPGw=
+			+gjHULZL/rvw/cBm18qpTwF8kwg=
 			</data>
 			<key>hash2</key>
 			<data>
-			mY3pMLNFFQIitN6jmqCogqWgUXgPtKUeOzgNk+VznRI=
+			JvmwV7T+8lu0Gukt5jxdTF/s+T9gZk8Xz66Pc1DzZMo=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/branch_actions.js</key>
@@ -545,11 +545,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			ySoCufRYBGG2Yojr5H0qYNfFL5E=
+			KtIFo5XR2F9Dv4VDwqCEZFKkbs4=
 			</data>
 			<key>hash2</key>
 			<data>
-			AMNyJnAXPKCdM7Lk8u0YekFb/pX9jxlorlXid74NfYc=
+			YwxwGX1YUjStdn+LVoRdx50XUpvC3/dv8s8KQVcuLzY=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/extract.js</key>
@@ -578,11 +578,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			q+XQvbYXNzQS3l8EDy6atJZZfvQ=
+			Hn5m6rL0dmj+t/oXkYtp7Vm/LX8=
 			</data>
 			<key>hash2</key>
 			<data>
-			Pxm/MeYMM2I1KNXuzxO70gOMvj//RuyLzEKtSQpsc5c=
+			SwTjh6Y+loW8kycKns1lhtZR9PUKakDfEwLfDHq/3/Q=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/search_index.js</key>
@@ -600,11 +600,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			RV2ylS+dbc9lT+3Nzmjk7LKoIl4=
+			YiEPA1xveVK+S0XStfi8vsTkVOs=
 			</data>
 			<key>hash2</key>
 			<data>
-			MUFRNt5R1ZowT+xW9TcWt+Pp1SwHXBMO7OmH19fZG94=
+			15I06U282xOrs8tjFWZdlZ2Px9zGglGh6Mcts/w0/A4=
 			</data>
 		</dict>
 	</dict>

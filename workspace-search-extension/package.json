@@ -76,10 +76,15 @@
           "default": "qwen3-embedding:0.6b",
           "description": "Ollama embedding model used to index and search workspace content."
         },
+        "scmToolkit.workspaceSearch.askOllama": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the Ask Ollama action. Requires an explicit chat model."
+        },
         "scmToolkit.workspaceSearch.chatModel": {
           "type": "string",
           "default": "",
-          "description": "Optional Ollama model for Ask Ollama. Empty reuses a loaded non-embedding model when possible, then the SCM toolkit AI commit model."
+          "description": "Ollama chat model used by Ask Ollama. Required when Ask Ollama is enabled."
         },
         "scmToolkit.workspaceSearch.ollamaUrl": {
           "type": "string",

@@ -155,6 +155,7 @@ function settings() {
   const cfg = vscode.workspace.getConfiguration(CONFIG_ROOT);
   return {
     embeddingModel: cfg.get('embeddingModel', 'qwen3-embedding:0.6b'),
+    askOllama: cfg.get('askOllama', false),
     chatModel: cfg.get('chatModel', '').trim(),
     ollamaUrl: cfg.get('ollamaUrl', 'http://127.0.0.1:11434'),
     mode: cfg.get('mode', 'hybrid'),
