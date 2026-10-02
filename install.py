@@ -8,6 +8,7 @@ import re
 import workspace_search
 import codex_colors
 import codex_context
+import codex_image_drop
 from pathlib import Path
 from toolkit_settings import DEFAULT_SETTINGS, load_settings, read_git_bool, read_git_string
 from branch_names import resolve_runtime_settings
@@ -443,6 +444,7 @@ def codex_countdown_edit(js):
 
 
 def transform_codex(js, enabled=False, hide_promotions=False, hide_timestamps=False, remove=False):
+    js = codex_image_drop.transform(js, remove=remove)
     if CODEX_TIMESTAMPS_START in js:
         js = strip_codex_timestamps_payload(js)
     if CODEX_PROMOTIONS_START in js:

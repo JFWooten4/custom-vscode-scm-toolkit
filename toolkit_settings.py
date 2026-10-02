@@ -45,6 +45,7 @@ DEFAULT_SETTINGS = {
     "codexSendBackground": "",
     "codexSendForeground": "",
     "codexComposerLabelColor": "",
+    "codexDropAccent": "",
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -134,6 +135,7 @@ SETTING_KEYS = {
     "codexSendBackground": "scm-toolkit.codex-send-background",
     "codexSendForeground": "scm-toolkit.codex-send-foreground",
     "codexComposerLabelColor": "scm-toolkit.codex-composer-label-color",
+    "codexDropAccent": "scm-toolkit.codex-drop-accent",
     "defaultBranch": "scm-toolkit.default-branch",
     "remote": "scm-toolkit.remote",
 }
