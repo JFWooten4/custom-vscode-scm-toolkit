@@ -44,6 +44,7 @@ SETTINGS = {
     "chatgptCustomInstructions": "",
     "chatgptWebCodexCoauthor": True,
     "codexHideChatTimestamps": False,
+    "codexHideDictation": False,
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -614,6 +615,36 @@ class CodexTimestampTests(unittest.TestCase):
         self.assertIn("scm-toolkit-usage-reset-countdown", patched)
         self.assertIn("scm-toolkit-codex-promotions:start", patched)
         self.assertIn("scm-toolkit-codex-timestamps:start", patched)
+        self.assertEqual(install.transform_codex(patched, remove=True), original)
+
+
+class CodexDictationTests(unittest.TestCase):
+    def test_dictation_hiding_is_off_by_default(self):
+        self.assertFalse(install.DEFAULT_SETTINGS["codexHideDictation"])
+
+    def test_codex_dictation_hiding_install_and_remove_round_trip(self):
+        original = "const app='codex';"
+        patched = install.transform_codex(original, hide_dictation=True)
+
+        self.assertIn("scm-toolkit-codex-dictation:start", patched)
+        self.assertIn("data-scm-toolkit-hidden-dictation", patched)
+        self.assertIn("looksLikeDictation", patched)
+        self.assertEqual(install.transform_codex(patched, remove=True), original)
+
+    def test_dictation_hiding_can_coexist_with_other_codex_patches(self):
+        original = CodexCountdownTests().fixture()
+        patched = install.transform_codex(
+            original,
+            enabled=True,
+            hide_promotions=True,
+            hide_timestamps=True,
+            hide_dictation=True,
+        )
+
+        self.assertIn("scm-toolkit-usage-reset-countdown", patched)
+        self.assertIn("scm-toolkit-codex-promotions:start", patched)
+        self.assertIn("scm-toolkit-codex-timestamps:start", patched)
+        self.assertIn("scm-toolkit-codex-dictation:start", patched)
         self.assertEqual(install.transform_codex(patched, remove=True), original)
 
 

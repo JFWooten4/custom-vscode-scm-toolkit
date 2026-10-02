@@ -99,7 +99,7 @@ form{display:flex;gap:6px}input,select,button{font:inherit;color:inherit}input,s
 </style></head><body>
 <form id="search"><input id="query" type="search" placeholder="Search your workspace…" autocomplete="off"><select id="mode" title="Search mode"><option value="hybrid">Hybrid</option><option value="semantic">Semantic</option><option value="exact">Exact</option></select><button type="submit">Search</button></form>
 <div class="actions"><button id="ask" class="secondary" type="button" disabled>Ask Ollama</button><button id="reindex" class="secondary" type="button">Reindex</button></div>
-<div id="status" class="status">Searches stay local. The embedding model indexes meaning; Ask Ollama reuses a loaded chat model when possible.</div><div id="answer"></div><div id="results"></div>
+<div id="status" class="status"></div><div id="answer"></div><div id="results"></div>
 <script nonce="${nonce}">
 const vscode=acquireVsCodeApi();const form=document.getElementById('search');const query=document.getElementById('query');const mode=document.getElementById('mode');const status=document.getElementById('status');const answer=document.getElementById('answer');const results=document.getElementById('results');const ask=document.getElementById('ask');
 form.addEventListener('submit',event=>{event.preventDefault();const value=query.value.trim();if(value)vscode.postMessage({type:'search',query:value,mode:mode.value})});

@@ -36,6 +36,10 @@
 		<data>
 		TBBc8fQQOML1NsDwCqyaAcLHtgw=
 		</data>
+		<key>Resources/toolkit/assets/codex/codex-hide-dictation.js</key>
+		<data>
+		Lv4zWQD8G+l327EcuRdi3f7nBMs=
+		</data>
 		<key>Resources/toolkit/assets/codex/codex-hide-promotions.js</key>
 		<data>
 		VH2KvCdD6IR7ap8Id44MFkOH3+Q=
@@ -90,7 +94,7 @@
 		</data>
 		<key>Resources/toolkit/scripts/configurator.py</key>
 		<data>
-		EZ9eQ8V7xm0JcfTp71i+YD10/vw=
+		2ZhM6uEvxqtO/yaZzbfcgqjOFT8=
 		</data>
 		<key>Resources/toolkit/scripts/configure.py</key>
 		<data>
@@ -98,7 +102,7 @@
 		</data>
 		<key>Resources/toolkit/scripts/install.py</key>
 		<data>
-		/40OdmsItpflv9wg20X2pfsgHKE=
+		7cw+q0HM5bPtJeYHkdvehPacVEU=
 		</data>
 		<key>Resources/toolkit/scripts/local_codex_commit.py</key>
 		<data>
@@ -110,7 +114,7 @@
 		</data>
 		<key>Resources/toolkit/scripts/toolkit_settings.py</key>
 		<data>
-		su/shSmqMjL6fO1w9D19W2h6Yy0=
+		HDj8iOC6Zy1hizl44OyrbK+Tqd4=
 		</data>
 		<key>Resources/toolkit/scripts/workspace_search.py</key>
 		<data>
@@ -241,6 +245,17 @@
 			<key>hash2</key>
 			<data>
 			YLQhDusOWdnMwZVca2gDSI+uzF6fQW9XlmFS00PZh1Q=
+			</data>
+		</dict>
+		<key>Resources/toolkit/assets/codex/codex-hide-dictation.js</key>
+		<dict>
+			<key>hash</key>
+			<data>
+			Lv4zWQD8G+l327EcuRdi3f7nBMs=
+			</data>
+			<key>hash2</key>
+			<data>
+			8K2S05pO+cKFZ8fOSyxu1zCFZhnQ8EHh2O9dFJuebTA=
 			</data>
 		</dict>
 		<key>Resources/toolkit/assets/codex/codex-hide-promotions.js</key>
@@ -390,11 +405,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			EZ9eQ8V7xm0JcfTp71i+YD10/vw=
+			2ZhM6uEvxqtO/yaZzbfcgqjOFT8=
 			</data>
 			<key>hash2</key>
 			<data>
-			JVVDHVa2JY/dz1L4CbGfUSd/vevUu54x8alyA34tw7w=
+			57at+jwdcMAGA1QBF4cYilQn8zhdvB0JRElqEZgPxpQ=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/configure.py</key>
@@ -412,11 +427,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			/40OdmsItpflv9wg20X2pfsgHKE=
+			7cw+q0HM5bPtJeYHkdvehPacVEU=
 			</data>
 			<key>hash2</key>
 			<data>
-			wpbKm2fKX88FjMDpvX2O636QETdREoYC0t7s2OSXi00=
+			zOgSCgE0FbTJ2wl9zs4F87zCUvMYlLdL6M/l01OkJlo=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/local_codex_commit.py</key>
@@ -445,11 +460,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			su/shSmqMjL6fO1w9D19W2h6Yy0=
+			HDj8iOC6Zy1hizl44OyrbK+Tqd4=
 			</data>
 			<key>hash2</key>
 			<data>
-			3eX2pL26+5sW8RmVg+5Z80aYpDOCjlyYOEaBwQVJOEk=
+			tMEdUpSs8kaLPD5iE4XwUcUcahkA13pft2tvgcDQxjU=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/workspace_search.py</key>
