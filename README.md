@@ -513,9 +513,11 @@ VS Code's MCP configuration rather than the SCM patch.
 
 When `pony-branch` is enabled, a branch-create button appears at the far right of
 the SCM message row. It checks out the configured `default-branch` (normally
-`main`), runs VS Code's normal Git sync action so that branch is synchronized
-with its upstream remote, then creates and checks out a new branch directly from
-the synchronized HEAD.
+`main`), pulls its upstream and pushes any outgoing commits, then creates and
+checks out a new branch directly from the synchronized HEAD. These operations
+use the built-in Git extension's API through the toolkit companion extension.
+The default branch must track the configured remote; checkout or sync failures
+stop branch creation and display the error.
 
 The branch name is chosen randomly from a built-in, branch-safe pool. Its canon
 portion covers the named G4 pony roster (excluding explicitly unnamed placeholders
@@ -539,9 +541,8 @@ Before deletion, the control:
 1. fetches with prune
 2. verifies that the current branch no longer exists under `refs/remotes/<remote>/`
 3. refuses to delete if the configured remote cannot be verified
-4. checks out the configured default branch
-5. asks VS Code to delete the old local branch without forcing
-6. syncs the checked-out default branch
+4. checks out and syncs the configured default branch
+5. deletes the old local branch without forcing, stopping if Git rejects deletion
 
 This does not delete the remote branch.
 
