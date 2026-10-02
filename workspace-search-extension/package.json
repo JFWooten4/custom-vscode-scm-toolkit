@@ -13,6 +13,7 @@
   ],
   "main": "./extension.js",
   "activationEvents": [
+    "onCommand:scmToolkit.prepareCodexCommit",
     "onCommand:scmToolkit.generateCodexCommitMessage",
     "onCommand:scmToolkit.createBranch",
     "onCommand:scmToolkit.deleteBranch",
