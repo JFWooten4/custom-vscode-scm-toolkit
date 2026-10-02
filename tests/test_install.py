@@ -213,12 +213,8 @@ class TransformTests(unittest.TestCase):
         self.assertIn("scm-toolkit-settings codicon codicon-gear", js)
         self.assertIn("commands.executeCommand('scmToolkit.openSettings')", js)
         self.assertIn("scm-toolkit-settings", css)
-        self.assertIn("input.value = '🔄 Sync brach to main';", js)
-        self.assertIn("await repository.fetch({ remote: settings.remote });", js)
-        self.assertIn(
-            "await repository.merge(`${settings.remote}/${settings.defaultBranch}`);",
-            js,
-        )
+        self.assertIn("commands.executeCommand('scmToolkit.syncBranch', repository, {", js)
+        self.assertNotIn("typeof repository.merge", js)
         self.assertNotIn("resolveMergeConflicts", js)
         self.assertEqual(js.count(install.START), 1)
         self.assertEqual(js.count(install.END), 1)

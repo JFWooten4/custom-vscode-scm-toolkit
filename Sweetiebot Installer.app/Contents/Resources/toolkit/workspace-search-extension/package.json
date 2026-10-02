@@ -16,6 +16,7 @@
     "onCommand:scmToolkit.generateCodexCommitMessage",
     "onCommand:scmToolkit.createBranch",
     "onCommand:scmToolkit.deleteBranch",
+    "onCommand:scmToolkit.syncBranch",
     "onView:scmToolkit.workspaceSearch",
     "onCommand:scmToolkit.openSettings",
     "onCommand:scmToolkit.workspaceSearch.reindex",
