@@ -24,7 +24,7 @@ Current features:
 - optionally spellcheck manually entered commit subjects with the configured local model
 - optionally show a live, minute-precision countdown in Codex usage-limit banners
 - optionally hide Codex promotional cards such as the Fast mode upsell
-- mirror ChatGPT web custom instructions into Codex global instructions using the local configurator
+- mirror ChatGPT web custom instructions into the global personalization used by the Codex VS Code extension
 - optionally require the Codex Web co-author trailer for web/GitHub-tool commits
 - import a PGP secret key directly into GnuPG without persisting the private material in toolkit settings
 - search repositories through the linked GitHub authentication session instead of maintaining a separate repo allow-list
@@ -391,15 +391,15 @@ alone.
 This option can be installed or refreshed with the same `--codex-only` command
 used by the usage-reset countdown.
 
-### ChatGPT and Codex instructions
+### Codex VS Code personalization
 
-The local configurator includes a ChatGPT section for keeping a local copy of the
-custom instructions you use on ChatGPT web. Saving the form mirrors that text into
-a managed block in `~/.codex/AGENTS.md`, which makes the same guidance available
-to Codex without overwriting unrelated global Codex instructions.
+The local configurator includes a Codex section for the personalization used by the
+Codex VS Code extension. It can keep a local copy of the custom instructions you
+use on ChatGPT web and mirror that text into a managed block in `~/.codex/AGENTS.md`
+without overwriting unrelated global Codex instructions.
 
-The "Sync from web" button is clipboard-assisted: copy the Custom Instructions text
-from ChatGPT Personalization, then click the button in the localhost configurator.
+The "Import from ChatGPT" button is clipboard-assisted: copy the Custom Instructions
+text from ChatGPT Personalization, then import it into the Codex section.
 The toolkit does not scrape ChatGPT session cookies or call a private custom-instructions
 endpoint.
 
@@ -410,7 +410,7 @@ web or GitHub-tool commits to append:
 Co-authored-by: Codex Web <noreply@openai.com>
 ```
 
-The ChatGPT section also accepts an optional ASCII-armored PGP secret key. The key
+The Codex section also accepts an optional ASCII-armored PGP secret key. The key
 is piped to GnuPG over stdin, imported into the local keyring, and discarded from
 the form. Only the resulting public fingerprint is saved to Git configuration;
 `commit.gpgsign` is enabled and the private key is never echoed into generated
