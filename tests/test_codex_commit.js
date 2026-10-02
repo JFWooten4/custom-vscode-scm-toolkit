@@ -19,6 +19,7 @@ async function run() {
   const errors = [];
   const context = vm.createContext({
     currentInput: input,
+    currentRepositoryUri: { scheme: 'file', path: '/selected-repository' },
     pending: false,
     deletingBranch: false,
     committingWithCodex: false,
@@ -42,6 +43,35 @@ async function run() {
   assert.equal(input.value, 'Fix button');
   assert.equal(context.codexButton.disabled, false);
   assert.deepEqual(errors, []);
+  calls.length = 0;
+  input.value = '';
+  context.settings.codexCommitContext = true;
+  context.commands.executeCommand = async (id, ...args) => {
+    calls.push({ id, args, message: input.value });
+    if (id === 'scmToolkit.generateCodexCommitMessage') return 'Fix local commit generation';
+  };
+  await context.commit({ stopPropagation() {} });
+  assert.deepEqual(calls.map(call => call.id), ['scmToolkit.generateCodexCommitMessage', 'provider.updatedCommit']);
+  assert.match(calls[1].message, /^Fix local commit generation\n\nCo-authored-by: Codex/);
+  assert.equal(input.value, '');
+  calls.length = 0;
+  context.commands.executeCommand = async id => {
+    calls.push({ id });
+    throw new Error('Ollama is offline');
+  };
+  await context.commit({ stopPropagation() {} });
+  assert.equal(calls.length, 1, 'failed generation never dispatches a commit');
+  assert.equal(input.value, '');
+  assert.equal(context.codexButton.disabled, false);
+  calls.length = 0;
+  context.commands.executeCommand = async id => {
+    calls.push({ id });
+    input.value = 'A newer manual message';
+    return 'Generated message';
+  };
+  await context.commit({ stopPropagation() {} });
+  assert.equal(calls.length, 1, 'editing the message while generating stops the commit');
+  assert.equal(input.value, 'A newer manual message');
   console.log('Codex commit startup regression checks passed.');
 }
 

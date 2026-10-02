@@ -7,6 +7,7 @@ import os
 import re
 import workspace_search
 import codex_colors
+import codex_context
 from pathlib import Path
 from toolkit_settings import DEFAULT_SETTINGS, load_settings, read_git_bool, read_git_string
 from branch_names import resolve_runtime_settings
@@ -602,6 +603,13 @@ def main():
     elif any(settings.get(key) for key in codex_colors.COLOR_SETTINGS):
         raise ValueError("The installed Codex composer stylesheet could not be identified.")
 
+    for path, context_old, context_new in codex_context.patch_files(
+        args.codex_extension, enabled=settings.get("codexCommitContext", False) and not args.uninstall
+    ):
+        paths.append(path)
+        old.append(context_old)
+        new.append(context_new)
+
     codex_path = codex_bundle_path(args.codex_extension)
     should_find_codex = (
         settings["codexUsageResetCountdown"]
@@ -615,7 +623,8 @@ def main():
             raise ValueError(message)
         print(f"Warning: {message} Skipping optional Codex customizations.")
     if codex_path is not None:
-        codex_old = codex_path.read_text()
+        existing_index = paths.index(codex_path) if codex_path in paths else None
+        codex_old = new[existing_index] if existing_index is not None else codex_path.read_text()
         try:
             codex_new = transform_codex(
                 codex_old,
@@ -633,9 +642,12 @@ def main():
                 raise
             print(f"Warning: {error} Skipping optional Codex customizations.")
         else:
-            paths.append(codex_path)
-            old.append(codex_old)
-            new.append(codex_new)
+            if existing_index is not None:
+                new[existing_index] = codex_new
+            else:
+                paths.append(codex_path)
+                old.append(codex_old)
+                new.append(codex_new)
 
     if (
         old == list(new)

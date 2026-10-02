@@ -497,6 +497,21 @@ so rerun `python3 install.py` and reload VS Code after changing it.
 
 ### Codex co-author commit
 
+Enable `scm-toolkit.codex-commit-context` to generate blank co-author commit
+messages from the current Codex conversation in the same VS Code window and the
+staged diff, using only local Ollama. The option defaults to `false`. The captured
+text stays in memory, is limited to the latest 6,000 characters of the loaded
+transcript, and supplies intent; the staged diff determines what the commit
+actually describes. Generation does not submit a Codex prompt, steer its task,
+stop it, or change focus. It also reads a retained conversation when Source
+Control hides the Codex pane, and shows progress while Ollama generates the
+message. Manually entered messages retain the usual behavior.
+
+Stage the intended changes first. An unavailable chat or local model stops the
+commit; a changed branch, index, repository, or message also stops it. Run the
+installer after enabling the setting and reopen the VS Code window once to load
+the snapshot bridge. Subsequent button presses leave Codex running.
+
 When `codex-coauthor` is enabled, an account button appears in the SCM message row.
 It appends this trailer to the current message and then runs VS Code's normal
 `git.commit` command:
