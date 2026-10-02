@@ -34,6 +34,26 @@ class WorkspaceSearchInstallerTests(unittest.TestCase):
         self.assertEqual(list(package["contributes"]["views"]), ["scm"])
         self.assertNotIn("viewsContainers", package["contributes"])
         self.assertEqual(package["contributes"]["views"]["scm"][0]["name"], "EFS")
+        properties = package["contributes"]["configuration"]["properties"]
+        self.assertFalse(DEFAULTS["workspaceSearchAskOllama"])
+        self.assertFalse(properties["scmToolkit.workspaceSearch.askOllama"]["default"])
+        self.assertEqual(properties["scmToolkit.workspaceSearch.chatModel"]["default"], "")
+
+    def test_ask_ollama_manifest_requires_opt_in_model(self):
+        settings = dict(
+            DEFAULTS,
+            workspaceSearchAskOllama=True,
+            workspaceSearchChatModel="qwen3:8b",
+        )
+        package = workspace_search.render_package(settings)
+        properties = package["contributes"]["configuration"]["properties"]
+
+        self.assertTrue(properties["scmToolkit.workspaceSearch.askOllama"]["default"])
+        self.assertEqual(properties["scmToolkit.workspaceSearch.chatModel"]["default"], "qwen3:8b")
+        view = (workspace_search.SOURCE / "view.js").read_text()
+        self.assertIn("if (this.getSettings().askOllama) await this.askOllama()", view)
+        self.assertIn("const askButton = askEnabled", view)
+        self.assertNotIn("resolveChatModel", view)
 
     def test_standalone_manifest_uses_activity_bar_and_efs_label(self):
         settings = dict(DEFAULTS, workspaceSearchActivityBar=True)

@@ -58,6 +58,8 @@ class SubmissionTests(unittest.TestCase):
         self.assertEqual(parsed["sourceControlLabel"], "Sweetie Bot")
         self.assertFalse(parsed["workspaceSearchActivityBar"])
         self.assertEqual(parsed["workspaceSearchLabel"], "EFS")
+        self.assertFalse(parsed["workspaceSearchAskOllama"])
+        self.assertEqual(parsed["workspaceSearchChatModel"], "")
         self.assertEqual(parsed["branchNameDisabledPacks"], "")
         self.assertEqual(parsed["branchCustomNames"], "")
         self.assertEqual(parsed["branchNameImports"], "[]")
@@ -77,6 +79,24 @@ class SubmissionTests(unittest.TestCase):
         self.assertEqual(parsed["branchNameDisabledPacks"], "g4-creatures")
         self.assertEqual(parsed["branchCustomNames"], "my-oc,rainy-friend")
         self.assertIn('"id":"friends"', parsed["branchNameImports"])
+
+    def test_ask_ollama_requires_chat_model_when_enabled(self):
+        values = form_values()
+        values["workspaceSearchAskOllama"] = ["true"]
+        values["workspaceSearchChatModel"] = [""]
+
+        with self.assertRaisesRegex(ValueError, "requires a chat model"):
+            configurator.parse_submission(values)
+
+    def test_ask_ollama_accepts_selected_chat_model(self):
+        values = form_values()
+        values["workspaceSearchAskOllama"] = ["true"]
+        values["workspaceSearchChatModel"] = ["qwen3:8b"]
+
+        parsed = configurator.parse_submission(values)
+
+        self.assertTrue(parsed["workspaceSearchAskOllama"])
+        self.assertEqual(parsed["workspaceSearchChatModel"], "qwen3:8b")
 
     def test_rejects_invalid_imported_branch_name(self):
         values = form_values()
@@ -117,6 +137,9 @@ class SubmissionTests(unittest.TestCase):
         self.assertIn('name="codexHideChatTimestamps"', page)
         self.assertIn('name="workspaceSearchActivityBar"', page)
         self.assertIn('name="workspaceSearchLabel"', page)
+        self.assertIn('name="workspaceSearchAskOllama"', page)
+        self.assertIn('name="workspaceSearchChatModel"', page)
+        self.assertIn("updateAskOllamaRequirement", page)
         self.assertIn('name="chatgptCustomInstructions"', page)
         self.assertIn('id="sync-chatgpt-instructions"', page)
         self.assertIn('name="pgpSecretKey"', page)

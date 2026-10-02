@@ -50,6 +50,8 @@ SETTINGS = (
     Setting("graphOpenWorkingFile", "scm-toolkit.graph-open-working-file", "Open graph files from working tree", "Make Source Control Graph Open File target the checked-out working-tree file instead of the selected commit snapshot.", "Source control"),
     Setting("workspaceSearchActivityBar", "scm-toolkit.workspace-search-activity-bar", "Standalone Activity Bar", "Move Workspace Search into its own Activity Bar container instead of the Source Control view.", "Workspace Search"),
     Setting("workspaceSearchLabel", "scm-toolkit.workspace-search-label", "Search label", "Label for the Workspace Search panel and its standalone Activity Bar container.", "Workspace Search", "text"),
+    Setting("workspaceSearchAskOllama", "scm-toolkit.workspace-search-ask-ollama", "Ask Ollama", "Show the Ask Ollama action in EFS search results.", "Workspace Search"),
+    Setting("workspaceSearchChatModel", "scm-toolkit.workspace-search-chat-model", "Ask Ollama chat model", "Ollama chat model used by Ask Ollama. Required when Ask Ollama is enabled.", "Workspace Search", "optional_model"),
     Setting("defaultBranch", "scm-toolkit.default-branch", "Default branch", "Protected branch and pull-request base.", "Repository", "text"),
     Setting("remote", "scm-toolkit.remote", "Git remote", "Remote used for branch checks and repository discovery.", "Repository", "text"),
     Setting("branchNameDisabledPacks", "scm-toolkit.branch-name-disabled-packs", "Name packs", "Enable or disable built-in and imported branch-name packs.", "Branch names", "packs"),
@@ -132,6 +134,11 @@ def parse_submission(values: dict[str, list[str]]) -> dict[str, bool | str]:
             continue
 
         value = raw_value.strip()
+        if setting.kind == "optional_model":
+            if "\x00" in value or "\n" in value or "\r" in value:
+                raise ValueError(f"{setting.label} must fit on one line.")
+            parsed[setting.name] = value
+            continue
         if not value:
             raise ValueError(f"{setting.label} cannot be empty.")
         if "\x00" in value or "\n" in value or "\r" in value:
@@ -143,6 +150,8 @@ def parse_submission(values: dict[str, list[str]]) -> dict[str, bool | str]:
             except ValueError as error:
                 raise ValueError(f"{setting.label} must be greater than zero.") from error
         parsed[setting.name] = value
+    if parsed.get("workspaceSearchAskOllama") and not parsed.get("workspaceSearchChatModel"):
+        raise ValueError("Ask Ollama requires a chat model.")
     return parsed
 
 
@@ -272,8 +281,13 @@ def _setting_control(setting: Setting, current: object) -> str:
     attrs = ' type="text"'
     if setting.kind == "number":
         attrs = ' type="number" min="0.1" step="0.1" inputmode="decimal"'
-    list_attr = ' list="ollama-models"' if setting.kind == "model" else ""
-    required = ' placeholder="#43AF49"' if setting.kind == "color" else " required"
+    list_attr = ' list="ollama-models"' if setting.kind in {"model", "optional_model"} else ""
+    if setting.kind == "color":
+        required = ' placeholder="#43AF49"'
+    elif setting.kind == "optional_model":
+        required = ' placeholder="Choose a chat model"'
+    else:
+        required = " required"
     return (
         '<label class="setting field-row">'
         f'<span><strong>{label}</strong><small>{description}</small></span>'
@@ -354,6 +368,16 @@ if (packSearch) {{
   for (const card of packCards) card.addEventListener('change', updatePacks);
   updatePacks();
 }}
+const askOllamaToggle = document.querySelector('input[name="workspaceSearchAskOllama"]');
+const askOllamaModel = document.querySelector('input[name="workspaceSearchChatModel"]');
+function updateAskOllamaRequirement() {
+  if (!askOllamaToggle || !askOllamaModel) return;
+  askOllamaModel.required = askOllamaToggle.checked;
+}
+if (askOllamaToggle && askOllamaModel) {
+  askOllamaToggle.addEventListener('change', updateAskOllamaRequirement);
+  updateAskOllamaRequirement();
+}
 const syncButton = document.getElementById('sync-chatgpt-instructions');
 if (syncButton) {{
   syncButton.addEventListener('click', async () => {{
