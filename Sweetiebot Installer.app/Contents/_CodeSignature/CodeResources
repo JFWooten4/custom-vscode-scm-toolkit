@@ -44,6 +44,10 @@
 		<data>
 		pbVzJcrHZfKCgLt4Xzr6yUTmhg8=
 		</data>
+		<key>Resources/toolkit/assets/codex/codex-keep-awake.js</key>
+		<data>
+		I0Fs/CZ7l1KUrKkUY2+FvWDykkc=
+		</data>
 		<key>Resources/toolkit/assets/workbench/outlined_buttons.css</key>
 		<data>
 		WJKp4MgViK+zUe6VbqMhJYQSybw=
@@ -88,9 +92,13 @@
 		<data>
 		wPpv7c2VssAwpKxAfSmP6eG0UQk=
 		</data>
+		<key>Resources/toolkit/scripts/codex_keep_awake.py</key>
+		<data>
+		9FxYh2WzPZgkEF2+ImwmsquEpTU=
+		</data>
 		<key>Resources/toolkit/scripts/configurator.py</key>
 		<data>
-		EZ9eQ8V7xm0JcfTp71i+YD10/vw=
+		BKnIAqfTivXELVUzA9O9kBmogMs=
 		</data>
 		<key>Resources/toolkit/scripts/configure.py</key>
 		<data>
@@ -98,7 +106,7 @@
 		</data>
 		<key>Resources/toolkit/scripts/install.py</key>
 		<data>
-		/40OdmsItpflv9wg20X2pfsgHKE=
+		sdQdL9ORJkajioIWsWmeBXTAsME=
 		</data>
 		<key>Resources/toolkit/scripts/local_codex_commit.py</key>
 		<data>
@@ -110,7 +118,7 @@
 		</data>
 		<key>Resources/toolkit/scripts/toolkit_settings.py</key>
 		<data>
-		su/shSmqMjL6fO1w9D19W2h6Yy0=
+		M9K3KVpdWqYW9P5A0DajIfAsEKU=
 		</data>
 		<key>Resources/toolkit/scripts/workspace_search.py</key>
 		<data>
@@ -142,7 +150,7 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/package.json</key>
 		<data>
-		kJ3rVtUr8rsQHjavSDatNUMdRxE=
+		0ZXDOBUoLNQtpw1NkuG+ornPfUs=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/search_index.js</key>
 		<data>
@@ -263,6 +271,17 @@
 			<key>hash2</key>
 			<data>
 			cscBK62Wh77IIXGL5QpbQCYvznmm5j3zD1sLzJ3WVEs=
+			</data>
+		</dict>
+		<key>Resources/toolkit/assets/codex/codex-keep-awake.js</key>
+		<dict>
+			<key>hash</key>
+			<data>
+			I0Fs/CZ7l1KUrKkUY2+FvWDykkc=
+			</data>
+			<key>hash2</key>
+			<data>
+			9lv5Nl6m5oGeInVGuazTP9wGmPs6f4McULCJkpMZKEA=
 			</data>
 		</dict>
 		<key>Resources/toolkit/assets/workbench/outlined_buttons.css</key>
@@ -386,15 +405,26 @@
 			JLOvFQePOpV1oKSh/0gsm7UcUY+lyhruRakOyb2tKB4=
 			</data>
 		</dict>
+		<key>Resources/toolkit/scripts/codex_keep_awake.py</key>
+		<dict>
+			<key>hash</key>
+			<data>
+			9FxYh2WzPZgkEF2+ImwmsquEpTU=
+			</data>
+			<key>hash2</key>
+			<data>
+			J3nlSSagLz/k01m3LSAXmLtJpbqqmyXKLIf2TIEF07w=
+			</data>
+		</dict>
 		<key>Resources/toolkit/scripts/configurator.py</key>
 		<dict>
 			<key>hash</key>
 			<data>
-			EZ9eQ8V7xm0JcfTp71i+YD10/vw=
+			BKnIAqfTivXELVUzA9O9kBmogMs=
 			</data>
 			<key>hash2</key>
 			<data>
-			JVVDHVa2JY/dz1L4CbGfUSd/vevUu54x8alyA34tw7w=
+			xey8Gzf0JwM3/9j7coO1aPHBqnXcWelpqNIqenLMIvM=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/configure.py</key>
@@ -412,11 +442,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			/40OdmsItpflv9wg20X2pfsgHKE=
+			sdQdL9ORJkajioIWsWmeBXTAsME=
 			</data>
 			<key>hash2</key>
 			<data>
-			wpbKm2fKX88FjMDpvX2O636QETdREoYC0t7s2OSXi00=
+			b/X6nLRc56YVnafZokcM8RzJNOIUqQdG0hxC8nUU8RA=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/local_codex_commit.py</key>
@@ -445,11 +475,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			su/shSmqMjL6fO1w9D19W2h6Yy0=
+			M9K3KVpdWqYW9P5A0DajIfAsEKU=
 			</data>
 			<key>hash2</key>
 			<data>
-			3eX2pL26+5sW8RmVg+5Z80aYpDOCjlyYOEaBwQVJOEk=
+			lARxEzYSPANscK+AjHxQS63ibXsN903HvDfgCTcQvMY=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/workspace_search.py</key>
@@ -533,11 +563,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			kJ3rVtUr8rsQHjavSDatNUMdRxE=
+			0ZXDOBUoLNQtpw1NkuG+ornPfUs=
 			</data>
 			<key>hash2</key>
 			<data>
-			QgNzSWVN/xLg26ZOpIJ3WQrJIV4PAMSEHFyBMg0yiNI=
+			KQ5hWeoO0oJTOGw4n6oBx+wScjIOFtxNnmGzcE6xcLE=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/search_index.js</key>
