@@ -5,6 +5,7 @@ from pathlib import Path
 import re
 
 HERE = Path(__file__).resolve().parent
+ASSETS = HERE.parent / "assets/codex"
 START = '\n/* scm-toolkit-codex-image-drop:start */\n'
 END = '\n/* scm-toolkit-codex-image-drop:end */\n'
 
@@ -46,4 +47,4 @@ def transform(source, remove=False):
                    + ','.join(match[name] for name in ('root', 'enter', 'leave', 'drop')) + ')')
     source = source.replace(original, replacement, 1)
     return (source + START + '/* edit:' + json.dumps([original, replacement]) + ' */\n'
-            + (HERE / 'codex-image-drop.js').read_text() + END)
+            + (ASSETS / 'codex-image-drop.js').read_text() + END)

@@ -82,20 +82,20 @@ def browser_resolver_fixture():
 
 class TransformTests(unittest.TestCase):
     def test_controls_use_the_vscode_input_background(self):
-        css = (install.HERE / "picker.css").read_text()
+        css = (install.WORKBENCH_ASSETS / "picker.css").read_text()
 
         self.assertEqual(css.count("background: var(--vscode-input-background);"), 5)
         self.assertEqual(css.count("background: transparent;"), 4)
 
     def test_branch_selector_uses_the_vscode_button_colors(self):
-        css = (install.HERE / "picker.css").read_text()
+        css = (install.WORKBENCH_ASSETS / "picker.css").read_text()
 
         self.assertIn("background: var(--vscode-button-background);", css)
         self.assertIn("color: var(--vscode-button-foreground);", css)
         self.assertIn("background: var(--vscode-button-hoverBackground);", css)
 
     def test_unfilled_buttons_match_their_background_with_a_border(self):
-        css = (install.HERE / "outlined_buttons.css").read_text()
+        css = (install.WORKBENCH_ASSETS / "outlined_buttons.css").read_text()
 
         self.assertIn(
             ".scm-view:not(.scm-history-view) .button-container > .monaco-button-dropdown", css
@@ -123,7 +123,7 @@ class TransformTests(unittest.TestCase):
         self.assertNotIn(selector, filled_css)
 
     def test_push_control_is_centered_without_a_divider(self):
-        css = (install.HERE / "picker.css").read_text()
+        css = (install.WORKBENCH_ASSETS / "picker.css").read_text()
         push_css = css.split(
             ".scm-view .scm-editor > .scm-toolkit-push {", 1
         )[1].split(
@@ -136,7 +136,7 @@ class TransformTests(unittest.TestCase):
         self.assertIn("border-radius: var(--vscode-cornerRadius-small, 4px);", push_css)
 
     def test_right_side_controls_have_no_vertical_dividers(self):
-        css = (install.HERE / "picker.css").read_text()
+        css = (install.WORKBENCH_ASSETS / "picker.css").read_text()
 
         for selector in ("scm-toolkit-delete-branch", "scm-toolkit-autocomplete"):
             control_css = css.split(
@@ -147,7 +147,7 @@ class TransformTests(unittest.TestCase):
             self.assertNotIn("border-left", control_css)
 
     def test_sync_control_uses_studio_toolbar_style(self):
-        css = (install.HERE / "picker.css").read_text()
+        css = (install.WORKBENCH_ASSETS / "picker.css").read_text()
         sync_css = css.split(
             ".scm-view .scm-editor > .scm-toolkit-sync-branch {", 1
         )[1].split(

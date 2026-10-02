@@ -11,7 +11,7 @@ const body = {
     removeEventListener(type, handler) { assert.equal(listeners.get(type), handler); listeners.delete(type); },
 };
 const context = vm.createContext({ document: { body } });
-vm.runInContext(fs.readFileSync(path.join(__dirname, '../codex-image-drop.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '../assets/codex/codex-image-drop.js'), 'utf8'), context);
 let count = 0, highlighted = false, uploads = 0;
 const dispose = context.scmToolkitRegisterImageDropTarget(null,
     event => { if (event.type === 'dragenter') count++; highlighted = true; event.preventDefault(); },

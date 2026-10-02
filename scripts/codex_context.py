@@ -5,6 +5,7 @@ from pathlib import Path
 import re
 
 HERE = Path(__file__).resolve().parent
+ASSETS = HERE.parent / "assets/codex"
 START = '\n/* scm-toolkit-codex-context:start */\n'
 END = '\n/* scm-toolkit-codex-context:end */\n'
 HOST_ANCHOR = re.compile(
@@ -43,7 +44,7 @@ def transform(source, kind, enabled=True):
         replacement = f'({original},scmToolkitRegisterCodexSnapshot({match["api"]}))'
     source = source.replace(original, replacement, 1)
     return (source + START + '/* edit:' + json.dumps([original, replacement]) + ' */\n'
-            + (HERE / f'codex-context-{kind}.js').read_text() + END)
+            + (ASSETS / f'codex-context-{kind}.js').read_text() + END)
 
 
 def patch_files(extension_path=None, enabled=True):

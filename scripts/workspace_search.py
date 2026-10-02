@@ -12,7 +12,7 @@ from pathlib import Path
 from toolkit_settings import load_settings
 
 HERE = Path(__file__).resolve().parent
-SOURCE = HERE / "workspace-search-extension"
+SOURCE = HERE.parent / "workspace-search-extension"
 STANDALONE_CONTAINER_ID = "scmToolkit.workspaceSearchContainer"
 
 

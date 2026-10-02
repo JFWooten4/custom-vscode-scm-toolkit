@@ -14,6 +14,8 @@ from toolkit_settings import DEFAULT_SETTINGS, load_settings, read_git_bool, rea
 from branch_names import resolve_runtime_settings
 
 HERE = Path(__file__).resolve().parent
+WORKBENCH_ASSETS = HERE.parent / "assets/workbench"
+CODEX_ASSETS = HERE.parent / "assets/codex"
 START = '\n/* scm-toolkit:start */\n'
 END = '\n/* scm-toolkit:end */\n'
 CODEX_START = '\n/* scm-toolkit-codex-countdown:start */\n'
@@ -478,21 +480,21 @@ def transform_codex(js, enabled=False, hide_promotions=False, hide_timestamps=Fa
             + "/* edit:"
             + json.dumps({"edits": edits})
             + " */\n"
-            + (HERE / "codex-countdown.js").read_text()
+            + (CODEX_ASSETS / "codex-countdown.js").read_text()
             + CODEX_END
         )
 
     if not remove and hide_promotions:
         js += (
             CODEX_PROMOTIONS_START
-            + (HERE / "codex-hide-promotions.js").read_text()
+            + (CODEX_ASSETS / "codex-hide-promotions.js").read_text()
             + CODEX_PROMOTIONS_END
         )
 
     if not remove and hide_timestamps:
         js += (
             CODEX_TIMESTAMPS_START
-            + (HERE / "codex-hide-chat-timestamps.js").read_text()
+            + (CODEX_ASSETS / "codex-hide-chat-timestamps.js").read_text()
             + CODEX_TIMESTAMPS_END
         )
 
@@ -537,12 +539,12 @@ def transform(js, css, remove=False, settings=None):
         + "/* edits:"
         + json.dumps(changes)
         + " */\n"
-        + (HERE / "picker.js").read_text()
+        + (WORKBENCH_ASSETS / "picker.js").read_text()
         + END
     )
-    toolkit_css = (HERE / "picker.css").read_text()
+    toolkit_css = (WORKBENCH_ASSETS / "picker.css").read_text()
     if not settings["filledButtons"]:
-        toolkit_css += "\n" + (HERE / "outlined_buttons.css").read_text()
+        toolkit_css += "\n" + (WORKBENCH_ASSETS / "outlined_buttons.css").read_text()
     css += START + toolkit_css + END
     return js, css
 

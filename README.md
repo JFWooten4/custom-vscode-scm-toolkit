@@ -42,6 +42,16 @@ The patch is intentionally narrow: it does not copy or manage unrelated editor s
 
 The installer modifies the installed VS Code workbench files. VS Code updates can replace those files, so rerun the installer after an update if the patch disappears. VS Code may also show an installation-integrity warning after its application files are modified.
 
+## Repository layout
+
+- `scripts/`: Python installers, configuration tools, and their branch-name catalog.
+- `assets/workbench/`: JavaScript and CSS injected into the VS Code workbench.
+- `assets/codex/`: JavaScript injected into the Codex extension.
+- `workspace-search-extension/`: companion VS Code extension code.
+- `tests/`: Python and JavaScript tests.
+
+Run Python tests from the repository root with `PYTHONPATH=scripts python3 -m unittest discover -s tests`.
+
 ## Install
 
 Clone the repository and enter it:
@@ -54,19 +64,19 @@ cd custom-vscode-scm-toolkit
 Validate that the currently installed VS Code build matches the guarded patch anchors without changing anything:
 
 ```sh
-python3 install.py --check
+python3 scripts/install.py --check
 ```
 
 Install the patch:
 
 ```sh
-python3 install.py
+python3 scripts/install.py
 ```
 
 To review the settings in a local browser before installing, run:
 
 ```sh
-python3 install.py --configure
+python3 scripts/install.py --configure
 ```
 
 Then reload or restart Visual Studio Code.
@@ -80,7 +90,7 @@ The default application path is:
 To target another app bundle, pass `--app`:
 
 ```sh
-python3 install.py --app "/path/to/Visual Studio Code.app"
+python3 scripts/install.py --app "/path/to/Visual Studio Code.app"
 ```
 
 If macOS blocks the write, allow the terminal or Python process you are using under **System Settings → Privacy & Security → App Management**, then run the installer again.
@@ -94,7 +104,7 @@ Toolkit settings live in your global Git config under the `scm-toolkit` section.
 Run the configurator without installing anything:
 
 ```sh
-python3 configure.py
+python3 scripts/configure.py
 ```
 
 It opens an app-like settings page in the default browser, prefilled with the current Git configuration. The page includes every toolkit switch plus the Ollama model choices and low-memory threshold. The **Branch names** section lets you toggle individual packs, add custom names, and paste third-party packs as JSON. If Ollama is running on `127.0.0.1:11434`, locally installed models appear as suggestions; model tags can still be entered manually when it is offline.
@@ -193,14 +203,14 @@ The filled-button style, standalone Workspace Search Activity Bar, Cmd-click clo
 After changing toolkit Git config, rerun:
 
 ```sh
-python3 install.py
+python3 scripts/install.py
 ```
 
 Then reload Visual Studio Code. The installer resolves the Git-config values and embeds that configuration into the installed patch.
 
 ### Branch-name packs
 
-Random branch names are data-driven. Built-in packs live in `branch_name_packs.json`, and every pack uses the same small schema: The G4 pony roster is split into mares, stallions, fillies, colts, and a small source-unspecified pack; background and minor ponies remain included.
+Random branch names are data-driven. Built-in packs live in `scripts/branch_name_packs.json`, and every pack uses the same small schema: The G4 pony roster is split into mares, stallions, fillies, colts, and a small source-unspecified pack; background and minor ponies remain included.
 
 ```json
 {
@@ -219,7 +229,7 @@ Built-in community packs also include a dedicated **Convention mascots** set and
 
 The normal installer also installs a small companion VS Code extension into `~/.vscode/extensions`. By default, after reloading VS Code, Source Control contains a **Workspace Search** section with an in-sidebar query box, Hybrid/Semantic/Exact modes, ranked snippets, click-to-open results, and an optional **Ask Ollama** action. It does not open Open WebUI or a separate browser window.
 
-Set `scm-toolkit.workspace-search-activity-bar` to `true` to move the same Workspace Search view into its own Activity Bar container. The panel title and container label use `scm-toolkit.workspace-search-label` and default to **EFS**. Rerun `python3 install.py` and reload VS Code after changing either setting.
+Set `scm-toolkit.workspace-search-activity-bar` to `true` to move the same Workspace Search view into its own Activity Bar container. The panel title and container label use `scm-toolkit.workspace-search-label` and default to **EFS**. Rerun `python3 scripts/install.py` and reload VS Code after changing either setting.
 
 Install the default local embedding model once:
 
@@ -233,7 +243,7 @@ Hybrid search combines semantic similarity with exact term/path matching. If Oll
 
 The default **Ask Ollama** model is automatic: it first reuses a currently loaded non-embedding Ollama model, preferring the largest loaded model, then falls back to `scm-toolkit.ai-commit-model`. Set `scmToolkit.workspaceSearch.chatModel` in VS Code settings only when you want to force a different model. The embedding model is separately configurable as `scmToolkit.workspaceSearch.embeddingModel`.
 
-The companion extension only accepts loopback Ollama URLs (`127.0.0.1`, `localhost`, or `::1`). You can also install or remove just this companion extension with `python3 workspace_search.py` or `python3 workspace_search.py --uninstall`.
+The companion extension only accepts loopback Ollama URLs (`127.0.0.1`, `localhost`, or `::1`). You can also install or remove just this companion extension with `python3 scripts/workspace_search.py` or `python3 scripts/workspace_search.py --uninstall`.
 
 
 #### Historical work index
@@ -255,7 +265,7 @@ The installer places a Git wrapper at `~/.local/bin/scm-toolkit-git`. To make VS
 }
 ```
 
-Use the absolute path shown by `python3 install.py`; do not rely on `~` expansion in the setting.
+Use the absolute path shown by `python3 scripts/install.py`; do not rely on `~` expansion in the setting.
 
 When `ai-commit` is enabled, clicking VS Code's normal Commit button with a blank message summarizes the staged diff through the configured local Ollama model. On the configured `default-branch` (normally `main`), `ai-default-branch-description = true` asks the model for a subject plus one or two substantive sentences describing what changed and, when clear from the diff, its purpose or effect. Other branches keep the subject-only format. A manually entered message is never replaced by generated commit content; when manual spellcheck is enabled, only its subject line may receive spelling corrections. Amend/fixup/squash/reuse-message mode, path-limited blank commits, or `--all` keep their existing behavior.
 
@@ -325,7 +335,7 @@ Disable and remove the installed picker on the next installer run:
 
 ```sh
 git config --global scm-toolkit.ai-model-picker false
-python3 install.py
+python3 scripts/install.py
 ```
 
 The environment variables `SCM_TOOLKIT_AI_MODEL`, `SCM_TOOLKIT_AI_LOW_MEMORY_MODEL`, and `SCM_TOOLKIT_AI_LOW_MEMORY_GIB` can temporarily override the corresponding Git-config values.
@@ -339,7 +349,7 @@ button background, `scm-toolkit.codex-send-foreground` for its icon, and
 controls. Use a hexadecimal color such as Studio green `#43AF49`; blank values
 restore the theme. All three settings default to blank.
 
-Run `python3 install.py` after changing them and reopen the VS Code window.
+Run `python3 scripts/install.py` after changing them and reopen the VS Code window.
 These overrides apply only to the Codex composer controls, independently of
 VS Code's general foreground color. Codex extension updates can replace the
 stylesheet, so rerun the installer after updating the extension.
@@ -354,7 +364,7 @@ To install or refresh only this optional Codex patch without touching the SCM
 workbench patch, run:
 
 ```sh
-python3 install.py --codex-only
+python3 scripts/install.py --codex-only
 ```
 
 Codex extension updates can replace the patched webview bundle. Rerun the command
@@ -434,7 +444,7 @@ Set another label and reinstall:
 
 ```sh
 git config --global scm-toolkit.source-control-label "My SCM"
-python3 install.py
+python3 scripts/install.py
 ```
 
 Set it back to `Source Control` to preserve VS Code's stock label while keeping
@@ -454,7 +464,7 @@ Restore VS Code's stock historical-file behavior with:
 
 ```sh
 git config --global scm-toolkit.graph-open-working-file false
-python3 install.py
+python3 scripts/install.py
 ```
 
 ### Blank-state refresh
@@ -493,7 +503,7 @@ left to VS Code.
 When `browser-chatgpt-home` is enabled, a blank Integrated Browser tab starts at
 `https://chatgpt.com/`. Explicit URLs continue to win, so commands and extensions
 that open a specific page are unchanged. The toggle is applied by the installer,
-so rerun `python3 install.py` and reload VS Code after changing it.
+so rerun `python3 scripts/install.py` and reload VS Code after changing it.
 
 ### Codex co-author commit
 
@@ -582,7 +592,7 @@ Before uninstalling, clear VS Code's `git.path` setting if it points to the tool
 Remove the patch and the installed wrapper:
 
 ```sh
-python3 install.py --uninstall
+python3 scripts/install.py --uninstall
 ```
 
 Then reload or restart Visual Studio Code.
@@ -590,5 +600,5 @@ Then reload or restart Visual Studio Code.
 You can also use `--check` with `--uninstall` to validate the removal without writing:
 
 ```sh
-python3 install.py --uninstall --check
+python3 scripts/install.py --uninstall --check
 ```

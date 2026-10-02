@@ -6,7 +6,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 function load(name, context) {
-  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', name), 'utf8'), context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../assets/codex', name), 'utf8'), context);
 }
 
 async function run() {
