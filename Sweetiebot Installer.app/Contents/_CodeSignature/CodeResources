@@ -54,7 +54,7 @@
 		</data>
 		<key>Resources/toolkit/assets/workbench/picker.js</key>
 		<data>
-		bVwIiNGhJubkZbh643wJRz/Ict8=
+		zxFDaAuQGJ8D3if15KEJBsJjjYs=
 		</data>
 		<key>Resources/toolkit/scripts/ai_commit.py</key>
 		<data>
@@ -118,7 +118,7 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/branch_actions.js</key>
 		<data>
-		XE29j8+aWDzJYjCSn5ScBCEe0g8=
+		2ElydK7lNdfJQNuBfxmZtW7jfyw=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/codex_commit.js</key>
 		<data>
@@ -142,7 +142,7 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/package.json</key>
 		<data>
-		eWPY7OCU4PlkaZ3LK+PqXISAJq0=
+		S1T+XmaWjwd0GthAS3y0Y4B1KPI=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/search_index.js</key>
 		<data>
@@ -291,11 +291,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			bVwIiNGhJubkZbh643wJRz/Ict8=
+			zxFDaAuQGJ8D3if15KEJBsJjjYs=
 			</data>
 			<key>hash2</key>
 			<data>
-			+usRHMEV5Cz/ItFNmVHeVkMWGPVXdCIVXqhlVLTBZw4=
+			h1hWGfdX68UPlstz0AflM+jPAm8UuKdd6zpXmw+0Vsk=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/ai_commit.py</key>
@@ -467,11 +467,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			XE29j8+aWDzJYjCSn5ScBCEe0g8=
+			2ElydK7lNdfJQNuBfxmZtW7jfyw=
 			</data>
 			<key>hash2</key>
 			<data>
-			U8UMFGL6Z4NAKbgWen4eH1xxZ+ZDHLdDHSoBdS76xAw=
+			ZQW57/p3xRoqKVnGBhMyM8iInOU5QbfVnuKpVpYeM3A=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/codex_commit.js</key>
@@ -533,11 +533,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			eWPY7OCU4PlkaZ3LK+PqXISAJq0=
+			S1T+XmaWjwd0GthAS3y0Y4B1KPI=
 			</data>
 			<key>hash2</key>
 			<data>
-			OT881Jq2FuId+qMaKyu3NVYlJokE99avlqgfSlo7HsY=
+			Aa1VaPsueLuaDGTPXV2KL3eDpPtvkJb7ZbgjzYDYamc=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/search_index.js</key>
