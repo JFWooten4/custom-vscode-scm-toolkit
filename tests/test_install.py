@@ -17,11 +17,13 @@ SETTINGS = {
     "branchCustomNames": "",
     "branchNameImports": "[]",
     "shortPlaceholder": True,
+    "commitButtonLabel": "Send",
     "sourceControlLabel": "Sweetie Bot",
     "filledButtons": False,
     "commitAndPush": True,
     "branchCleanup": True,
     "autocompleteToggle": True,
+    "autoPublishToggle": True,
     "codexCoauthor": True,
     "hideOutgoingSyncCount": True,
     "blankStateRefresh": True,
@@ -84,7 +86,7 @@ class TransformTests(unittest.TestCase):
     def test_controls_use_the_vscode_input_background(self):
         css = (install.WORKBENCH_ASSETS / "picker.css").read_text()
 
-        self.assertEqual(css.count("background: var(--vscode-input-background);"), 5)
+        self.assertEqual(css.count("background: var(--vscode-input-background);"), 6)
         self.assertEqual(css.count("background: transparent;"), 4)
 
     def test_branch_selector_uses_the_vscode_button_colors(self):
@@ -138,7 +140,13 @@ class TransformTests(unittest.TestCase):
     def test_right_side_controls_have_no_vertical_dividers(self):
         css = (install.WORKBENCH_ASSETS / "picker.css").read_text()
 
-        for selector in ("scm-toolkit-delete-branch", "scm-toolkit-autocomplete"):
+        for selector in (
+            "scm-toolkit-delete-branch",
+            "scm-toolkit-autocomplete",
+            "scm-toolkit-codex-coauthor",
+            "scm-toolkit-pull-request",
+            "scm-toolkit-auto-publish",
+        ):
             control_css = css.split(
                 f".scm-view .scm-editor > .{selector} {{", 1
             )[1].split(
@@ -172,9 +180,14 @@ class TransformTests(unittest.TestCase):
         self.assertIn("resolveHistoryItemRefsCommonAncestor", js)
         self.assertIn("commands.executeCommand('git.pull', repositoryArgument)", js)
         self.assertIn("scm-toolkit-autocomplete", css)
+        self.assertIn("scm-toolkit-auto-publish", css)
+        self.assertEqual(js.count("className = 'scm-toolkit-divider'"), 2)
+        self.assertIn("scmToolkitCustomizeCommitButtonLabel", js)
+        self.assertIn("'scmToolkit.publishBranch'", js)
+        self.assertIn("scmToolkit.autoPublishNewBranches", js)
         self.assertIn('[id="workbench.view.scm"] .monaco-progress-container', css)
         self.assertIn(".pane:has(.scm-view) > .monaco-progress-container", css)
-        self.assertEqual(js.count("className = 'scm-toolkit-tooltip'"), 4)
+        self.assertEqual(js.count("className = 'scm-toolkit-tooltip'"), 5)
         self.assertIn(".scm-toolkit-autocomplete:hover > .scm-toolkit-tooltip", css)
         self.assertIn("Co-authored-by: Codex <noreply@openai.com>", js)
         self.assertIn("currentInput?.repository.provider.acceptInputCommand", js)
@@ -226,6 +239,10 @@ class TransformTests(unittest.TestCase):
 
     def test_source_control_label_defaults_to_sweetiebot(self):
         self.assertEqual(install.DEFAULT_SETTINGS["sourceControlLabel"], "Sweetie Bot")
+
+    def test_commit_button_label_defaults_to_send(self):
+        self.assertEqual(install.DEFAULT_SETTINGS["commitButtonLabel"], "Send")
+        self.assertTrue(install.DEFAULT_SETTINGS["autoPublishToggle"])
 
     def test_source_control_label_patches_view_container_title(self):
         js, _ = install.transform(workbench_fixture(), "base-css", settings=SETTINGS)

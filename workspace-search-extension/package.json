@@ -15,6 +15,7 @@
   "activationEvents": [
     "onCommand:scmToolkit.generateCodexCommitMessage",
     "onCommand:scmToolkit.createBranch",
+    "onCommand:scmToolkit.publishBranch",
     "onCommand:scmToolkit.deleteBranch",
     "onView:scmToolkit.workspaceSearch",
     "onCommand:scmToolkit.openSettings",
@@ -73,6 +74,11 @@
     "configuration": {
       "title": "SCM Toolkit Workspace Search",
       "properties": {
+        "scmToolkit.autoPublishNewBranches": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically publish newly selected local branches to the configured Git remote."
+        },
         "scmToolkit.workspaceSearch.embeddingModel": {
           "type": "string",
           "default": "qwen3-embedding:0.6b",

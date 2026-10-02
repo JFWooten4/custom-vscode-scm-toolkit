@@ -34,6 +34,29 @@ function scmToolkitHideOutgoingSyncCount(widget) {
     observer.observe(root, { subtree: true, childList: true, characterData: true });
 }
 
+function scmToolkitCustomizeCommitButtonLabel(widget, label) {
+    const value = String(label ?? '').trim();
+    const root = widget.element.closest('.scm-view');
+    const Observer = widget.element.ownerDocument.defaultView?.MutationObserver;
+    if (!value || !root || !Observer) return;
+
+    globalThis.__scmToolkitCommitButtonLabel = value;
+    const observedRoots = globalThis.__scmToolkitCommitLabelRoots ??= new WeakSet();
+    const update = () => {
+        const button = root.querySelector(
+            '.button-container > .monaco-button-dropdown > .monaco-button:first-child'
+        );
+        const current = globalThis.__scmToolkitCommitButtonLabel;
+        if (button && current && button.textContent !== current) button.textContent = current;
+    };
+
+    update();
+    if (observedRoots.has(root)) return;
+    observedRoots.add(root);
+    const observer = new Observer(update);
+    observer.observe(root, { subtree: true, childList: true, characterData: true });
+}
+
 async function scmToolkitPullCleanRepository(provider, commands, repositoryArgument) {
     const hasChanges = () => provider.groups.some(group => group.resources.length > 0);
     if (hasChanges()) return false;
@@ -328,6 +351,9 @@ function scmToolkitReleaseCommitBeforePush(repository, configuration, notificati
 function scmToolkitCreateControls(widget, observe, commands, notifications, configuration, mcpService, settings) {
     const doc = widget.element.ownerDocument;
     if (settings.hideOutgoingSyncCount) scmToolkitHideOutgoingSyncCount(widget);
+    if (settings.commitButtonLabel) {
+        scmToolkitCustomizeCommitButtonLabel(widget, settings.commitButtonLabel);
+    }
     const branchButton = doc.createElement('button');
     branchButton.type = 'button';
     branchButton.className = 'scm-toolkit-branch';
@@ -373,6 +399,11 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     deleteTooltip.setAttribute('aria-hidden', 'true');
     deleteButton.append(deleteTooltip);
 
+    const firstDivider = doc.createElement('span');
+    firstDivider.className = 'scm-toolkit-divider';
+    firstDivider.hidden = true;
+    firstDivider.setAttribute('aria-hidden', 'true');
+
     const autocompleteButton = doc.createElement('button');
     autocompleteButton.type = 'button';
     autocompleteButton.className = 'scm-toolkit-autocomplete codicon codicon-sparkle';
@@ -389,6 +420,21 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     codexButton.hidden = true;
     codexButton.title = 'Commit with Codex co-author';
     codexButton.setAttribute('aria-label', 'Commit with Codex co-author');
+
+    const autoPublishButton = doc.createElement('button');
+    autoPublishButton.type = 'button';
+    autoPublishButton.className = 'scm-toolkit-auto-publish codicon codicon-cloud-upload';
+    autoPublishButton.hidden = true;
+
+    const autoPublishTooltip = doc.createElement('span');
+    autoPublishTooltip.className = 'scm-toolkit-tooltip';
+    autoPublishTooltip.setAttribute('aria-hidden', 'true');
+    autoPublishButton.append(autoPublishTooltip);
+
+    const secondDivider = doc.createElement('span');
+    secondDivider.className = 'scm-toolkit-divider';
+    secondDivider.hidden = true;
+    secondDivider.setAttribute('aria-hidden', 'true');
 
     const pullRequestButton = doc.createElement('button');
     pullRequestButton.type = 'button';
@@ -422,8 +468,11 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         pushControl,
         syncButton,
         deleteButton,
+        firstDivider,
         autocompleteButton,
         codexButton,
+        autoPublishButton,
+        secondDivider,
         pullRequestButton,
         ponyBranchButton,
         settingsButton
@@ -440,6 +489,8 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     let creatingPonyBranch = false;
     let updatingPush = false;
     let updatingAutocomplete = false;
+    let updatingAutoPublish = false;
+    let publishingBranch;
     let committingWithCodex = false;
 
     const refreshPush = () => {
@@ -505,6 +556,74 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     widget.disposables.add(configuration.onDidChangeConfiguration(event => {
         if (event.affectsConfiguration('editor.inlineSuggest.enabled')) {
             refreshAutocomplete();
+        }
+    }));
+
+    const refreshAutoPublish = () => {
+        const enabled = configuration.getValue('scmToolkit.autoPublishNewBranches') === true;
+        autoPublishButton.classList.toggle('scm-toolkit-auto-publish-active', enabled);
+        autoPublishButton.setAttribute('aria-pressed', String(enabled));
+        autoPublishButton.disabled =
+            updatingAutoPublish || Boolean(publishingBranch) || !currentRepositoryUri;
+        const description = enabled
+            ? `Automatically publish new branches to ${settings.remote}`
+            : `Keep new branches local instead of publishing to ${settings.remote}`;
+        autoPublishButton.setAttribute('aria-label', description);
+        autoPublishTooltip.textContent = description;
+    };
+
+    const toggleAutoPublish = async event => {
+        event.stopPropagation();
+        if (updatingAutoPublish) return;
+
+        updatingAutoPublish = true;
+        refreshAutoPublish();
+        const enabled = configuration.getValue('scmToolkit.autoPublishNewBranches') === true;
+        try {
+            await configuration.updateValue('scmToolkit.autoPublishNewBranches', !enabled);
+        } catch (error) {
+            notifications.error(error);
+        } finally {
+            updatingAutoPublish = false;
+            refreshAutoPublish();
+        }
+    };
+
+    const maybePublishBranch = async branch => {
+        if (
+            !settings.autoPublishToggle
+            || configuration.getValue('scmToolkit.autoPublishNewBranches') !== true
+            || !currentRepositoryUri
+            || !branch
+            || branch === settings.defaultBranch
+            || publishingBranch === branch
+        ) {
+            return false;
+        }
+
+        publishingBranch = branch;
+        refreshAutoPublish();
+        try {
+            const published = await commands.executeCommand(
+                'scmToolkit.publishBranch',
+                currentRepositoryUri,
+                { branch, remote: settings.remote }
+            );
+            if (published) notifications.info(`Published ${branch} to ${settings.remote}.`);
+            return Boolean(published);
+        } catch (error) {
+            notifications.error(error);
+            return false;
+        } finally {
+            if (publishingBranch === branch) publishingBranch = undefined;
+            refreshAutoPublish();
+        }
+    };
+
+    autoPublishButton.addEventListener('click', toggleAutoPublish);
+    widget.disposables.add(configuration.onDidChangeConfiguration(event => {
+        if (event.affectsConfiguration('scmToolkit.autoPublishNewBranches')) {
+            refreshAutoPublish();
         }
     }));
 
@@ -720,11 +839,12 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         refreshBranchControls();
 
         try {
-            await commands.executeCommand('scmToolkit.createBranch', repository, {
+            const branch = await commands.executeCommand('scmToolkit.createBranch', repository, {
                 defaultBranch: settings.defaultBranch,
                 remote: settings.remote,
                 names: scmToolkitBranchNamePool(),
             });
+            await maybePublishBranch(branch);
         } catch (error) {
             notifications.error(error);
         } finally {
@@ -833,6 +953,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         }
 
         refreshSyncBranch();
+        refreshAutoPublish();
         refreshCodexCommit();
         refreshPullRequest();
         refreshPonyBranch();
@@ -921,6 +1042,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             deleteButton.removeEventListener('click', deleteBranch);
             pushCheckbox.removeEventListener('change', changePush);
             autocompleteButton.removeEventListener('click', toggleAutocomplete);
+            autoPublishButton.removeEventListener('click', toggleAutoPublish);
             codexButton.removeEventListener('click', commitWithCodex);
             pullRequestButton.removeEventListener('click', createPullRequest);
             ponyBranchButton.removeEventListener('click', createPonyBranch);
@@ -929,8 +1051,11 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             pushControl.remove();
             syncButton.remove();
             deleteButton.remove();
+            firstDivider.remove();
             autocompleteButton.remove();
             codexButton.remove();
+            autoPublishButton.remove();
+            secondDivider.remove();
             pullRequestButton.remove();
             ponyBranchButton.remove();
             settingsButton.remove();
@@ -951,12 +1076,21 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             const deleteWidth = deleteButton.hidden
                 ? 0
                 : deleteButton.getBoundingClientRect().width;
+            const firstDividerWidth = firstDivider.hidden
+                ? 0
+                : firstDivider.getBoundingClientRect().width;
             const autocompleteWidth = autocompleteButton.hidden
                 ? 0
                 : autocompleteButton.getBoundingClientRect().width;
             const codexWidth = codexButton.hidden
                 ? 0
                 : codexButton.getBoundingClientRect().width;
+            const autoPublishWidth = autoPublishButton.hidden
+                ? 0
+                : autoPublishButton.getBoundingClientRect().width;
+            const secondDividerWidth = secondDivider.hidden
+                ? 0
+                : secondDivider.getBoundingClientRect().width;
             const pullRequestWidth = pullRequestButton.hidden
                 ? 0
                 : pullRequestButton.getBoundingClientRect().width;
@@ -966,8 +1100,9 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             const settingsWidth = settingsButton.hidden
                 ? 0
                 : settingsButton.getBoundingClientRect().width;
-            return branchWidth + pushWidth + syncWidth + deleteWidth + autocompleteWidth
-                + codexWidth + pullRequestWidth + ponyBranchWidth + settingsWidth;
+            return branchWidth + pushWidth + syncWidth + deleteWidth + firstDividerWidth
+                + autocompleteWidth + codexWidth + autoPublishWidth + secondDividerWidth
+                + pullRequestWidth + ponyBranchWidth + settingsWidth;
         },
 
         bind(input) {
@@ -983,9 +1118,13 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             syncButton.disabled = true;
             deleteButton.hidden = true;
             deleteButton.disabled = true;
+            firstDivider.hidden = true;
             autocompleteButton.hidden = true;
             autocompleteButton.disabled = false;
             codexButton.hidden = true;
+            autoPublishButton.hidden = true;
+            autoPublishButton.disabled = true;
+            secondDivider.hidden = true;
             codexButton.disabled = true;
             pullRequestButton.hidden = true;
             pullRequestButton.disabled = true;
@@ -1014,6 +1153,16 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
                 refreshCodexCommit();
             }
 
+            if (settings.autoPublishToggle) {
+                autoPublishButton.hidden = false;
+                refreshAutoPublish();
+            }
+
+            const groupedControlsVisible =
+                !autocompleteButton.hidden || !codexButton.hidden || !autoPublishButton.hidden;
+            firstDivider.hidden = !groupedControlsVisible;
+            secondDivider.hidden = !groupedControlsVisible;
+
             if (settings.mcpPullRequest) {
                 pullRequestButton.hidden = false;
                 refreshPullRequest();
@@ -1027,21 +1176,23 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             syncButton.classList.toggle(
                 'scm-toolkit-has-following-control',
                 !deleteButton.hidden || !autocompleteButton.hidden || !codexButton.hidden
-                    || !pullRequestButton.hidden || !ponyBranchButton.hidden || !settingsButton.hidden
+                    || !autoPublishButton.hidden || !pullRequestButton.hidden
+                    || !ponyBranchButton.hidden || !settingsButton.hidden
             );
             deleteButton.classList.toggle(
                 'scm-toolkit-has-following-control',
-                !autocompleteButton.hidden || !codexButton.hidden || !pullRequestButton.hidden
-                    || !ponyBranchButton.hidden || !settingsButton.hidden
+                !autocompleteButton.hidden || !codexButton.hidden || !autoPublishButton.hidden
+                    || !pullRequestButton.hidden || !ponyBranchButton.hidden || !settingsButton.hidden
             );
             autocompleteButton.classList.toggle(
                 'scm-toolkit-has-following-control',
-                !codexButton.hidden || !pullRequestButton.hidden || !ponyBranchButton.hidden
-                    || !settingsButton.hidden
+                !codexButton.hidden || !autoPublishButton.hidden || !pullRequestButton.hidden
+                    || !ponyBranchButton.hidden || !settingsButton.hidden
             );
             codexButton.classList.toggle(
                 'scm-toolkit-has-following-control',
-                !pullRequestButton.hidden || !ponyBranchButton.hidden || !settingsButton.hidden
+                !autoPublishButton.hidden || !pullRequestButton.hidden
+                    || !ponyBranchButton.hidden || !settingsButton.hidden
             );
             pullRequestButton.classList.toggle(
                 'scm-toolkit-has-following-control',
@@ -1107,9 +1258,13 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
 
                 const historyProvider = provider.historyProvider.read(reader);
                 const historyItemRef = historyProvider?.historyItemRef.read(reader);
+                const previousBranch = currentBranch;
                 currentBranch = historyItemRef?.id?.startsWith('refs/heads/')
                     ? historyItemRef.name
                     : undefined;
+                if (previousBranch && currentBranch && previousBranch !== currentBranch) {
+                    void maybePublishBranch(currentBranch);
+                }
 
                 const branch = command?.title?.replace(/\$\([^)]+\)/g, '').trim();
                 branchButton.hidden = !settings.branchPicker || !branch;
