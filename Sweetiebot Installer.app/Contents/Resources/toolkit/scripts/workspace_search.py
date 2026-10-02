@@ -37,6 +37,13 @@ def render_package(settings: dict[str, object] | None = None) -> dict[str, objec
     workspace_view = contributes["views"]["scm"][0]
     workspace_view["name"] = str(settings["workspaceSearchLabel"])
     workspace_view["contextualTitle"] = str(settings["workspaceSearchLabel"])
+    properties = contributes["configuration"]["properties"]
+    properties["scmToolkit.workspaceSearch.askOllama"]["default"] = bool(
+        settings["workspaceSearchAskOllama"]
+    )
+    properties["scmToolkit.workspaceSearch.chatModel"]["default"] = str(
+        settings["workspaceSearchChatModel"]
+    )
 
     if settings["workspaceSearchActivityBar"]:
         contributes["viewsContainers"] = {
@@ -44,7 +51,7 @@ def render_package(settings: dict[str, object] | None = None) -> dict[str, objec
                 {
                     "id": STANDALONE_CONTAINER_ID,
                     "title": str(settings["workspaceSearchLabel"]),
-                    "icon": "$(search)",
+                    "icon": "media/efs.svg",
                 }
             ]
         }

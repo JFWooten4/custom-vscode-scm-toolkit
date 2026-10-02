@@ -35,6 +35,18 @@ async function createBranch(repository, { defaultBranch, remote, names }, random
   return branch;
 }
 
+async function publishBranch(repository, { branch, remote }) {
+  if (!branch) throw new Error('No branch was supplied for publishing.');
+  await repository.status();
+  const head = repository.state.HEAD;
+  if (head?.name !== branch) {
+    throw new Error('The active branch changed before it could be published.');
+  }
+  if (head.upstream) return false;
+  await repository.push(remote, branch, true);
+  return true;
+}
+
 async function deleteBranch(repository, { branch, defaultBranch, remote }) {
   if (!branch || branch === defaultBranch) throw new Error(`Cannot delete ${defaultBranch}.`);
   await repository.status();
@@ -52,10 +64,37 @@ async function deleteBranch(repository, { branch, defaultBranch, remote }) {
   return branch;
 }
 
+async function syncBranch(repository, { branch, defaultBranch, remote }) {
+  if (!branch || branch === defaultBranch) throw new Error(`Cannot sync ${defaultBranch} into itself.`);
+  const checkBranch = async () => {
+    await repository.status();
+    if (repository.state.HEAD?.name !== branch) {
+      throw new Error('The active branch changed; select the branch to sync again.');
+    }
+  };
+  await checkBranch();
+  await repository.fetch({ remote });
+  await checkBranch();
+  const previousMessage = repository.inputBox.value;
+  const message = `🔄 Sync branch with ${defaultBranch}`;
+  repository.inputBox.value = message;
+  try {
+    await repository.merge(`${remote}/${defaultBranch}`);
+  } finally {
+    await repository.status();
+    if (!repository.state.mergeChanges.length && repository.inputBox.value === message) {
+      repository.inputBox.value = previousMessage;
+    }
+  }
+  return branch;
+}
+
 function registerBranchCommands(vscode, context) {
   for (const [command, action] of [
     ['scmToolkit.createBranch', createBranch],
-    ['scmToolkit.deleteBranch', deleteBranch]
+    ['scmToolkit.publishBranch', publishBranch],
+    ['scmToolkit.deleteBranch', deleteBranch],
+    ['scmToolkit.syncBranch', syncBranch]
   ]) {
     context.subscriptions.push(vscode.commands.registerCommand(command, async (uri, options) => {
       const extension = vscode.extensions.getExtension('vscode.git');
@@ -73,4 +112,4 @@ function registerBranchCommands(vscode, context) {
   }
 }
 
-module.exports = { createBranch, deleteBranch, registerBranchCommands };
+module.exports = { createBranch, publishBranch, deleteBranch, syncBranch, registerBranchCommands };

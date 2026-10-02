@@ -38,18 +38,23 @@ SETTINGS = (
     Setting("branchPicker", "scm-toolkit.branch-picker", "Branch picker", "Show the current branch in the commit-message row.", "Source control"),
     Setting("ponyBranch", "scm-toolkit.pony-branch", "Random branch button", "Create a freshly synced branch using the configured branch-name pool.", "Source control"),
     Setting("shortPlaceholder", "scm-toolkit.short-placeholder", "Short message placeholder", "Use Message instead of the longer built-in placeholder.", "Source control"),
+    Setting("commitButtonLabel", "scm-toolkit.commit-button-label", "Commit button label", "Text shown on the primary Source Control commit action. Leave blank to keep VS Code's label.", "Source control", "text"),
     Setting("sourceControlLabel", "scm-toolkit.source-control-label", "Source Control label", "Override the Source Control view label shown in the app bar.", "Source control", "text"),
     Setting("filledButtons", "scm-toolkit.filled-buttons", "Accent-filled buttons", "Fill the branch and Commit controls with the theme accent instead of outlining them.", "Source control"),
     Setting("commitAndPush", "scm-toolkit.commit-and-push", "Commit and push checkbox", "Show the control backed by git.postCommitCommand.", "Source control"),
     Setting("branchCleanup", "scm-toolkit.branch-cleanup", "Branch cleanup", "Show guarded local-branch cleanup controls.", "Source control"),
     Setting("autocompleteToggle", "scm-toolkit.autocomplete-toggle", "Autocomplete toggle", "Show the inline-suggestion switch in the SCM message row.", "Source control"),
+    Setting("autoPublishToggle", "scm-toolkit.auto-publish-toggle", "Auto-publish toggle", "Show the cloud control that publishes newly selected local branches to the configured remote.", "Source control"),
     Setting("codexCoauthor", "scm-toolkit.codex-coauthor", "Codex co-author button", "Show the attributed commit action.", "Source control"),
     Setting("codexCommitContext", "scm-toolkit.codex-commit-context", "Local commit messages from Codex text", "When the co-author commit message is blank, use this window's current conversation and staged changes with local Ollama. Codex keeps running.", "Source control"),
+    Setting("codexKeepAwake", "scm-toolkit.codex-keep-awake", "Keep awake while Codex works", "Prevent idle sleep on macOS while Codex tasks are running. The display can still turn off. Enabled by default; VS Code's Codex Keep Awake setting can override it.", "Codex"),
     Setting("hideOutgoingSyncCount", "scm-toolkit.hide-outgoing-sync-count", "Hide outgoing count", "Remove the outgoing commit count from Sync.", "Source control"),
     Setting("blankStateRefresh", "scm-toolkit.blank-state-refresh", "Refresh blank repositories", "Refresh clean repositories so their first new change appears quickly.", "Source control"),
     Setting("graphOpenWorkingFile", "scm-toolkit.graph-open-working-file", "Open graph files from working tree", "Make Source Control Graph Open File target the checked-out working-tree file instead of the selected commit snapshot.", "Source control"),
     Setting("workspaceSearchActivityBar", "scm-toolkit.workspace-search-activity-bar", "Standalone Activity Bar", "Move Workspace Search into its own Activity Bar container instead of the Source Control view.", "Workspace Search"),
     Setting("workspaceSearchLabel", "scm-toolkit.workspace-search-label", "Search label", "Label for the Workspace Search panel and its standalone Activity Bar container.", "Workspace Search", "text"),
+    Setting("workspaceSearchAskOllama", "scm-toolkit.workspace-search-ask-ollama", "Ask Ollama", "Show the Ask Ollama action in EFS search results.", "Workspace Search"),
+    Setting("workspaceSearchChatModel", "scm-toolkit.workspace-search-chat-model", "Ask Ollama chat model", "Ollama chat model used by Ask Ollama. Required when Ask Ollama is enabled.", "Workspace Search", "optional_model"),
     Setting("defaultBranch", "scm-toolkit.default-branch", "Default branch", "Protected branch and pull-request base.", "Repository", "text"),
     Setting("remote", "scm-toolkit.remote", "Git remote", "Remote used for branch checks and repository discovery.", "Repository", "text"),
     Setting("branchNameDisabledPacks", "scm-toolkit.branch-name-disabled-packs", "Name packs", "Enable or disable built-in and imported branch-name packs.", "Branch names", "packs"),
@@ -69,8 +74,9 @@ SETTINGS = (
     Setting("codexSendForeground", "scm-toolkit.codex-send-foreground", "Send button icon", "Hex color for the Codex send icon. Leave blank to use the theme.", "Codex", "color"),
     Setting("codexComposerLabelColor", "scm-toolkit.codex-composer-label-color", "Composer label text", "Hex color for Full access and Work locally controls. Leave blank to use the theme.", "Codex", "color"),
     Setting("codexDropAccent", "scm-toolkit.codex-drop-accent", "Image drop accent", "Hex color for the drop highlight, border, and attachment prompt. Leave blank to use the theme.", "Codex", "color"),
-    Setting("chatgptCustomInstructions", "scm-toolkit.chatgpt-custom-instructions", "Custom instructions", "Keep a local copy of ChatGPT web custom instructions and mirror them into Codex global instructions.", "ChatGPT", "textarea"),
-    Setting("chatgptWebCodexCoauthor", "scm-toolkit.chatgpt-web-codex-coauthor", "Codex Web co-author", "Require the Codex Web co-author trailer on Git commits made through web or GitHub tools.", "ChatGPT"),
+    Setting("chatgptCustomInstructions", "scm-toolkit.chatgpt-custom-instructions", "Codex personalization", "Keep a local copy of your ChatGPT web instructions and mirror them into the global personalization used by the Codex VS Code extension.", "Codex", "textarea"),
+    Setting("codexHideDictation", "scm-toolkit.codex-hide-dictation", "Hide dictation button", "Hide the microphone dictation control in Codex chat.", "Codex"),
+    Setting("chatgptWebCodexCoauthor", "scm-toolkit.chatgpt-web-codex-coauthor", "Codex Web co-author", "Require the Codex Web co-author trailer on Git commits made through web or GitHub tools.", "Codex"),
     Setting("codexHideChatTimestamps", "scm-toolkit.codex-hide-chat-timestamps", "Hide chat timestamps", "Hide standalone date/time separators inside Codex conversations.", "Codex"),
 )
 
@@ -132,6 +138,11 @@ def parse_submission(values: dict[str, list[str]]) -> dict[str, bool | str]:
             continue
 
         value = raw_value.strip()
+        if setting.kind == "optional_model":
+            if "\x00" in value or "\n" in value or "\r" in value:
+                raise ValueError(f"{setting.label} must fit on one line.")
+            parsed[setting.name] = value
+            continue
         if not value:
             raise ValueError(f"{setting.label} cannot be empty.")
         if "\x00" in value or "\n" in value or "\r" in value:
@@ -143,6 +154,8 @@ def parse_submission(values: dict[str, list[str]]) -> dict[str, bool | str]:
             except ValueError as error:
                 raise ValueError(f"{setting.label} must be greater than zero.") from error
         parsed[setting.name] = value
+    if parsed.get("workspaceSearchAskOllama") and not parsed.get("workspaceSearchChatModel"):
+        raise ValueError("Ask Ollama requires a chat model.")
     return parsed
 
 
@@ -272,8 +285,13 @@ def _setting_control(setting: Setting, current: object) -> str:
     attrs = ' type="text"'
     if setting.kind == "number":
         attrs = ' type="number" min="0.1" step="0.1" inputmode="decimal"'
-    list_attr = ' list="ollama-models"' if setting.kind == "model" else ""
-    required = ' placeholder="#43AF49"' if setting.kind == "color" else " required"
+    list_attr = ' list="ollama-models"' if setting.kind in {"model", "optional_model"} else ""
+    if setting.kind == "color":
+        required = ' placeholder="#43AF49"'
+    elif setting.kind == "optional_model":
+        required = ' placeholder="Choose a chat model"'
+    else:
+        required = " required"
     return (
         '<label class="setting field-row">'
         f'<span><strong>{label}</strong><small>{description}</small></span>'
@@ -298,15 +316,15 @@ def render_form(
         )
         if section == "Branch names":
             controls = _pack_controls(current) + controls
-        if section == "ChatGPT":
+        if section == "Codex":
             controls += (
-                '<div class="setting textarea-row"><span><strong>Sync from ChatGPT web</strong>'
-                '<small>Copy the Custom Instructions text from ChatGPT Personalization, then use this button. '
-                'The localhost configurator reads only your clipboard after you click.</small></span>'
-                '<button type="button" id="sync-chatgpt-instructions">Sync from web</button></div>'
+                '<div class="setting textarea-row"><span><strong>Import ChatGPT personalization</strong>'
+                '<small>Copy Custom Instructions from ChatGPT Personalization, then import them here. Saving mirrors '
+                'the text into the global personalization used by the Codex VS Code extension.</small></span>'
+                '<button type="button" id="sync-chatgpt-instructions">Import from ChatGPT</button></div>'
                 '<label class="setting textarea-row"><span><strong>PGP secret key</strong>'
-                '<small>Optional. Imported directly into GnuPG through stdin. The private key is never saved '
-                'to Git config, rendered back into this page, or written to command output.</small></span>'
+                '<small>Optional signing key for Codex and VS Code Git commits. Imported directly into GnuPG through stdin. '
+                'The private key is never saved to Git config, rendered back into this page, or written to command output.</small></span>'
                 '<textarea name="pgpSecretKey" rows="6" spellcheck="false" autocomplete="off" '
                 'placeholder="-----BEGIN PGP PRIVATE KEY BLOCK-----"></textarea></label>'
             )
@@ -354,6 +372,16 @@ if (packSearch) {{
   for (const card of packCards) card.addEventListener('change', updatePacks);
   updatePacks();
 }}
+const askOllamaToggle = document.querySelector('input[name="workspaceSearchAskOllama"]');
+const askOllamaModel = document.querySelector('input[name="workspaceSearchChatModel"]');
+function updateAskOllamaRequirement() {{
+  if (!askOllamaToggle || !askOllamaModel) return;
+  askOllamaModel.required = askOllamaToggle.checked;
+}}
+if (askOllamaToggle && askOllamaModel) {{
+  askOllamaToggle.addEventListener('change', updateAskOllamaRequirement);
+  updateAskOllamaRequirement();
+}}
 const syncButton = document.getElementById('sync-chatgpt-instructions');
 if (syncButton) {{
   syncButton.addEventListener('click', async () => {{
@@ -364,7 +392,7 @@ if (syncButton) {{
       if (!value.trim()) throw new Error('Clipboard is empty.');
       target.value = value.trim();
       target.dispatchEvent(new Event('input', {{ bubbles: true }}));
-      syncButton.textContent = 'Synced';
+      syncButton.textContent = 'Imported';
     }} catch (error) {{
       syncButton.textContent = 'Copy instructions, then retry';
       syncButton.title = String(error);

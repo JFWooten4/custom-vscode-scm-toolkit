@@ -1,19 +1,15 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const {
-  createBranch,
-  publishBranch,
-  deleteBranch,
-  registerBranchCommands
-} = require('../workspace-search-extension/branch_actions');
+const { createBranch, publishBranch, deleteBranch, syncBranch, registerBranchCommands } = require('../workspace-search-extension/branch_actions');
 
 const options = { defaultBranch: 'main', remote: 'origin', names: ['used', 'remote-used', 'fresh'] };
 
 function fixture() {
   const calls = [];
   const repository = {
-    state: { HEAD: { name: 'topic' } },
+    state: { HEAD: { name: 'topic' }, mergeChanges: [] },
+    inputBox: { value: 'Existing draft' },
     async status() { calls.push(['status']); },
     async checkout(name) {
       calls.push(['checkout', name]);
@@ -22,6 +18,7 @@ function fixture() {
     async pull() { calls.push(['pull']); },
     async push(...args) { calls.push(['push', ...args]); },
     async fetch(opts) { calls.push(['fetch', opts]); },
+    async merge(ref) { calls.push(['merge', ref]); },
     async getRefs(opts) {
       calls.push(['refs', opts]);
       return [{ name: 'used' }, { name: 'origin/remote-used' }, { name: 'origin/main' }];
@@ -33,6 +30,42 @@ function fixture() {
 }
 
 async function run() {
+  {
+    const { repository, calls } = fixture();
+    assert.equal(await syncBranch(repository, { ...options, branch: 'topic' }), 'topic');
+    assert.deepEqual(calls, [['status'], ['fetch', { remote: 'origin' }], ['status'], ['merge', 'origin/main'], ['status']]);
+    assert.equal(repository.inputBox.value, 'Existing draft');
+  }
+  for (const branch of ['main', 'different']) {
+    const { repository, calls } = fixture();
+    await assert.rejects(syncBranch(repository, { ...options, branch }), /Cannot sync|active branch changed/);
+    assert(!calls.some(call => call[0] === 'fetch' || call[0] === 'merge'));
+  }
+  {
+    const { repository, calls } = fixture();
+    repository.fetch = async () => { repository.state.HEAD.name = 'changed'; };
+    await assert.rejects(syncBranch(repository, { ...options, branch: 'topic' }), /active branch changed/);
+    assert(!calls.some(call => call[0] === 'merge'));
+  }
+  for (const conflict of [false, true]) {
+    const { repository } = fixture();
+    repository.merge = async () => {
+      if (conflict) repository.state.mergeChanges.push({});
+      throw new Error('merge failed');
+    };
+    await assert.rejects(syncBranch(repository, { ...options, branch: 'topic' }), /merge failed/);
+    assert.equal(repository.inputBox.value, conflict ? '🔄 Sync branch with main' : 'Existing draft');
+  }
+  {
+    const { repository } = fixture();
+    repository.fetch = async () => { throw new Error('fetch failed'); };
+    await assert.rejects(syncBranch(repository, { ...options, branch: 'topic' }), /fetch failed/);
+    assert.equal(repository.inputBox.value, 'Existing draft');
+    repository.fetch = async () => {};
+    repository.merge = async () => { repository.inputBox.value = 'Edited during sync'; };
+    await syncBranch(repository, { ...options, branch: 'topic' });
+    assert.equal(repository.inputBox.value, 'Edited during sync');
+  }
   {
     const { repository, calls } = fixture();
     assert.equal(await createBranch(repository, options, () => 0), 'fresh');
@@ -132,7 +165,7 @@ async function run() {
     };
     const context = { subscriptions: [] };
     registerBranchCommands(vscode, context);
-    assert.equal(context.subscriptions.length, 3);
+    assert.equal(context.subscriptions.length, 4);
     assert.equal(await commands.get('scmToolkit.createBranch')(uri, options), 'fresh');
     assert.equal(await commands.get('scmToolkit.createBranch')({ ...uri }, options), 'fresh');
     assert.equal(await commands.get('scmToolkit.createBranch')({ rootUri: uri }, options), 'fresh');
@@ -141,6 +174,9 @@ async function run() {
       branch: 'topic', remote: 'origin'
     }), true);
     repository.state.HEAD = { name: 'topic' };
+    assert.equal(await commands.get('scmToolkit.syncBranch')({ rootUri: uri }, {
+      ...options, branch: 'topic'
+    }), 'topic');
     assert.equal(await commands.get('scmToolkit.deleteBranch')({ rootUri: uri }, {
       ...options, branch: 'topic'
     }), 'topic');

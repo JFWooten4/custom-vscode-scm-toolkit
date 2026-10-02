@@ -856,7 +856,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
 
     const refreshSyncBranch = () => {
         const branch = currentBranch;
-        const repository = currentRepositoryArgument;
+        const repository = currentRepositoryUri;
         syncButton.hidden = !branch;
         syncButton.disabled =
             pending
@@ -864,8 +864,6 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             || creatingPullRequest
             || creatingPonyBranch
             || !repository
-            || typeof repository.fetch !== 'function'
-            || typeof repository.merge !== 'function'
             || branch === settings.defaultBranch;
 
         const description = branch === settings.defaultBranch
@@ -879,15 +877,11 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         event.stopPropagation();
 
         const branch = currentBranch;
-        const repository = currentRepositoryArgument;
-        const input = currentInput;
+        const repository = currentRepositoryUri;
         if (
             !branch
             || branch === settings.defaultBranch
             || !repository
-            || !input
-            || typeof repository.fetch !== 'function'
-            || typeof repository.merge !== 'function'
             || pending
             || deletingBranch
             || creatingPullRequest
@@ -900,15 +894,12 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         pushCheckbox.disabled = true;
         refreshBranchControls();
 
-        const previousMessage = input.value ?? '';
         try {
-            await repository.fetch({ remote: settings.remote });
-            input.value = '🔄 Sync brach to main';
-            await repository.merge(`${settings.remote}/${settings.defaultBranch}`);
-
-            if (input.value === '🔄 Sync brach to main') {
-                input.value = previousMessage;
-            }
+            await commands.executeCommand('scmToolkit.syncBranch', repository, {
+                branch,
+                defaultBranch: settings.defaultBranch,
+                remote: settings.remote,
+            });
             notifications.info(`Synced ${branch} with ${settings.defaultBranch}.`);
         } catch (error) {
             // Leave merge conflicts untouched and keep the sync message for the manual commit.
