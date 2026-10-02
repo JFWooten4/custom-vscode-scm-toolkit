@@ -70,6 +70,7 @@ SETTINGS = (
     Setting("chatgptCustomInstructions", "scm-toolkit.chatgpt-custom-instructions", "Custom instructions", "Keep a local copy of ChatGPT web custom instructions and mirror them into Codex global instructions.", "ChatGPT", "textarea"),
     Setting("chatgptWebCodexCoauthor", "scm-toolkit.chatgpt-web-codex-coauthor", "Codex Web co-author", "Require the Codex Web co-author trailer on Git commits made through web or GitHub tools.", "ChatGPT"),
     Setting("codexHideChatTimestamps", "scm-toolkit.codex-hide-chat-timestamps", "Hide chat timestamps", "Hide standalone date/time separators inside Codex conversations.", "Codex"),
+    Setting("codexHideDictation", "scm-toolkit.codex-hide-dictation", "Hide dictation button", "Hide the microphone dictation control in Codex chat.", "Codex"),
 )
 
 

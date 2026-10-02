@@ -20,6 +20,8 @@ CODEX_PROMOTIONS_START = '\n/* scm-toolkit-codex-promotions:start */\n'
 CODEX_PROMOTIONS_END = '\n/* scm-toolkit-codex-promotions:end */\n'
 CODEX_TIMESTAMPS_START = '\n/* scm-toolkit-codex-timestamps:start */\n'
 CODEX_TIMESTAMPS_END = '\n/* scm-toolkit-codex-timestamps:end */\n'
+CODEX_DICTATION_START = '\n/* scm-toolkit-codex-dictation:start */\n'
+CODEX_DICTATION_END = '\n/* scm-toolkit-codex-dictation:end */\n'
 
 def ai_wrapper_path():
     configured = os.environ.get(
@@ -312,6 +314,16 @@ def strip_codex_timestamps_payload(text):
     return before + after
 
 
+def strip_codex_dictation_payload(text):
+    if CODEX_DICTATION_START not in text:
+        return text
+    if text.count(CODEX_DICTATION_START) != 1 or text.count(CODEX_DICTATION_END) != 1:
+        raise ValueError("Unexpected Codex dictation patch markers; refusing to modify this file.")
+    before, rest = text.split(CODEX_DICTATION_START, 1)
+    _, after = rest.split(CODEX_DICTATION_END, 1)
+    return before + after
+
+
 def codex_countdown_edit(js):
     matches = []
     pattern = re.compile(
@@ -348,7 +360,16 @@ def codex_countdown_edit(js):
     return original, replacement
 
 
-def transform_codex(js, enabled=False, hide_promotions=False, hide_timestamps=False, remove=False):
+def transform_codex(
+    js,
+    enabled=False,
+    hide_promotions=False,
+    hide_timestamps=False,
+    hide_dictation=False,
+    remove=False,
+):
+    if CODEX_DICTATION_START in js:
+        js = strip_codex_dictation_payload(js)
     if CODEX_TIMESTAMPS_START in js:
         js = strip_codex_timestamps_payload(js)
     if CODEX_PROMOTIONS_START in js:
@@ -395,6 +416,13 @@ def transform_codex(js, enabled=False, hide_promotions=False, hide_timestamps=Fa
             CODEX_TIMESTAMPS_START
             + (HERE / "codex-hide-chat-timestamps.js").read_text()
             + CODEX_TIMESTAMPS_END
+        )
+
+    if not remove and hide_dictation:
+        js += (
+            CODEX_DICTATION_START
+            + (HERE / "codex-hide-dictation.js").read_text()
+            + CODEX_DICTATION_END
         )
 
     return js
@@ -460,7 +488,12 @@ def application_paths(app_path):
 
 
 def codex_bundle_matches(text):
-    if CODEX_START in text or CODEX_PROMOTIONS_START in text or CODEX_TIMESTAMPS_START in text:
+    if (
+        CODEX_START in text
+        or CODEX_PROMOTIONS_START in text
+        or CODEX_TIMESTAMPS_START in text
+        or CODEX_DICTATION_START in text
+    ):
         return True
 
     if "You’re out of Codex messages" in text:
@@ -488,7 +521,12 @@ def codex_bundle_path(extension_path=None):
         patched = []
         for path in assets.glob("*.js"):
             text = path.read_text()
-            if CODEX_START in text or CODEX_PROMOTIONS_START in text or CODEX_TIMESTAMPS_START in text:
+            if (
+        CODEX_START in text
+        or CODEX_PROMOTIONS_START in text
+        or CODEX_TIMESTAMPS_START in text
+        or CODEX_DICTATION_START in text
+    ):
                 patched.append(path)
         if len(patched) == 1:
             return patched[0]
@@ -607,6 +645,7 @@ def main():
         settings["codexUsageResetCountdown"]
         or settings["codexHidePromotions"]
         or settings["codexHideChatTimestamps"]
+        or settings["codexHideDictation"]
         or args.uninstall
     )
     if codex_path is None and should_find_codex:
@@ -622,6 +661,7 @@ def main():
                 enabled=settings["codexUsageResetCountdown"],
                 hide_promotions=settings["codexHidePromotions"],
                 hide_timestamps=settings["codexHideChatTimestamps"],
+                hide_dictation=settings["codexHideDictation"],
                 remove=args.uninstall,
             )
         except ValueError as error:
@@ -629,6 +669,8 @@ def main():
                 args.codex_only
                 or CODEX_START in codex_old
                 or CODEX_PROMOTIONS_START in codex_old
+                or CODEX_TIMESTAMPS_START in codex_old
+                or CODEX_DICTATION_START in codex_old
             ):
                 raise
             print(f"Warning: {error} Skipping optional Codex customizations.")
