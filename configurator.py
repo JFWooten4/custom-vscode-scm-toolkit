@@ -15,6 +15,7 @@ import webbrowser
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from toolkit_settings import load_settings
+from codex_colors import validate_color
 from branch_names import load_catalog, merge_catalog, parse_imported_packs, parse_name_list, parse_pack_id_list
 from chatgpt_integration import import_pgp_secret_key, sync_codex_instructions
 
@@ -63,6 +64,9 @@ SETTINGS = (
     Setting("mcpPrServer", "scm-toolkit.mcp-pr-server", "MCP server", "Configured VS Code MCP server name.", "Pull requests", "text"),
     Setting("mcpPrTool", "scm-toolkit.mcp-pr-tool", "MCP tool", "Tool invoked to create a pull request.", "Pull requests", "text"),
     Setting("codexUsageResetCountdown", "scm-toolkit.codex-usage-reset-countdown", "Codex reset countdown", "Show the live usage-reset countdown in Codex limit banners.", "Codex"),
+    Setting("codexSendBackground", "scm-toolkit.codex-send-background", "Send button background", "Hex color for the Codex send button. Leave blank to use the theme.", "Codex", "color"),
+    Setting("codexSendForeground", "scm-toolkit.codex-send-foreground", "Send button icon", "Hex color for the Codex send icon. Leave blank to use the theme.", "Codex", "color"),
+    Setting("codexComposerLabelColor", "scm-toolkit.codex-composer-label-color", "Composer label text", "Hex color for Full access and Work locally controls. Leave blank to use the theme.", "Codex", "color"),
     Setting("chatgptCustomInstructions", "scm-toolkit.chatgpt-custom-instructions", "Custom instructions", "Keep a local copy of ChatGPT web custom instructions and mirror them into Codex global instructions.", "ChatGPT", "textarea"),
     Setting("chatgptWebCodexCoauthor", "scm-toolkit.chatgpt-web-codex-coauthor", "Codex Web co-author", "Require the Codex Web co-author trailer on Git commits made through web or GitHub tools.", "ChatGPT"),
     Setting("codexHideChatTimestamps", "scm-toolkit.codex-hide-chat-timestamps", "Hide chat timestamps", "Hide standalone date/time separators inside Codex conversations.", "Codex"),
@@ -116,6 +120,9 @@ def parse_submission(values: dict[str, list[str]]) -> dict[str, bool | str]:
             continue
 
         raw_value = values.get(setting.name, [""])[0]
+        if setting.kind == "color":
+            parsed[setting.name] = validate_color(raw_value)
+            continue
         if setting.kind == "textarea":
             if "\x00" in raw_value:
                 raise ValueError(f"{setting.label} contains an invalid null byte.")
@@ -264,10 +271,11 @@ def _setting_control(setting: Setting, current: object) -> str:
     if setting.kind == "number":
         attrs = ' type="number" min="0.1" step="0.1" inputmode="decimal"'
     list_attr = ' list="ollama-models"' if setting.kind == "model" else ""
+    required = ' placeholder="#43AF49"' if setting.kind == "color" else " required"
     return (
         '<label class="setting field-row">'
         f'<span><strong>{label}</strong><small>{description}</small></span>'
-        f'<input{attrs} name="{name}" value="{value}"{list_attr} required></label>'
+        f'<input{attrs} name="{name}" value="{value}"{list_attr}{required}></label>'
     )
 
 

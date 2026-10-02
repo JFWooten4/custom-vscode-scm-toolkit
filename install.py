@@ -6,6 +6,7 @@ import json
 import os
 import re
 import workspace_search
+import codex_colors
 from pathlib import Path
 from toolkit_settings import DEFAULT_SETTINGS, load_settings, read_git_bool, read_git_string
 from branch_names import resolve_runtime_settings
@@ -590,6 +591,16 @@ def main():
             settings=settings,
         )
     )
+
+    color_path = codex_colors.stylesheet_path(args.codex_extension)
+    if color_path is not None:
+        color_old = color_path.read_text()
+        color_new = codex_colors.transform(color_old, settings, remove=args.uninstall)
+        paths.append(color_path)
+        old.append(color_old)
+        new.append(color_new)
+    elif any(settings.get(key) for key in codex_colors.COLOR_SETTINGS):
+        raise ValueError("The installed Codex composer stylesheet could not be identified.")
 
     codex_path = codex_bundle_path(args.codex_extension)
     should_find_codex = (

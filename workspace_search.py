@@ -62,6 +62,7 @@ def source_files() -> dict[Path, Path]:
     }
     files[Path("configurator.py")] = HERE / "configurator.py"
     files[Path("toolkit_settings.py")] = HERE / "toolkit_settings.py"
+    files[Path("codex_colors.py")] = HERE / "codex_colors.py"
     files[Path("branch_names.py")] = HERE / "branch_names.py"
     files[Path("branch_name_packs.json")] = HERE / "branch_name_packs.json"
     files[Path("chatgpt_integration.py")] = HERE / "chatgpt_integration.py"

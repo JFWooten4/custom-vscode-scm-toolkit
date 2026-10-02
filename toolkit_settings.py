@@ -41,6 +41,9 @@ DEFAULT_SETTINGS = {
     "chatgptCustomInstructions": "",
     "chatgptWebCodexCoauthor": True,
     "codexHideChatTimestamps": False,
+    "codexSendBackground": "",
+    "codexSendForeground": "",
+    "codexComposerLabelColor": "",
     "defaultBranch": "main",
     "remote": "origin",
 }
@@ -126,6 +129,9 @@ SETTING_KEYS = {
     "chatgptCustomInstructions": "scm-toolkit.chatgpt-custom-instructions",
     "chatgptWebCodexCoauthor": "scm-toolkit.chatgpt-web-codex-coauthor",
     "codexHideChatTimestamps": "scm-toolkit.codex-hide-chat-timestamps",
+    "codexSendBackground": "scm-toolkit.codex-send-background",
+    "codexSendForeground": "scm-toolkit.codex-send-foreground",
+    "codexComposerLabelColor": "scm-toolkit.codex-composer-label-color",
     "defaultBranch": "scm-toolkit.default-branch",
     "remote": "scm-toolkit.remote",
 }

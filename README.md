@@ -330,6 +330,20 @@ python3 install.py
 
 The environment variables `SCM_TOOLKIT_AI_MODEL`, `SCM_TOOLKIT_AI_LOW_MEMORY_MODEL`, and `SCM_TOOLKIT_AI_LOW_MEMORY_GIB` can temporarily override the corresponding Git-config values.
 
+### Codex composer colors
+
+The send button and composer labels have separate color controls in the local
+configurator's **Codex** section. Set `scm-toolkit.codex-send-background` for the
+button background, `scm-toolkit.codex-send-foreground` for its icon, and
+`scm-toolkit.codex-composer-label-color` for the **Full access** and **Work locally**
+controls. Use a hexadecimal color such as Studio green `#43AF49`; blank values
+restore the theme. All three settings default to blank.
+
+Run `python3 install.py` after changing them and reopen the VS Code window.
+These overrides apply only to the Codex composer controls, independently of
+VS Code's general foreground color. Codex extension updates can replace the
+stylesheet, so rerun the installer after updating the extension.
+
 ### Codex usage-reset countdown
 
 When `codex-usage-reset-countdown` is enabled, usage-limit banners in the installed
