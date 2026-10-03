@@ -52,6 +52,8 @@ SETTINGS = (
     Setting("hideOutgoingSyncCount", "scm-toolkit.hide-outgoing-sync-count", "Hide outgoing count", "Remove the outgoing commit count from Sync.", "Source control"),
     Setting("blankStateRefresh", "scm-toolkit.blank-state-refresh", "Refresh blank repositories", "Refresh clean repositories so their first new change appears quickly.", "Source control"),
     Setting("graphOpenWorkingFile", "scm-toolkit.graph-open-working-file", "Open graph files from working tree", "Make Source Control Graph Open File target the checked-out working-tree file instead of the selected commit snapshot.", "Source control"),
+    Setting("cmdClickCloseOthers", "scm-toolkit.cmd-click-close-others", "Cmd-click closes other tabs", "Hold Command while clicking a tab\'s X to keep that tab open and close the other editors in its group.", "Browser"),
+    Setting("browserChatgptHome", "scm-toolkit.browser-chatgpt-home", "ChatGPT for blank browser tabs", "Open blank Integrated Browser tabs at https://chatgpt.com/ while preserving explicit URLs.", "Browser"),
     Setting("workspaceSearchActivityBar", "scm-toolkit.workspace-search-activity-bar", "Standalone Activity Bar", "Move Workspace Search into its own Activity Bar container instead of the Source Control view.", "Workspace Search"),
     Setting("workspaceSearchLabel", "scm-toolkit.workspace-search-label", "Search label", "Label for the Workspace Search panel and its standalone Activity Bar container.", "Workspace Search", "text"),
     Setting("workspaceSearchEmbeddingModel", "scm-toolkit.workspace-search-embedding-model", "Search embedding model", "Turns workspace passages into searchable meaning. Choose an embedding model, separate from chat models.", "Workspace Search", "model"),
