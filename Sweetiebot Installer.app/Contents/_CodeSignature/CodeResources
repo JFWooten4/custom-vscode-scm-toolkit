@@ -78,7 +78,7 @@
 		</data>
 		<key>Resources/toolkit/scripts/build_installer_app.py</key>
 		<data>
-		XgB24ks9FlDxhkPUT43MSWiCehQ=
+		kIzgKHza3htX59QPKJsbXmhAKxc=
 		</data>
 		<key>Resources/toolkit/scripts/chatgpt_integration.py</key>
 		<data>
@@ -108,9 +108,13 @@
 		<data>
 		k4Ov7Ty8ePH2srT8GSorvqw5lJs=
 		</data>
+		<key>Resources/toolkit/scripts/github_pr.py</key>
+		<data>
+		TPpmm0dogPaedO04KOPlo3FqXCA=
+		</data>
 		<key>Resources/toolkit/scripts/install.py</key>
 		<data>
-		6Mzo4z2Di1tXgyWp56ESt7NZBj8=
+		e/E9+hWU9Ip/iV6rWevMVnKHZnU=
 		</data>
 		<key>Resources/toolkit/scripts/local_codex_commit.py</key>
 		<data>
@@ -120,13 +124,17 @@
 		<data>
 		igRXx3tAcv5NLw9BB3pQNrDhjNA=
 		</data>
+		<key>Resources/toolkit/scripts/prune_merged_branches.py</key>
+		<data>
+		SVZKY5w6diX57Jf4U+YonAL2u/c=
+		</data>
 		<key>Resources/toolkit/scripts/toolkit_settings.py</key>
 		<data>
 		Oyx2FMwPt7gV7FpU7P7Yn34Fqk8=
 		</data>
 		<key>Resources/toolkit/scripts/workspace_search.py</key>
 		<data>
-		A2GrNBnaf4SkIXYqhPoLhq8Vkvs=
+		pxQ4kje5Pbo2nHJ8OXguVjfYFSY=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/THIRD_PARTY_NOTICES.md</key>
 		<data>
@@ -135,6 +143,10 @@
 		<key>Resources/toolkit/workspace-search-extension/branch_actions.js</key>
 		<data>
 		F76SzoIyK9nL5hRMWW4WGCwG8xM=
+		</data>
+		<key>Resources/toolkit/workspace-search-extension/branch_maintenance.js</key>
+		<data>
+		db01eUP0wwh/KlVmq+JWIiKUVCg=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/codex_commit.js</key>
 		<data>
@@ -146,7 +158,7 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/extension.js</key>
 		<data>
-		xUHLx3VVTogTLGlQCEFC9mVJpDM=
+		AY4V/2usVxR1Qzu3h3GqohohbhU=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/extract.js</key>
 		<data>
@@ -162,11 +174,11 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/package.json</key>
 		<data>
-		pnn4GFJskuzDfj9koIIJ01GMZaM=
+		4k4aPpGUykcVVzMVJe6vc0MzCLc=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/pull_request.js</key>
 		<data>
-		pcXboK61OXc/xFbUeyw27XaCSxw=
+		YruQ/lWxiqg/x6o0b6MJJ2HGwFg=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/search_index.js</key>
 		<data>
@@ -381,11 +393,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			XgB24ks9FlDxhkPUT43MSWiCehQ=
+			kIzgKHza3htX59QPKJsbXmhAKxc=
 			</data>
 			<key>hash2</key>
 			<data>
-			NkRAEXWcvxlYytTmCeRKsCSR9mMJegxoZLPqz/c7UxQ=
+			K40zhLJiJOmlJUZUtPZzRItTC6IJLOk5J0XmaTsVTNg=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/chatgpt_integration.py</key>
@@ -465,15 +477,26 @@
 			SicA5p7lCrzWlG1hlP+J3AcrUX93KC313kYuxYSox9I=
 			</data>
 		</dict>
+		<key>Resources/toolkit/scripts/github_pr.py</key>
+		<dict>
+			<key>hash</key>
+			<data>
+			TPpmm0dogPaedO04KOPlo3FqXCA=
+			</data>
+			<key>hash2</key>
+			<data>
+			z+HuyFLMfLvPfjbL4L6IKhp/6o7/mI1ebVQ9LavO12Q=
+			</data>
+		</dict>
 		<key>Resources/toolkit/scripts/install.py</key>
 		<dict>
 			<key>hash</key>
 			<data>
-			6Mzo4z2Di1tXgyWp56ESt7NZBj8=
+			e/E9+hWU9Ip/iV6rWevMVnKHZnU=
 			</data>
 			<key>hash2</key>
 			<data>
-			UiYfnj5tW+bQBLpcsWY9ZehqBKOk/DdgWzQOwce4Mcw=
+			YhPWyHxL2HZsRSrvRBjv8iO8gdDnOY1dmF1s60hsE7E=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/local_codex_commit.py</key>
@@ -498,6 +521,17 @@
 			Z5oxEuA04fnlCsXsxdW5H9U0rkaOqKfXanv+MZBpFSI=
 			</data>
 		</dict>
+		<key>Resources/toolkit/scripts/prune_merged_branches.py</key>
+		<dict>
+			<key>hash</key>
+			<data>
+			SVZKY5w6diX57Jf4U+YonAL2u/c=
+			</data>
+			<key>hash2</key>
+			<data>
+			aFpKlQnwhoNnkH5Vdxr5jjagZxfwc05CJeCiopyO8fo=
+			</data>
+		</dict>
 		<key>Resources/toolkit/scripts/toolkit_settings.py</key>
 		<dict>
 			<key>hash</key>
@@ -513,11 +547,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			A2GrNBnaf4SkIXYqhPoLhq8Vkvs=
+			pxQ4kje5Pbo2nHJ8OXguVjfYFSY=
 			</data>
 			<key>hash2</key>
 			<data>
-			OxjSFIzpMQcGdaXPnGugN9IZ0Rn51ePRiWdg86WqN4U=
+			qcxTeB1W10EVAYIik/J9G1ht/MeKhB5/SL2hrxkLEiA=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/THIRD_PARTY_NOTICES.md</key>
@@ -540,6 +574,17 @@
 			<key>hash2</key>
 			<data>
 			pxsryBzFR8AMKGlq5I2FpSsEPGlcx5VXp0bGeh6qGVI=
+			</data>
+		</dict>
+		<key>Resources/toolkit/workspace-search-extension/branch_maintenance.js</key>
+		<dict>
+			<key>hash</key>
+			<data>
+			db01eUP0wwh/KlVmq+JWIiKUVCg=
+			</data>
+			<key>hash2</key>
+			<data>
+			0+lu923l2Ap7ffvTxCAY89X0khUca3iYE+cl6ZpZ86M=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/codex_commit.js</key>
@@ -568,11 +613,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			xUHLx3VVTogTLGlQCEFC9mVJpDM=
+			AY4V/2usVxR1Qzu3h3GqohohbhU=
 			</data>
 			<key>hash2</key>
 			<data>
-			lxD6yIPZpUOysbsN1sAHRT/laT5/0BSSQ4W1laMbgXw=
+			zeBc65jqyQ2RENYeAyvSBbztpdebbyNnqIv1vBDKda4=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/extract.js</key>
@@ -612,22 +657,22 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			pnn4GFJskuzDfj9koIIJ01GMZaM=
+			4k4aPpGUykcVVzMVJe6vc0MzCLc=
 			</data>
 			<key>hash2</key>
 			<data>
-			qjNRCcPAi6iTsubS8XdK4VY8/uoStSw67XtW9nysGpQ=
+			0XyB+aPtlkUZgIjERfv6x9ozvxOPMeX38HTpURYxhow=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/pull_request.js</key>
 		<dict>
 			<key>hash</key>
 			<data>
-			pcXboK61OXc/xFbUeyw27XaCSxw=
+			YruQ/lWxiqg/x6o0b6MJJ2HGwFg=
 			</data>
 			<key>hash2</key>
 			<data>
-			OhPB3qPUNk4R8I90FDIMDcRCyrQXoPDtUSnmyfnu4ig=
+			QFpNJJvzBHXURVe0IUb8a/v5N/nGgZ2lpOn5kB+6alI=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/search_index.js</key>
