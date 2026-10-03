@@ -121,7 +121,7 @@ Run the configurator without installing anything:
 python3 scripts/configure.py
 ```
 
-It opens an app-like settings page in the default browser, prefilled with the current Git configuration. The page includes every toolkit switch plus the Ollama model choices and low-memory threshold. The **Branch names** section lets you toggle individual packs, add custom names, and paste third-party packs as JSON. If Ollama is running on `127.0.0.1:11434`, locally installed models appear as suggestions; model tags can still be entered manually when it is offline.
+It opens an app-like settings page in the default browser, prefilled with the current Git configuration. The page includes every toolkit switch plus the Ollama model choices and low-memory threshold. Changes save automatically to global Git config after you edit a setting, with an inline status showing whether the latest values were saved. A dedicated **Startup** section exposes **Open Sweetie Bot on startup**; when opened through VS Code, that checkbox also updates the real `scmToolkit.openPanelOnStartup` global user setting. The **Branch names** section lets you toggle individual packs, add custom names, and paste third-party packs as JSON. If Ollama is running on `127.0.0.1:11434`, locally installed models appear as suggestions; model tags can still be entered manually when it is offline. PGP secret-key import remains tied to the final action instead of autosaving private key material while it is being entered.
 
 After installation, the gear at the right end of the Source Control message row opens the same local settings page directly. The companion extension starts the loopback configurator and opens it in VS Code’s native Integrated Browser in the current window. Clicking the gear again focuses the existing settings tab. This requires a VS Code version with the Integrated Browser; older versions show an update message. The repository checkout and manual URL entry are not required.
 
@@ -136,6 +136,7 @@ git config --global scm-toolkit.branch-picker true
 git config --global scm-toolkit.pony-branch true
 git config --global scm-toolkit.short-placeholder true
 git config --global scm-toolkit.source-control-label "Sweetie Bot"
+git config --global scm-toolkit.open-panel-on-startup true
 git config --global scm-toolkit.workspace-search-activity-bar false
 git config --global scm-toolkit.workspace-search-label EFS
 git config --global scm-toolkit.filled-buttons false
@@ -180,6 +181,7 @@ The equivalent `~/.gitconfig` block is:
     pony-branch = true
     short-placeholder = true
     source-control-label = Sweetie Bot
+    open-panel-on-startup = true
     workspace-search-activity-bar = false
     workspace-search-label = EFS
     filled-buttons = false

@@ -10,8 +10,13 @@ async function run() {
   const vscode = {
     ConfigurationTarget: { Global: 1 },
     workspace: { getConfiguration(root) {
-      assert.equal(root, 'scmToolkit.workspaceSearch');
-      return { async update(key, value, target) { updates.push({key, value, target}); } };
+      return {
+        get(key, fallback) {
+          if (root === 'scmToolkit' && key === 'openPanelOnStartup') return false;
+          return fallback;
+        },
+        async update(key, value, target) { updates.push({root, key, value, target}); }
+      };
     } },
     Uri: { joinPath: (_, file) => ({ fsPath: `/extension/${file}` }) },
     window: { showErrorMessage: message => errors.push(message) },
@@ -30,7 +35,9 @@ async function run() {
       if (name !== 'child_process') return {};
       return { spawn(executable, args, options) {
         assert.equal(executable, process.platform === 'win32' ? 'python' : 'python3');
-        assert.deepEqual(Array.from(args), ['/extension/configurator.py', '--no-browser']);
+        assert.deepEqual(Array.from(args), [
+          '/extension/configurator.py', '--no-browser', '--open-panel-on-startup', 'false'
+        ]);
         assert.equal(options.cwd, '/extension');
         assert.equal(options.stdio[1], 'pipe');
         const child = new EventEmitter();
@@ -72,10 +79,18 @@ async function run() {
   assert.equal(calls.length, 2, 'Repeated click must refocus the native browser');
   assert.equal(children.length, 1);
   const saved = {embeddingModel: 'custom:embed', chatModel: 'custom:chat', askOllama: true};
-  children[0].stdout.emit('data', JSON.stringify({workspaceSearch: saved}) + '\n');
+  children[0].stdout.emit('data', JSON.stringify({
+    workspaceSearch: saved,
+    vscodeSettings: {openPanelOnStartup: true}
+  }) + '\n');
   await tick();
-  assert.deepEqual(updates, Object.entries(saved).map(([key, value]) => ({key, value, target: 1})));
-  assert.equal(calls.length, 2, 'Saving models must apply settings without reopening the browser');
+  assert.deepEqual(updates, [
+    ...Object.entries(saved).map(([key, value]) => ({
+      root: 'scmToolkit.workspaceSearch', key, value, target: 1
+    })),
+    {root: 'scmToolkit', key: 'openPanelOnStartup', value: true, target: 1}
+  ]);
+  assert.equal(calls.length, 2, 'Saving settings must apply them without reopening the browser');
   children[0].exitCode = 0;
   children[0].emit('exit', 0);
   await open();
