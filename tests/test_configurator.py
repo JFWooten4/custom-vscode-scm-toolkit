@@ -32,6 +32,13 @@ def form_values():
 
 
 class SubmissionTests(unittest.TestCase):
+    def test_post_commit_spellcheck_toggle_defaults_off_and_saves_on(self):
+        values = form_values()
+        self.assertFalse(install.DEFAULT_SETTINGS["postCommitSpellcheck"])
+        self.assertFalse(configurator.parse_submission(values)["postCommitSpellcheck"])
+        values["postCommitSpellcheck"] = ["true"]
+        self.assertTrue(configurator.parse_submission(values)["postCommitSpellcheck"])
+
     def test_parses_optional_composer_colors(self):
         values = form_values()
         values['codexSendBackground'] = ['#43AF49']

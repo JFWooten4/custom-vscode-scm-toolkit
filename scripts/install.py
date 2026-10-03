@@ -37,27 +37,31 @@ def ai_wrapper_path():
 
 def sync_ai_wrapper(remove=False, check=False, destination=None):
     destination = Path(destination) if destination is not None else ai_wrapper_path()
-    source = HERE / "ai_commit.py"
-
-    if remove:
-        changed = destination.exists() or destination.is_symlink()
-        if changed and not check:
-            destination.unlink()
-        return changed
-
-    if destination.is_symlink():
-        raise RuntimeError(f"Refusing to overwrite symlinked AI wrapper: {destination}")
-
-    expected = source.read_bytes()
-    current = destination.read_bytes() if destination.exists() else None
-    executable = destination.exists() and bool(destination.stat().st_mode & 0o111)
-    changed = current != expected or not executable
-
-    if changed and not check:
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_bytes(expected)
-        destination.chmod(0o755)
-
+    files = [
+        (HERE / "ai_commit.py", destination),
+        (HERE / "post_commit_spellcheck.py", destination.with_name(destination.name + "-spellcheck.py")),
+    ]
+    # Validate both destinations before changing either one.
+    for _, target in files:
+        if not remove and target.is_symlink():
+            raise RuntimeError(f"Refusing to overwrite symlinked AI wrapper: {target}")
+    changed = False
+    for source, target in files:
+        if remove:
+            exists = target.exists() or target.is_symlink()
+            changed |= exists
+            if exists and not check:
+                target.unlink()
+            continue
+        expected = source.read_bytes()
+        current = target.read_bytes() if target.exists() else None
+        executable = target.exists() and bool(target.stat().st_mode & 0o111)
+        needs_update = current != expected or not executable
+        changed |= needs_update
+        if needs_update and not check:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(expected)
+            target.chmod(0o755)
     return changed
 
 

@@ -66,7 +66,7 @@
 		</data>
 		<key>Resources/toolkit/scripts/ai_commit.py</key>
 		<data>
-		OVsNVkNoU38U5jZRTGu3cZ1OiT0=
+		I2jGNl/Mikebzw5rss1joCSiYcc=
 		</data>
 		<key>Resources/toolkit/scripts/branch_name_packs.json</key>
 		<data>
@@ -102,7 +102,7 @@
 		</data>
 		<key>Resources/toolkit/scripts/configurator.py</key>
 		<data>
-		kJKEfqMVo/m+VuTo/wKbglb7Pjs=
+		lxXx95tcD3Vszf8StHTWLhQv8LI=
 		</data>
 		<key>Resources/toolkit/scripts/configure.py</key>
 		<data>
@@ -110,7 +110,7 @@
 		</data>
 		<key>Resources/toolkit/scripts/install.py</key>
 		<data>
-		6Mzo4z2Di1tXgyWp56ESt7NZBj8=
+		nAw8vjalCTs5Hd05m86WqqD4Tu8=
 		</data>
 		<key>Resources/toolkit/scripts/local_codex_commit.py</key>
 		<data>
@@ -120,9 +120,13 @@
 		<data>
 		igRXx3tAcv5NLw9BB3pQNrDhjNA=
 		</data>
+		<key>Resources/toolkit/scripts/post_commit_spellcheck.py</key>
+		<data>
+		L7X1DeZuO1/lDm/zkGyETrvUASs=
+		</data>
 		<key>Resources/toolkit/scripts/toolkit_settings.py</key>
 		<data>
-		Oyx2FMwPt7gV7FpU7P7Yn34Fqk8=
+		o5f3iST8Yf9TGsPtTAzAIIoWYqM=
 		</data>
 		<key>Resources/toolkit/scripts/workspace_search.py</key>
 		<data>
@@ -166,7 +170,7 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/pull_request.js</key>
 		<data>
-		pcXboK61OXc/xFbUeyw27XaCSxw=
+		YruQ/lWxiqg/x6o0b6MJJ2HGwFg=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/search_index.js</key>
 		<data>
@@ -348,11 +352,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			OVsNVkNoU38U5jZRTGu3cZ1OiT0=
+			I2jGNl/Mikebzw5rss1joCSiYcc=
 			</data>
 			<key>hash2</key>
 			<data>
-			paYDRh8tpZ3+4Q3+0t6IlQfIOX/+IaQooBqX8oxIvA8=
+			L0yB3GhoDZIp3H7VCkGs3S6VV2UAcTKfFmZqbF0P4n0=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/branch_name_packs.json</key>
@@ -447,11 +451,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			kJKEfqMVo/m+VuTo/wKbglb7Pjs=
+			lxXx95tcD3Vszf8StHTWLhQv8LI=
 			</data>
 			<key>hash2</key>
 			<data>
-			jb7t/SZ1nd/fAOsmxPacKXkjubFEMHSnujNI3INHhFs=
+			ybaarZ4XfVqE4zt574M/J4/YEApJ+hayCYgKHcLhKww=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/configure.py</key>
@@ -469,11 +473,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			6Mzo4z2Di1tXgyWp56ESt7NZBj8=
+			nAw8vjalCTs5Hd05m86WqqD4Tu8=
 			</data>
 			<key>hash2</key>
 			<data>
-			UiYfnj5tW+bQBLpcsWY9ZehqBKOk/DdgWzQOwce4Mcw=
+			iGQ8CfLHkWURP0DJir0v5a5zF+pkE8WmM8eKHgakRhc=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/local_codex_commit.py</key>
@@ -498,15 +502,26 @@
 			Z5oxEuA04fnlCsXsxdW5H9U0rkaOqKfXanv+MZBpFSI=
 			</data>
 		</dict>
+		<key>Resources/toolkit/scripts/post_commit_spellcheck.py</key>
+		<dict>
+			<key>hash</key>
+			<data>
+			L7X1DeZuO1/lDm/zkGyETrvUASs=
+			</data>
+			<key>hash2</key>
+			<data>
+			1U8SXV9b0Gy0AVOjNaoXVgRFocz6GgI24554+Hby8nY=
+			</data>
+		</dict>
 		<key>Resources/toolkit/scripts/toolkit_settings.py</key>
 		<dict>
 			<key>hash</key>
 			<data>
-			Oyx2FMwPt7gV7FpU7P7Yn34Fqk8=
+			o5f3iST8Yf9TGsPtTAzAIIoWYqM=
 			</data>
 			<key>hash2</key>
 			<data>
-			2BuIqhbAG9nXX6Vxx84wHdkUY3p96gPxEg67J4EpJ4U=
+			/PckIbn8wev/044dPPaSl5S2ZOijgHNtVrA67cEuy0E=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/workspace_search.py</key>
@@ -623,11 +638,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			pcXboK61OXc/xFbUeyw27XaCSxw=
+			YruQ/lWxiqg/x6o0b6MJJ2HGwFg=
 			</data>
 			<key>hash2</key>
 			<data>
-			OhPB3qPUNk4R8I90FDIMDcRCyrQXoPDtUSnmyfnu4ig=
+			QFpNJJvzBHXURVe0IUb8a/v5N/nGgZ2lpOn5kB+6alI=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/search_index.js</key>

@@ -887,6 +887,18 @@ def generate_message(
 def generate_title(stat: str, diff: str, files: list[str]) -> str:
     return generate_message(stat, diff, files)[0]
 
+def load_post_commit_spellcheck():
+    import importlib.util
+    from pathlib import Path
+    source = Path(__file__).with_name("post_commit_spellcheck.py")
+    if not source.exists():
+        source = Path(__file__).with_name(Path(__file__).name + "-spellcheck.py")
+    spec = importlib.util.spec_from_file_location("scm_toolkit_post_commit_spellcheck", source)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def main() -> None:
     global GIT_GLOBAL_ARGS
 
@@ -929,7 +941,28 @@ def main() -> None:
     message_args = ["-m", title]
     if description:
         message_args.extend(["-m", description])
-    os.execv(REAL_GIT, [REAL_GIT, *argv, *message_args])
+    if not git_config_bool("scm-toolkit.post-commit-spellcheck", False):
+        os.execv(REAL_GIT, [REAL_GIT, *argv, *message_args])
+
+    spellcheck = None
+    paths = []
+    previous_head = ""
+    try:
+        spellcheck = load_post_commit_spellcheck()
+        if not spellcheck.has_unstaged_changes(GIT_GLOBAL_ARGS):
+            paths = spellcheck.staged_markdown_paths(GIT_GLOBAL_ARGS)
+            previous_head = spellcheck.head_sha(GIT_GLOBAL_ARGS)
+    except Exception as exc:
+        print(f"scm-toolkit: post-commit spellcheck unavailable ({exc})", file=sys.stderr)
+    result = subprocess.run([REAL_GIT, *argv, *message_args], check=False)
+    if result.returncode == 0 and paths:
+        try:
+            committed_head = spellcheck.head_sha(GIT_GLOBAL_ARGS)
+            if committed_head and committed_head != previous_head:
+                spellcheck.spawn_post_commit(GIT_GLOBAL_ARGS, paths, committed_head, os.path.abspath(__file__))
+        except Exception as exc:
+            print(f"scm-toolkit: post-commit spellcheck skipped ({exc})", file=sys.stderr)
+    raise SystemExit(result.returncode)
 
 
 if __name__ == "__main__":
