@@ -10,6 +10,7 @@ import codex_colors
 import codex_context
 import codex_keep_awake
 import codex_image_drop
+import github_pr
 from pathlib import Path
 from toolkit_settings import DEFAULT_SETTINGS, load_settings, read_git_bool, read_git_string
 from branch_names import resolve_runtime_settings
@@ -718,6 +719,12 @@ def main():
             settings=settings,
         )
     )
+
+    if not args.codex_only:
+        for github_path, github_old, github_new in github_pr.patch_files(remove=args.uninstall):
+            paths.append(github_path)
+            old.append(github_old)
+            new.append(github_new)
 
     color_path = codex_colors.stylesheet_path(args.codex_extension)
     if color_path is not None:
