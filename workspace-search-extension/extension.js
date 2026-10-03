@@ -176,6 +176,12 @@ function settings() {
 }
 
 async function activate(context) {
+  // Hidden panel tabs can still be restored as the active container.
+  // Select the user's SCM container explicitly once the workbench has started.
+  if (vscode.workspace.getConfiguration('scmToolkit').get('openPanelOnStartup', true)) {
+    await vscode.commands.executeCommand('workbench.view.scm');
+    await vscode.commands.executeCommand('workbench.action.focusActiveEditorGroup');
+  }
   registerBranchCommands(vscode, context);
   registerCodexCommitCommand(vscode, context);
   registerPullRequestCommand(vscode, context);
