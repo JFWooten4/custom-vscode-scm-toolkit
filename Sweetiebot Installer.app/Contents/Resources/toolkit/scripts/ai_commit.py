@@ -429,6 +429,55 @@ def normalize_staged_final_newlines() -> list[str]:
     def repo_git(*args: str, input_data: bytes | None = None):
         return git_bytes("-C", worktree_root, "--literal-pathspecs", *args, input_data=input_data)
 
+    def added_line_numbers(path: str) -> set[int]:
+        diff_result = repo_git(
+            "diff",
+            "--cached",
+            "--no-ext-diff",
+            "--no-textconv",
+            "--unified=0",
+            "--no-color",
+            "--",
+            path,
+        )
+        if diff_result.returncode != 0:
+            raise RuntimeError(f"could not inspect staged additions for {path}")
+
+        added = set()
+        next_line = None
+        for line in diff_result.stdout.splitlines():
+            if line.startswith(b"@@ "):
+                match = re.match(rb"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@", line)
+                next_line = int(match.group(1)) if match else None
+                continue
+            if next_line is None:
+                continue
+            if line.startswith(b"+"):
+                added.add(next_line)
+                next_line += 1
+            elif line.startswith(b"-") or line.startswith(b"\\"):
+                continue
+            else:
+                next_line += 1
+        return added
+
+    def strip_added_trailing_whitespace(data: bytes, path: str) -> bytes:
+        added = added_line_numbers(path)
+        if not added:
+            return data
+
+        lines = data.split(b"\n")
+        for line_number in added:
+            index = line_number - 1
+            if index < 0 or index >= len(lines):
+                continue
+            line = lines[index]
+            if line.endswith(b"\r"):
+                lines[index] = line[:-1].rstrip(b" \t") + b"\r"
+            else:
+                lines[index] = line.rstrip(b" \t")
+        return b"\n".join(lines)
+
     changed = repo_git("diff", "--cached", "--name-only", "--no-relative",
                        "--diff-filter=ACMR", "-z", "--")
     if changed.returncode != 0:
@@ -475,12 +524,13 @@ def normalize_staged_final_newlines() -> list[str]:
             data.decode("utf-8")
         except UnicodeDecodeError:
             continue
-        last_lf = data.rfind(b"\n")
-        newline = b"\r\n" if last_lf > 0 and data[last_lf - 1:last_lf] == b"\r" else b"\n"
-        if data.endswith(b"\r"):
-            updated = data + b"\n"
+        cleaned = strip_added_trailing_whitespace(data, path)
+        last_lf = cleaned.rfind(b"\n")
+        newline = b"\r\n" if last_lf > 0 and cleaned[last_lf - 1:last_lf] == b"\r" else b"\n"
+        if cleaned.endswith(b"\r"):
+            updated = cleaned + b"\n"
         else:
-            trimmed = data
+            trimmed = cleaned
             while trimmed.endswith((b"\r\n", b"\n")):
                 trimmed = trimmed[:-2] if trimmed.endswith(b"\r\n") else trimmed[:-1]
             updated = trimmed + newline

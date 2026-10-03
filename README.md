@@ -617,6 +617,8 @@ python3 scripts/install.py --uninstall --check
 ```
 
 
+Automatic staged commits remove trailing spaces and tabs from added or changed text lines and normalize the final newline. Existing untouched lines, LF/CRLF style, file modes, cached attribute exclusions, and unstaged edits are preserved. Explicit-message commits keep their existing behavior.
+
 ### Post-commit Markdown spellcheck
 
 Enable **Post-commit Markdown spellcheck** in SweetieBot settings under Ollama, or run:
