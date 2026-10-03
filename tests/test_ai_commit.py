@@ -271,6 +271,48 @@ class TitleTests(unittest.TestCase):
         self.assertIn("Recent repository subjects:", prompt)
         self.assertIn("Output rules:", prompt)
         self.assertIn("Staged diff:", prompt)
+        self.assertIn("one professional emoji", prompt)
+        self.assertIn("dedicated Sync button", prompt)
+        self.assertIn("file count, diff size, and file moves", prompt)
+
+    def test_title_preference_references_global_agents(self):
+        with patch.object(ai_commit.Path, "read_text", return_value="Never stage changes.\nCommit titles should use my current title style.\n"):
+            self.assertEqual(ai_commit.commit_title_preference(), "Commit titles should use my current title style.")
+
+    @patch.object(ai_commit, "git_output", return_value="🔄 Sync branch to main\nSync branch with main\n📝 Reorganize research notes\nFix parser\n")
+    def test_history_excludes_sync_titles(self, _git):
+        self.assertEqual(ai_commit.recent_subjects(), "📝 Reorganize research notes\nFix parser")
+
+    def test_generated_sync_titles_are_rejected_for_normal_and_context_commits(self):
+        for title in ["🔄 Sync branch to main", "Sync branch with main", "Synchronize repository changes"]:
+            for context in ["", "Moved the research notes into an archive"]:
+                with self.subTest(title=title, context=context), ExitStack() as stack:
+                    for name, value in [
+                        ("installed_local_model_names", {"local"}),
+                        ("selected_model", ("local", False)),
+                        ("configured_models", ("local", "small")),
+                        ("staged_file_context", "renamed research notes"),
+                        ("recent_subjects", ""),
+                        ("ollama_json", {"response": title + "\n\nSync the branch to main."}),
+                    ]:
+                        stack.enter_context(patch.object(ai_commit, name, return_value=value))
+                    self.assertEqual(
+                        ai_commit.generate_message("18 files changed", "rename diff", ["a.md", "b.md"], include_description=True, conversation_context=context, require_model=bool(context)),
+                        ("📝 Update 2 staged files", ""),
+                    )
+
+    def test_generated_title_without_emoji_gets_one_and_preserves_description(self):
+        with ExitStack() as stack:
+            for name, value in [
+                ("installed_local_model_names", {"local"}),
+                ("selected_model", ("local", False)),
+                ("configured_models", ("local", "small")),
+                ("staged_file_context", ""),
+                ("recent_subjects", ""),
+                ("ollama_json", {"response": "Reorganize research notes\n\nGroup unfinished drafts together."}),
+            ]:
+                stack.enter_context(patch.object(ai_commit, name, return_value=value))
+            self.assertEqual(ai_commit.generate_message("18 files changed", "rename diff", ["notes.md"], include_description=True), ("📝 Reorganize research notes", "Group unfinished drafts together."))
 
     @patch.object(ai_commit, "recent_subjects", return_value="Update parser")
     def test_default_branch_prompt_requests_one_or_two_sentences(self, _subjects):
@@ -312,17 +354,17 @@ class TitleTests(unittest.TestCase):
         self.assertFalse(title.endswith("."))
 
     def test_fallback_uses_staged_paths_only(self):
-        self.assertEqual(ai_commit.fallback_title(["src/widget.js"]), "Update widget.js")
+        self.assertEqual(ai_commit.fallback_title(["src/widget.js"]), "🔧 Update widget.js")
         self.assertEqual(
             ai_commit.fallback_title(["src/a.js", "src/b.js"]),
-            "Update 2 staged files",
+            "🔧 Update 2 staged files",
         )
 
     @patch.object(ai_commit, "installed_local_model_names", return_value=set())
     def test_missing_model_uses_local_fallback(self, _models):
         self.assertEqual(
             ai_commit.generate_title("1 file", "diff", ["README.md"]),
-            "Update README.md",
+            "📝 Update README.md",
         )
 
 
@@ -336,9 +378,9 @@ class ArtifactContextTests(unittest.TestCase):
         )
         self.assertEqual(
             ai_commit.fallback_title(["assets/a.png", "src/app.js"]),
-            "Update 2 staged files",
+            "🔧 Update 2 staged files",
         )
-        self.assertEqual(ai_commit.fallback_title([]), "Update staged changes")
+        self.assertEqual(ai_commit.fallback_title([]), "🔧 Update staged changes")
 
     @patch.object(ai_commit, "installed_local_model_names", return_value=set())
     def test_missing_model_uses_image_fallback(self, _models):
