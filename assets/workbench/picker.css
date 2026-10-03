@@ -497,10 +497,10 @@
 .scm-view .scm-editor > .scm-toolkit-auto-publish-active::after {
     content: '✓';
     position: absolute;
-    left: 5px;
-    top: 8px;
-    font-size: 9px;
-    line-height: 10px;
+    left: 7px;
+    top: 4px;
+    font-size: 12px;
+    line-height: 13px;
 }
 
 .scm-toolkit-auto-publish:hover > .scm-toolkit-tooltip,
