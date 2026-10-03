@@ -41,6 +41,7 @@ SETTINGS = (
     Setting("shortPlaceholder", "scm-toolkit.short-placeholder", "Short message placeholder", "Use Message instead of the longer built-in placeholder.", "Source control"),
     Setting("commitButtonLabel", "scm-toolkit.commit-button-label", "Commit button label", "Text shown on the primary Source Control commit action. Leave blank to keep VS Code's label.", "Source control", "text"),
     Setting("sourceControlLabel", "scm-toolkit.source-control-label", "Source Control label", "Override the Source Control view label shown in the app bar.", "Source control", "text"),
+    Setting("openPanelOnStartup", "scm-toolkit.open-panel-on-startup", "Open Sweetie Bot on startup", "Open Sweetie Bot / Source Control automatically when each VS Code window starts.", "Startup"),
     Setting("filledButtons", "scm-toolkit.filled-buttons", "Accent-filled buttons", "Fill the branch and Commit controls with the theme accent instead of outlining them.", "Source control"),
     Setting("commitAndPush", "scm-toolkit.commit-and-push", "Commit and push checkbox", "Show the control backed by git.postCommitCommand.", "Source control"),
     Setting("branchCleanup", "scm-toolkit.branch-cleanup", "Branch cleanup", "Show guarded local-branch cleanup controls.", "Source control"),
@@ -564,6 +565,19 @@ if (syncButton) {{
 </main></body></html>"""
 
 
+def extension_settings_payload(settings: dict[str, bool | str]) -> dict[str, object]:
+    return {
+        "workspaceSearch": {
+            "embeddingModel": settings["workspaceSearchEmbeddingModel"],
+            "chatModel": settings["workspaceSearchChatModel"],
+            "askOllama": settings["workspaceSearchAskOllama"],
+        },
+        "vscodeSettings": {
+            "openPanelOnStartup": settings["openPanelOnStartup"],
+        },
+    }
+
+
 def _result_page(saved: bool) -> str:
     title = "Configuration saved" if saved else "Configuration cancelled"
     detail = "Return to the terminal to continue." if saved else "No settings were changed."
@@ -663,11 +677,7 @@ def run_configurator(
                     return
                 session_settings.update(parsed)
                 if not open_browser:
-                    print(json.dumps({"workspaceSearch": {
-                        "embeddingModel": parsed["workspaceSearchEmbeddingModel"],
-                        "chatModel": parsed["workspaceSearchChatModel"],
-                        "askOllama": parsed["workspaceSearchAskOllama"],
-                    }}), flush=True)
+                    print(json.dumps(extension_settings_payload(parsed)), flush=True)
                 self._send_json({"saved": True})
                 return
             if values.get("action", [""])[0] == "cancel":
@@ -694,11 +704,7 @@ def run_configurator(
             session_settings.update(parsed)
             outcome["saved"] = True
             if not open_browser:
-                print(json.dumps({"workspaceSearch": {
-                    "embeddingModel": parsed["workspaceSearchEmbeddingModel"],
-                    "chatModel": parsed["workspaceSearchChatModel"],
-                    "askOllama": parsed["workspaceSearchAskOllama"],
-                }}), flush=True)
+                print(json.dumps(extension_settings_payload(parsed)), flush=True)
             self._send(_result_page(True))
             threading.Thread(target=self.server.shutdown, daemon=True).start()
 
@@ -727,5 +733,13 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--no-browser", action="store_true", help="Send the URL to the calling extension.")
+    parser.add_argument(
+        "--open-panel-on-startup",
+        choices=("true", "false"),
+        help="Current VS Code user setting supplied by the companion extension.",
+    )
     args = parser.parse_args()
-    run_configurator(load_settings(), open_browser=not args.no_browser)
+    current = load_settings()
+    if args.open_panel_on_startup is not None:
+        current["openPanelOnStartup"] = args.open_panel_on_startup == "true"
+    run_configurator(current, open_browser=not args.no_browser)

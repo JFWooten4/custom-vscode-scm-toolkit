@@ -65,7 +65,7 @@
       ]
     },
     "configuration": {
-      "title": "SCM Toolkit Workspace Search",
+      "title": "Sweetie Bot",
       "properties": {
         "scmToolkit.autoPublishNewBranches": {
           "type": "boolean",
@@ -138,7 +138,7 @@
           "type": "boolean",
           "default": true,
           "scope": "window",
-          "description": "Open Source Control when each window starts, using its configured panel location instead of restoring a hidden Output tab."
+          "description": "Open Sweetie Bot / Source Control when each VS Code window starts, then return keyboard focus to the editor."
         }
       }
     }

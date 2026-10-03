@@ -64,6 +64,7 @@ class SubmissionTests(unittest.TestCase):
         self.assertTrue(parsed["commitAndPush"])
         self.assertEqual(parsed["aiCommitModel"], "qwen2.5-coder:7b")
         self.assertEqual(parsed["sourceControlLabel"], "Sweetie Bot")
+        self.assertTrue(parsed["openPanelOnStartup"])
         self.assertEqual(parsed["commitButtonLabel"], "Send")
         self.assertTrue(parsed["autoPublishToggle"])
         self.assertFalse(parsed["workspaceSearchActivityBar"])
@@ -147,6 +148,8 @@ class SubmissionTests(unittest.TestCase):
         self.assertIn('name="branchCustomNames"', page)
         self.assertIn('name="branchNameImports"', page)
         self.assertIn('name="sourceControlLabel"', page)
+        self.assertIn('name="openPanelOnStartup"', page)
+        self.assertIn("Open Sweetie Bot on startup", page)
         self.assertIn('name="commitButtonLabel"', page)
         self.assertIn('name="autoPublishToggle"', page)
         self.assertIn('name="codexHideChatTimestamps"', page)
@@ -161,6 +164,18 @@ class SubmissionTests(unittest.TestCase):
         self.assertIn('name="pgpSecretKey"', page)
         self.assertNotIn("PGP PRIVATE KEY BLOCK-----\nsecret", page)
 
+
+    def test_extension_payload_exposes_startup_user_setting(self):
+        parsed = configurator.parse_submission(form_values())
+        parsed["openPanelOnStartup"] = False
+
+        payload = configurator.extension_settings_payload(parsed)
+
+        self.assertFalse(payload["vscodeSettings"]["openPanelOnStartup"])
+        self.assertEqual(
+            payload["workspaceSearch"]["embeddingModel"],
+            install.DEFAULT_SETTINGS["workspaceSearchEmbeddingModel"],
+        )
 
     def test_custom_instructions_allow_multiline_text(self):
         values = form_values()

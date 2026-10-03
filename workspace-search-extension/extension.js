@@ -39,7 +39,10 @@ async function openSettings(context) {
 
   const script = vscode.Uri.joinPath(context.extensionUri, 'configurator.py').fsPath;
   const python = process.platform === 'win32' ? 'python' : 'python3';
-  const child = spawn(python, [script, '--no-browser'], {
+  const openPanelOnStartup = vscode.workspace.getConfiguration('scmToolkit').get('openPanelOnStartup', true);
+  const child = spawn(python, [
+    script, '--no-browser', '--open-panel-on-startup', String(Boolean(openPanelOnStartup))
+  ], {
     cwd: context.extensionPath,
     stdio: ['ignore', 'pipe', 'pipe']
   });
@@ -56,11 +59,23 @@ async function openSettings(context) {
       output = output.slice(newline + 1);
       try {
         const message = JSON.parse(line);
+        const settingUpdates = [];
         if (message.workspaceSearch) {
           const cfg = vscode.workspace.getConfiguration(CONFIG_ROOT);
-          void Promise.all(Object.entries(message.workspaceSearch).map(([key, value]) =>
+          settingUpdates.push(...Object.entries(message.workspaceSearch).map(([key, value]) =>
             cfg.update(key, value, vscode.ConfigurationTarget.Global)
-          )).catch(error => vscode.window.showErrorMessage(`Unable to apply search settings: ${error.message}`));
+          ));
+        }
+        if (message.vscodeSettings) {
+          const cfg = vscode.workspace.getConfiguration('scmToolkit');
+          settingUpdates.push(...Object.entries(message.vscodeSettings).map(([key, value]) =>
+            cfg.update(key, value, vscode.ConfigurationTarget.Global)
+          ));
+        }
+        if (settingUpdates.length) {
+          void Promise.all(settingUpdates).catch(error =>
+            vscode.window.showErrorMessage(`Unable to apply Sweetie Bot settings: ${error.message}`)
+          );
           continue;
         }
         if (configuratorURL) continue;
