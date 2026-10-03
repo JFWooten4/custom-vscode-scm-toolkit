@@ -9,7 +9,7 @@ import os
 import shutil
 from pathlib import Path
 
-from toolkit_settings import load_settings
+from toolkit_settings import load_settings, VSCODE_SETTINGS
 
 HERE = Path(__file__).resolve().parent
 SOURCE = HERE.parent / "workspace-search-extension"
@@ -48,6 +48,18 @@ def render_package(settings: dict[str, object] | None = None) -> dict[str, objec
     properties["scmToolkit.workspaceSearch.embeddingModel"]["default"] = str(
         settings["workspaceSearchEmbeddingModel"]
     )
+
+    for group, root in (("workspaceSearch", "scmToolkit.workspaceSearch"), ("vscodeSettings", "scmToolkit")):
+        for key, name in VSCODE_SETTINGS[group].items():
+            if name not in settings:
+                continue
+            prop = properties[f"{root}.{key}"]
+            value = settings[name]
+            if prop["type"] == "integer":
+                value = int(value)
+            elif prop["type"] == "number":
+                value = float(value)
+            prop["default"] = value
 
     if settings["workspaceSearchActivityBar"]:
         contributes["viewsContainers"] = {

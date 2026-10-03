@@ -67,6 +67,16 @@
     "configuration": {
       "title": "Sweetie Bot",
       "properties": {
+        "scmToolkit.automaticBranchCleanup": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically remove eligible merged local branches on startup and every ten minutes."
+        },
+        "scmToolkit.workspaceSearch.autoReindex": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically refresh the workspace search index every two minutes."
+        },
         "scmToolkit.autoPublishNewBranches": {
           "type": "boolean",
           "default": false,

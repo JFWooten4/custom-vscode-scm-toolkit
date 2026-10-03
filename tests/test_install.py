@@ -84,6 +84,12 @@ def browser_resolver_fixture():
 
 
 class TransformTests(unittest.TestCase):
+    def test_progress_animation_can_be_restored_from_gear_settings(self):
+        _, css = install.transform(workbench_fixture(), "base-css", settings=dict(SETTINGS, hideSCMProgress=False))
+        self.assertNotIn(".monaco-progress-container", css)
+        _, css = install.transform(workbench_fixture(), "base-css", settings=dict(SETTINGS, hideSCMProgress=True))
+        self.assertIn(".monaco-progress-container", css)
+
     def test_controls_use_the_vscode_input_background(self):
         css = (install.WORKBENCH_ASSETS / "picker.css").read_text()
 

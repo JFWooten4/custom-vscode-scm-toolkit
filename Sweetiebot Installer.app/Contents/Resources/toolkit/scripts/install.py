@@ -570,6 +570,8 @@ def transform(js, css, remove=False, settings=None):
         + END
     )
     toolkit_css = (WORKBENCH_ASSETS / "picker.css").read_text()
+    if settings.get("hideSCMProgress", True):
+        toolkit_css += "\n" + (WORKBENCH_ASSETS / "hide_progress.css").read_text()
     if not settings["filledButtons"]:
         toolkit_css += "\n" + (WORKBENCH_ASSETS / "outlined_buttons.css").read_text()
     css += START + toolkit_css + END

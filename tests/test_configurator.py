@@ -11,6 +11,8 @@ from unittest.mock import patch
 import configurator
 import install
 import branch_names
+import toolkit_settings
+from pathlib import Path
 
 
 def form_values():
@@ -32,6 +34,52 @@ def form_values():
 
 
 class SubmissionTests(unittest.TestCase):
+    def test_gear_page_covers_every_toolkit_and_extension_setting(self):
+        controls = {setting.name: setting.git_key for setting in configurator.SETTINGS}
+        self.assertEqual(controls, toolkit_settings.SETTING_KEYS)
+        self.assertEqual(set(controls), set(toolkit_settings.DEFAULT_SETTINGS))
+        package = json.loads((Path(__file__).parent.parent / "workspace-search-extension/package.json").read_text())
+        properties = set(package["contributes"]["configuration"]["properties"])
+        exposed = {
+            f"{root}.{key}"
+            for group, root in (("workspaceSearch", "scmToolkit.workspaceSearch"), ("vscodeSettings", "scmToolkit"))
+            for key in toolkit_settings.VSCODE_SETTINGS[group]
+        }
+        self.assertEqual(properties, exposed)
+        page = configurator.render_form(install.DEFAULT_SETTINGS, [], "Ready", "test-token", "Save")
+        for name in controls:
+            if name != "branchNameDisabledPacks":
+                self.assertIn(f'name="{name}"', page)
+
+    def test_cloud_preference_round_trips_into_vscode(self):
+        current = dict(install.DEFAULT_SETTINGS)
+        configurator.apply_vscode_settings(current, {
+            "vscodeSettings": {"autoPublishNewBranches": True},
+            "workspaceSearch": {"resultLimit": 35},
+            "gitSettings": {"postCommitCommand": "push"},
+        })
+        self.assertTrue(current["autoPublishNewBranches"])
+        page = configurator.render_form(current, [], "Ready", "test-token", "Save")
+        self.assertIn('name="autoPublishNewBranches" value="true" checked', page)
+        values = form_values()
+        values["autoPublishNewBranches"] = ["true"]
+        values["workspaceSearchResultLimit"] = ["35"]
+        values["postCommitAction"] = ["push"]
+        payload = configurator.extension_settings_payload(configurator.parse_submission(values))
+        self.assertTrue(payload["vscodeSettings"]["autoPublishNewBranches"])
+        self.assertEqual(payload["workspaceSearch"]["resultLimit"], 35)
+        self.assertEqual(payload["gitSettings"]["postCommitCommand"], "push")
+
+    def test_search_preferences_reject_values_outside_runtime_contract(self):
+        for key, value in (("workspaceSearchResultLimit", "101"), ("workspaceSearchMaxFiles", "1.5"),
+                           ("workspaceSearchMaxFileSizeMB", "nan"), ("workspaceSearchMode", "invalid"),
+                           ("workspaceSearchOllamaUrl", "https://example.com")):
+            with self.subTest(key=key):
+                values = form_values()
+                values[key] = [value]
+                with self.assertRaises(ValueError):
+                    configurator.parse_submission(values)
+
     def test_post_commit_spellcheck_toggle_defaults_off_and_saves_on(self):
         values = form_values()
         self.assertFalse(install.DEFAULT_SETTINGS["postCommitSpellcheck"])

@@ -40,8 +40,24 @@ async function openSettings(context) {
   const script = vscode.Uri.joinPath(context.extensionUri, 'configurator.py').fsPath;
   const python = process.platform === 'win32' ? 'python' : 'python3';
   const openPanelOnStartup = vscode.workspace.getConfiguration('scmToolkit').get('openPanelOnStartup', true);
+  const scm = vscode.workspace.getConfiguration('scmToolkit');
+  const currentSettings = {
+    workspaceSearch: settings(),
+    vscodeSettings: {
+      openPanelOnStartup,
+      autoPublishNewBranches: scm.get('autoPublishNewBranches', false),
+      automaticBranchCleanup: scm.get('automaticBranchCleanup', true),
+      codexKeepAwake: scm.get('codexKeepAwake', true)
+    },
+    editorSettings: {
+      'inlineSuggest.enabled': vscode.workspace.getConfiguration('editor').get('inlineSuggest.enabled', true)
+    },
+    gitSettings: {
+      postCommitCommand: vscode.workspace.getConfiguration('git').get('postCommitCommand', 'none')
+    }
+  };
   const child = spawn(python, [
-    script, '--no-browser', '--open-panel-on-startup', String(Boolean(openPanelOnStartup))
+    script, '--no-browser', '--vscode-settings', JSON.stringify(currentSettings)
   ], {
     cwd: context.extensionPath,
     stdio: ['ignore', 'pipe', 'pipe']
@@ -69,6 +85,13 @@ async function openSettings(context) {
         if (message.vscodeSettings) {
           const cfg = vscode.workspace.getConfiguration('scmToolkit');
           settingUpdates.push(...Object.entries(message.vscodeSettings).map(([key, value]) =>
+            cfg.update(key, value, vscode.ConfigurationTarget.Global)
+          ));
+        }
+        for (const [group, root] of [['editorSettings', 'editor'], ['gitSettings', 'git']]) {
+          if (!message[group]) continue;
+          const cfg = vscode.workspace.getConfiguration(root);
+          settingUpdates.push(...Object.entries(message[group]).map(([key, value]) =>
             cfg.update(key, value, vscode.ConfigurationTarget.Global)
           ));
         }
@@ -187,7 +210,8 @@ function settings() {
     resultLimit: cfg.get('resultLimit', 20),
     maxFiles: cfg.get('maxFiles', 5000),
     maxFileSizeMB: cfg.get('maxFileSizeMB', 10),
-    exclude: cfg.get('exclude', '**/{.git,node_modules,dist,build,out,target,.venv,venv,__pycache__,coverage}/**')
+    exclude: cfg.get('exclude', '**/{.git,node_modules,dist,build,out,target,.venv,venv,__pycache__,coverage}/**'),
+    autoReindex: cfg.get('autoReindex', true)
   };
 }
 
@@ -224,7 +248,7 @@ async function activate(context) {
 
   let autoReindexRunning = false;
   const autoReindexTimer = setInterval(() => {
-    if (autoReindexRunning) return;
+    if (autoReindexRunning || !settings().autoReindex) return;
     autoReindexRunning = true;
     void index.refresh({ force: true }).catch(error => {
       console.error('Workspace Search automatic reindex failed:', error);

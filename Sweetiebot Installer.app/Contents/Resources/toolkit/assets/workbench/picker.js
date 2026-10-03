@@ -554,8 +554,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
 
     const maybePublishBranch = async branch => {
         if (
-            !settings.autoPublishToggle
-            || configuration.getValue('scmToolkit.autoPublishNewBranches') !== true
+            configuration.getValue('scmToolkit.autoPublishNewBranches') !== true
             || !currentRepositoryUri
             || !branch
             || branch === settings.defaultBranch

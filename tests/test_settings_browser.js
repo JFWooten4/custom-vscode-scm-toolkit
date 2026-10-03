@@ -13,6 +13,8 @@ async function run() {
       return {
         get(key, fallback) {
           if (root === 'scmToolkit' && key === 'openPanelOnStartup') return false;
+          if (root === 'scmToolkit' && key === 'autoPublishNewBranches') return true;
+          if (root === 'scmToolkit.workspaceSearch' && key === 'resultLimit') return 35;
           return fallback;
         },
         async update(key, value, target) { updates.push({root, key, value, target}); }
@@ -35,9 +37,15 @@ async function run() {
       if (name !== 'child_process') return {};
       return { spawn(executable, args, options) {
         assert.equal(executable, process.platform === 'win32' ? 'python' : 'python3');
-        assert.deepEqual(Array.from(args), [
-          '/extension/configurator.py', '--no-browser', '--open-panel-on-startup', 'false'
+        assert.deepEqual(Array.from(args).slice(0, 3), [
+          '/extension/configurator.py', '--no-browser', '--vscode-settings'
         ]);
+        const current = JSON.parse(args[3]);
+        assert.equal(current.vscodeSettings.openPanelOnStartup, false);
+        assert.equal(current.vscodeSettings.autoPublishNewBranches, true);
+        assert.equal(current.workspaceSearch.resultLimit, 35);
+        assert.equal(current.editorSettings['inlineSuggest.enabled'], true);
+        assert.equal(current.gitSettings.postCommitCommand, 'none');
         assert.equal(options.cwd, '/extension');
         assert.equal(options.stdio[1], 'pipe');
         const child = new EventEmitter();
@@ -81,14 +89,19 @@ async function run() {
   const saved = {embeddingModel: 'custom:embed', chatModel: 'custom:chat', askOllama: true};
   children[0].stdout.emit('data', JSON.stringify({
     workspaceSearch: saved,
-    vscodeSettings: {openPanelOnStartup: true}
+    vscodeSettings: {openPanelOnStartup: true, autoPublishNewBranches: true},
+    editorSettings: {'inlineSuggest.enabled': false},
+    gitSettings: {postCommitCommand: 'push'}
   }) + '\n');
   await tick();
   assert.deepEqual(updates, [
     ...Object.entries(saved).map(([key, value]) => ({
       root: 'scmToolkit.workspaceSearch', key, value, target: 1
     })),
-    {root: 'scmToolkit', key: 'openPanelOnStartup', value: true, target: 1}
+    {root: 'scmToolkit', key: 'openPanelOnStartup', value: true, target: 1},
+    {root: 'scmToolkit', key: 'autoPublishNewBranches', value: true, target: 1},
+    {root: 'editor', key: 'inlineSuggest.enabled', value: false, target: 1},
+    {root: 'git', key: 'postCommitCommand', value: 'push', target: 1}
   ]);
   assert.equal(calls.length, 2, 'Saving settings must apply them without reopening the browser');
   children[0].exitCode = 0;
