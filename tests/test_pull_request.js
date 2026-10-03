@@ -12,13 +12,15 @@ async function run() {
     assert.equal(githubRepository(remote), undefined);
   }
   const prompt = pullRequestPrompt({ branch: 'draft', repositoryPath: '/repo with spaces', repositoryUrl: 'https://github.com/owner/repo', base: 'main' });
+  assert(prompt.includes('in repository https://github.com/owner/repo, against'));
+  assert(!prompt.includes('/repo with spaces'));
   assert.match(prompt, /natural, human-readable paragraphs/);
   assert.match(prompt, /code, prose, research, or brainstorming/);
   assert.match(prompt, /intent and meaning/);
   assert.match(prompt, /Omit testing and verification boilerplate for text changes/);
   assert.match(prompt, /Do not describe commit authorship/);
   assert(prompt.endsWith('</a></p>'));
-  assert.equal(prompt.split('https://wooten.link/placeholder-pony.png').length, 2);
+  assert.equal(prompt.split('https://github.com/user-attachments/assets/2d5481b8-54dc-48c6-87e5-b67927d630bd').length, 2);
   assert.equal(prompt.split('https://github.com/pony-factor/kefania').length, 2);
   assert.match(prompt, /align="center"/);
   assert.match(prompt, /alt="This PR description was written automatically\."/);
@@ -49,7 +51,8 @@ async function run() {
   const url = new URL(calls[0].options.url);
   assert.equal(url.origin, 'https://chatgpt.com');
   assert.match(url.searchParams.get('q'), /"draft"/);
-  assert.match(url.searchParams.get('q'), /"\/selected repository"/);
+  assert(url.searchParams.get('q').includes('in repository https://github.com/owner/repo, against'));
+  assert(!url.searchParams.get('q').includes(uri.fsPath));
   assert.equal(calls[0].options.openToSide, false);
   browserAvailable = false;
   await assert.rejects(callback(uri, { branch: 'draft', base: 'main' }), /Update VS Code/);
