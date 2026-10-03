@@ -693,7 +693,11 @@ def sanitize_generated_message(
 
 def fallback_title(files: list[str]) -> str:
     if len(files) == 1:
-        return sanitize_title(f"Update {os.path.basename(files[0])}")
+        kind = path_kind(files[0])
+        prefix = "🖼️ " if kind == "image" else "🖋️ " if kind == "document" else ""
+        return sanitize_title(f"{prefix}Update {os.path.basename(files[0])}")
+    if files and all(path_kind(path) == "image" for path in files):
+        return sanitize_title(f"🖼️ Update {len(files)} image assets")
     if files:
         return f"Update {len(files)} staged files"
     return "Update staged changes"

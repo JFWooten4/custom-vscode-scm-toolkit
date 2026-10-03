@@ -271,6 +271,26 @@ class TitleTests(unittest.TestCase):
 
 
 class ArtifactContextTests(unittest.TestCase):
+    def test_artifact_fallbacks(self):
+        self.assertEqual(ai_commit.fallback_title(["assets/DASH.PNG"]), "🖼️ Update DASH.PNG")
+        self.assertEqual(ai_commit.fallback_title(["docs/report.pdf"]), "🖋️ Update report.pdf")
+        self.assertEqual(
+            ai_commit.fallback_title(["assets/a.png", "assets/b.svg"]),
+            "🖼️ Update 2 image assets",
+        )
+        self.assertEqual(
+            ai_commit.fallback_title(["assets/a.png", "src/app.js"]),
+            "Update 2 staged files",
+        )
+        self.assertEqual(ai_commit.fallback_title([]), "Update staged changes")
+
+    @patch.object(ai_commit, "installed_local_model_names", return_value=set())
+    def test_missing_model_uses_image_fallback(self, _models):
+        self.assertEqual(
+            ai_commit.generate_title("1 binary file", "Binary files differ", ["assets/logo.png"]),
+            "🖼️ Update logo.png",
+        )
+
     def test_large_single_file_diff_keeps_beginning_and_tail(self):
         diff = (
             "diff --git a/docs/report.md b/docs/report.md\n"
