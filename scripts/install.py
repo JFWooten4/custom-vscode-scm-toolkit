@@ -407,7 +407,7 @@ def codex_transcript_countdown_edits(js):
     messages = list(re.finditer(
         r"id:`localConversation\.usageLimit\.(?:upgrade|upgradeOrAddCredits|addCredits|retry)`,"
         r"defaultMessage:`[^`]*\bat \{resetDate\}[^`]*`", js))
-    if len(messages) != 4:
+    if not messages:
         raise ValueError("Unsupported Codex extension build: transcript usage-limit messages do not match.")
     for match in messages:
         original = match.group(0)
@@ -593,44 +593,40 @@ def codex_bundle_matches(text):
     if CODEX_START in text or CODEX_PROMOTIONS_START in text or CODEX_TIMESTAMPS_START in text or CODEX_DICTATION_START in text:
         return True
 
-    if "You’re out of Codex messages" in text or "codex.rateLimitUpsellBanner.dismiss" in text:
-        try:
-            codex_countdown_edits(text)
-        except ValueError:
-            pass
-        else:
-            return True
+    # Discover by feature, independently of compiler output and patch support.
+    # Translation dictionaries contain the same IDs, but no defaultMessage.
+    if ("You’re out of Codex messages" in text
+            or ('codex.rateLimitUpsellBanner.dismiss' in text
+                and ('defaultMessage:' in text or '.reset_at' in text))
+            or ('dragCounterRef:' in text and re.search(r'addEventListener\([`\"\']dragenter[`\"\']', text))):
+        return True
 
     return "Enable Fast mode" in text
 
 
-def codex_bundle_path(extension_path=None):
+def codex_bundle_paths(extension_path=None):
     if extension_path is None:
         extensions = Path.home() / ".vscode/extensions"
         candidates = sorted(extensions.glob("openai.chatgpt-*"), reverse=True)
     else:
         candidates = [extension_path]
 
+    matches = []
     for candidate in candidates:
         assets = candidate / "webview/assets"
         if not assets.is_dir():
             continue
-        patched = []
         for path in assets.glob("*.js"):
             text = path.read_text()
-            if CODEX_START in text or CODEX_PROMOTIONS_START in text or CODEX_TIMESTAMPS_START in text or CODEX_DICTATION_START in text:
-                patched.append(path)
-        if len(patched) == 1:
-            return patched[0]
-
-        matches = []
-        for path in assets.glob("*.js"):
-            if codex_bundle_matches(path.read_text()):
+            if codex_bundle_matches(text) or codex_image_drop.START in text:
                 matches.append(path)
-        if len(matches) == 1:
-            return matches[0]
+    return sorted(matches)
 
-    return None
+
+def codex_bundle_path(extension_path=None):
+    paths = codex_bundle_paths(extension_path)
+    # Compatibility for callers needing one bundle: prefer the usage UI.
+    return max(paths, key=lambda path: 'codex.rateLimitUpsellBanner.dismiss' in path.read_text(), default=None)
 
 def write_pair(paths, new_contents, old_contents):
     written = []
@@ -745,7 +741,7 @@ def main():
         old.append(context_old)
         new.append(context_new)
 
-    codex_path = codex_bundle_path(args.codex_extension)
+    codex_paths = codex_bundle_paths(args.codex_extension)
     try:
         awake_patch = codex_keep_awake.patch_file(
             args.codex_extension, enabled=settings.get("codexKeepAwake", True), remove=args.uninstall
@@ -773,18 +769,21 @@ def main():
         or settings["codexHideDictation"]
         or args.uninstall
     )
-    if codex_path is None and should_find_codex:
+    if not codex_paths and should_find_codex:
         message = "OpenAI Codex extension webview bundle was not found or is unsupported."
         if args.codex_only:
             raise ValueError(message)
         print(f"Warning: {message} Skipping optional Codex customizations.")
-    if codex_path is not None:
+    for codex_path in codex_paths:
         existing_index = paths.index(codex_path) if codex_path in paths else None
         codex_old = new[existing_index] if existing_index is not None else codex_path.read_text()
         try:
             codex_new = transform_codex(
                 codex_old,
-                enabled=settings["codexUsageResetCountdown"],
+                enabled=settings["codexUsageResetCountdown"] and (
+                    CODEX_START in codex_old or 'codex.rateLimitUpsellBanner.dismiss' in codex_old
+                    or 'You’re out of Codex messages' in codex_old
+                ),
                 hide_promotions=settings["codexHidePromotions"],
                 hide_timestamps=settings["codexHideChatTimestamps"],
                 hide_dictation=settings["codexHideDictation"],

@@ -46,11 +46,15 @@
 		</data>
 		<key>Resources/toolkit/assets/codex/codex-image-drop.js</key>
 		<data>
-		pbVzJcrHZfKCgLt4Xzr6yUTmhg8=
+		ycCUmgyBIPDF3tlYXfvhqG/yJpA=
 		</data>
 		<key>Resources/toolkit/assets/codex/codex-keep-awake.js</key>
 		<data>
 		I0Fs/CZ7l1KUrKkUY2+FvWDykkc=
+		</data>
+		<key>Resources/toolkit/assets/workbench/hide_progress.css</key>
+		<data>
+		PHzhj8y/RJZn+5glSC/7I+A+eDk=
 		</data>
 		<key>Resources/toolkit/assets/workbench/outlined_buttons.css</key>
 		<data>
@@ -58,11 +62,11 @@
 		</data>
 		<key>Resources/toolkit/assets/workbench/picker.css</key>
 		<data>
-		PPwrjEB8COHngg6PdbOKeo3L+rY=
+		ojRyVLnd2Prk+0sPycX6HCQQl90=
 		</data>
 		<key>Resources/toolkit/assets/workbench/picker.js</key>
 		<data>
-		7I/yyX4dCcO7C11s1AKyihVGHgo=
+		fy7bRwjfaR1VXgSMFJIJpfjmOAg=
 		</data>
 		<key>Resources/toolkit/scripts/ai_commit.py</key>
 		<data>
@@ -94,7 +98,7 @@
 		</data>
 		<key>Resources/toolkit/scripts/codex_image_drop.py</key>
 		<data>
-		wPpv7c2VssAwpKxAfSmP6eG0UQk=
+		F1hBF9ftXRAmByy+N5UYBhzelA8=
 		</data>
 		<key>Resources/toolkit/scripts/codex_keep_awake.py</key>
 		<data>
@@ -102,7 +106,7 @@
 		</data>
 		<key>Resources/toolkit/scripts/configurator.py</key>
 		<data>
-		lxXx95tcD3Vszf8StHTWLhQv8LI=
+		EVPLB6bU9/Zb8iTmkXKi5BIkOrk=
 		</data>
 		<key>Resources/toolkit/scripts/configure.py</key>
 		<data>
@@ -114,11 +118,11 @@
 		</data>
 		<key>Resources/toolkit/scripts/install.py</key>
 		<data>
-		Ic7uUhByK8yJ2h5x9fvS765dtrI=
+		nA8cZm44dm2zlQuNxR9Dcb5XpSw=
 		</data>
 		<key>Resources/toolkit/scripts/local_codex_commit.py</key>
 		<data>
-		9p8NUIxJEhSsqKWCqFq8VpP1Uo0=
+		/LhfPnqqJ0a73F4qWHdIQ4lISfE=
 		</data>
 		<key>Resources/toolkit/scripts/model_picker.py</key>
 		<data>
@@ -134,11 +138,11 @@
 		</data>
 		<key>Resources/toolkit/scripts/toolkit_settings.py</key>
 		<data>
-		o5f3iST8Yf9TGsPtTAzAIIoWYqM=
+		1gJEwKzG/djVSAzto4ffd3ZB3WU=
 		</data>
 		<key>Resources/toolkit/scripts/workspace_search.py</key>
 		<data>
-		pxQ4kje5Pbo2nHJ8OXguVjfYFSY=
+		cx0cHmsHS2XDOB2WtgFehzDMLbY=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/THIRD_PARTY_NOTICES.md</key>
 		<data>
@@ -150,11 +154,15 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/branch_maintenance.js</key>
 		<data>
-		db01eUP0wwh/KlVmq+JWIiKUVCg=
+		hClnJuT1UO9aZutbfW65iQlL3EY=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/codex_commit.js</key>
 		<data>
-		q1QcELxurbyBPEU38sdMbRL6M9E=
+		TSLGvQGbI4RKjXRvmYKKPKRE37Y=
+		</data>
+		<key>Resources/toolkit/workspace-search-extension/codex_refresh.js</key>
+		<data>
+		hvwW6uhwlKNx1ljcH+depjzW9Qo=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/core.js</key>
 		<data>
@@ -162,7 +170,7 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/extension.js</key>
 		<data>
-		AY4V/2usVxR1Qzu3h3GqohohbhU=
+		Pb35mXsTZ6nsZa7iyNhl5VCT3ZE=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/extract.js</key>
 		<data>
@@ -174,11 +182,11 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/ollama.js</key>
 		<data>
-		OJj6qGckRhXD/236bduFqVAQjys=
+		U5VhDWjoERhYJGW8DVPbZFRwq4M=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/package.json</key>
 		<data>
-		4k4aPpGUykcVVzMVJe6vc0MzCLc=
+		ayTLqjAUl42f7kIzu+W3B55FhLY=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/pull_request.js</key>
 		<data>
@@ -186,11 +194,11 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/search_index.js</key>
 		<data>
-		o2CcBwaX8ava7JNX+XM/0vB2zlI=
+		8/qGhUKnSAdWgvozetQDK74tDsk=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/view.js</key>
 		<data>
-		YiEPA1xveVK+S0XStfi8vsTkVOs=
+		glRK1zMOpc1ynO6L4qmwW+qf7X4=
 		</data>
 	</dict>
 	<key>files2</key>
@@ -309,11 +317,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			pbVzJcrHZfKCgLt4Xzr6yUTmhg8=
+			ycCUmgyBIPDF3tlYXfvhqG/yJpA=
 			</data>
 			<key>hash2</key>
 			<data>
-			cscBK62Wh77IIXGL5QpbQCYvznmm5j3zD1sLzJ3WVEs=
+			MGGErlWFcAPHCSuO58dTB5em5f0cm+bfFFKBszUXzOE=
 			</data>
 		</dict>
 		<key>Resources/toolkit/assets/codex/codex-keep-awake.js</key>
@@ -325,6 +333,17 @@
 			<key>hash2</key>
 			<data>
 			9lv5Nl6m5oGeInVGuazTP9wGmPs6f4McULCJkpMZKEA=
+			</data>
+		</dict>
+		<key>Resources/toolkit/assets/workbench/hide_progress.css</key>
+		<dict>
+			<key>hash</key>
+			<data>
+			PHzhj8y/RJZn+5glSC/7I+A+eDk=
+			</data>
+			<key>hash2</key>
+			<data>
+			TNFf4utytqpHQjlULerjjVetOUPNJXvVFyq8qJWivXs=
 			</data>
 		</dict>
 		<key>Resources/toolkit/assets/workbench/outlined_buttons.css</key>
@@ -342,22 +361,22 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			PPwrjEB8COHngg6PdbOKeo3L+rY=
+			ojRyVLnd2Prk+0sPycX6HCQQl90=
 			</data>
 			<key>hash2</key>
 			<data>
-			i8meu7iQjzZZ7LpTm12j5/jJzN6cR+Tpu+oQqinWFR4=
+			Vp88FbxKUnjNMrr9BaV84kvewxFfYBC3pwCWSnyb+bQ=
 			</data>
 		</dict>
 		<key>Resources/toolkit/assets/workbench/picker.js</key>
 		<dict>
 			<key>hash</key>
 			<data>
-			7I/yyX4dCcO7C11s1AKyihVGHgo=
+			fy7bRwjfaR1VXgSMFJIJpfjmOAg=
 			</data>
 			<key>hash2</key>
 			<data>
-			PvJ5KlGwOIQcNLCmmUkrplghGVltebwULWfrTPy7mHU=
+			VESytbmhCTo/7pOxIi66jjJxKbvUOEkCzugpJ+guasg=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/ai_commit.py</key>
@@ -441,11 +460,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			wPpv7c2VssAwpKxAfSmP6eG0UQk=
+			F1hBF9ftXRAmByy+N5UYBhzelA8=
 			</data>
 			<key>hash2</key>
 			<data>
-			JLOvFQePOpV1oKSh/0gsm7UcUY+lyhruRakOyb2tKB4=
+			p9D41DszrmsqUPdmxFmAW13rhQT5jRt11zvhZfdmqvA=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/codex_keep_awake.py</key>
@@ -463,11 +482,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			lxXx95tcD3Vszf8StHTWLhQv8LI=
+			EVPLB6bU9/Zb8iTmkXKi5BIkOrk=
 			</data>
 			<key>hash2</key>
 			<data>
-			ybaarZ4XfVqE4zt574M/J4/YEApJ+hayCYgKHcLhKww=
+			9lfM83WfsXXCU3CHALAjmM9Zrw7UWoogpUm8m/ywOg4=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/configure.py</key>
@@ -496,22 +515,22 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			Ic7uUhByK8yJ2h5x9fvS765dtrI=
+			nA8cZm44dm2zlQuNxR9Dcb5XpSw=
 			</data>
 			<key>hash2</key>
 			<data>
-			PncQFrZdgiLEJD161MvwdcnEDMHKkM8aG7G8wG6+Zcg=
+			joElxMLo33/sg22APuw2lVhUvqpVxze1Pl593R1RQ6g=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/local_codex_commit.py</key>
 		<dict>
 			<key>hash</key>
 			<data>
-			9p8NUIxJEhSsqKWCqFq8VpP1Uo0=
+			/LhfPnqqJ0a73F4qWHdIQ4lISfE=
 			</data>
 			<key>hash2</key>
 			<data>
-			UkDnn+85U9n3OcHP10wQ9fSoADvXNEGILN5vxgfTgSY=
+			KT0XX5qlbnLIOC9hfRLGNyTzlItP/sGKLca9ckuXxF4=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/model_picker.py</key>
@@ -551,22 +570,22 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			o5f3iST8Yf9TGsPtTAzAIIoWYqM=
+			1gJEwKzG/djVSAzto4ffd3ZB3WU=
 			</data>
 			<key>hash2</key>
 			<data>
-			/PckIbn8wev/044dPPaSl5S2ZOijgHNtVrA67cEuy0E=
+			4BzyBV/GS35A+mHTitxCxVzlKZJt8nFfnQu7NaxzVxk=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/workspace_search.py</key>
 		<dict>
 			<key>hash</key>
 			<data>
-			pxQ4kje5Pbo2nHJ8OXguVjfYFSY=
+			cx0cHmsHS2XDOB2WtgFehzDMLbY=
 			</data>
 			<key>hash2</key>
 			<data>
-			qcxTeB1W10EVAYIik/J9G1ht/MeKhB5/SL2hrxkLEiA=
+			JEqk0g66iwoX4aHT4sTBGinNMNvZ5UfIIFKszZ/NVBs=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/THIRD_PARTY_NOTICES.md</key>
@@ -595,22 +614,33 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			db01eUP0wwh/KlVmq+JWIiKUVCg=
+			hClnJuT1UO9aZutbfW65iQlL3EY=
 			</data>
 			<key>hash2</key>
 			<data>
-			0+lu923l2Ap7ffvTxCAY89X0khUca3iYE+cl6ZpZ86M=
+			fNu5O8kxc0tWkZ1f7L/3LjgrpRtquFMEcwapIS7E+d4=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/codex_commit.js</key>
 		<dict>
 			<key>hash</key>
 			<data>
-			q1QcELxurbyBPEU38sdMbRL6M9E=
+			TSLGvQGbI4RKjXRvmYKKPKRE37Y=
 			</data>
 			<key>hash2</key>
 			<data>
-			8SzUilz57JgaJztiiLOl9Hrz9ubkB9rdmRIjRTQi8hc=
+			KYC4ARsWuS9Mm0ExdmhsFsquao4EyTp6QVYbGRuUIbs=
+			</data>
+		</dict>
+		<key>Resources/toolkit/workspace-search-extension/codex_refresh.js</key>
+		<dict>
+			<key>hash</key>
+			<data>
+			hvwW6uhwlKNx1ljcH+depjzW9Qo=
+			</data>
+			<key>hash2</key>
+			<data>
+			veu7nZfEZH4JoJooTwh0SYViXXz1UuZF/7E85U9YrkE=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/core.js</key>
@@ -628,11 +658,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			AY4V/2usVxR1Qzu3h3GqohohbhU=
+			Pb35mXsTZ6nsZa7iyNhl5VCT3ZE=
 			</data>
 			<key>hash2</key>
 			<data>
-			zeBc65jqyQ2RENYeAyvSBbztpdebbyNnqIv1vBDKda4=
+			z8rR0WYKNjzIOfJXflE4WERWAa1MT4AuEOCHNMvHSiE=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/extract.js</key>
@@ -661,22 +691,22 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			OJj6qGckRhXD/236bduFqVAQjys=
+			U5VhDWjoERhYJGW8DVPbZFRwq4M=
 			</data>
 			<key>hash2</key>
 			<data>
-			BuqrY7HaBka/olGktb88vuMD1RsBQBDNZnbEhJY9nC8=
+			yP5+H0SRefzqOTKx99y01zm5JeH6y9HemMhPkhYmFDU=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/package.json</key>
 		<dict>
 			<key>hash</key>
 			<data>
-			4k4aPpGUykcVVzMVJe6vc0MzCLc=
+			ayTLqjAUl42f7kIzu+W3B55FhLY=
 			</data>
 			<key>hash2</key>
 			<data>
-			0XyB+aPtlkUZgIjERfv6x9ozvxOPMeX38HTpURYxhow=
+			LF8OVv4qaAlwo9ZDZyJEQw5BTz3+k3WaPLbNuGwC14U=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/pull_request.js</key>
@@ -694,22 +724,22 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			o2CcBwaX8ava7JNX+XM/0vB2zlI=
+			8/qGhUKnSAdWgvozetQDK74tDsk=
 			</data>
 			<key>hash2</key>
 			<data>
-			fKKEPYI2WEats/HCZyJV+pmiWq946Nfim08eEaR79vQ=
+			gSJWmTjHXGdcuZ/3u2ZKvd2vVbdW/IiBfquN0uzWjvs=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/view.js</key>
 		<dict>
 			<key>hash</key>
 			<data>
-			YiEPA1xveVK+S0XStfi8vsTkVOs=
+			glRK1zMOpc1ynO6L4qmwW+qf7X4=
 			</data>
 			<key>hash2</key>
 			<data>
-			15I06U282xOrs8tjFWZdlZ2Px9zGglGh6Mcts/w0/A4=
+			iWXqbGxbfWDmz8lE52uy1zxKmkWImsDMD6bOMA0j/UQ=
 			</data>
 		</dict>
 	</dict>

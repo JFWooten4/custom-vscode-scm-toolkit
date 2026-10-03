@@ -8,6 +8,7 @@ const { registerBranchCommands } = require('./branch_actions');
 const { registerCodexCommitCommand } = require('./codex_commit');
 const { registerPullRequestCommand } = require('./pull_request');
 const { registerBranchMaintenance } = require('./branch_maintenance');
+const { registerCodexRefresh } = require('./codex_refresh');
 
 const VIEW_ID = 'scmToolkit.workspaceSearch';
 const CONFIG_ROOT = 'scmToolkit.workspaceSearch';
@@ -216,6 +217,7 @@ function settings() {
 }
 
 async function activate(context) {
+  registerCodexRefresh(vscode, context);
   // Hidden panel tabs can still be restored as the active container.
   // Select the user's SCM container explicitly once the workbench has started.
   if (vscode.workspace.getConfiguration('scmToolkit').get('openPanelOnStartup', true)) {
