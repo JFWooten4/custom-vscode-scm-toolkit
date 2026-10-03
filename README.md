@@ -615,3 +615,18 @@ You can also use `--check` with `--uninstall` to validate the removal without wr
 ```sh
 python3 scripts/install.py --uninstall --check
 ```
+
+
+Automatic staged commits remove trailing spaces and tabs from added or changed text lines and normalize the final newline. Existing untouched lines, LF/CRLF style, file modes, cached attribute exclusions, and unstaged edits are preserved. Explicit-message commits keep their existing behavior.
+
+### Post-commit Markdown spellcheck
+
+Enable **Post-commit Markdown spellcheck** in SweetieBot settings under Ollama, or run:
+
+```sh
+git config --global scm-toolkit.post-commit-spellcheck true
+```
+
+This toggle is off by default. After a successful automatic staged commit, the local Ollama model reviews changed Markdown prose and proposes conservative spelling, grammar, and ASCII punctuation corrections. Fenced code, inline code, URLs, Markdown prefixes, and line endings are protected. Unavailable models and unchanged text produce no dialog.
+
+Proposals appear as unstaged edits in Source Control. Choose **Keep edits** to review them or **Discard** to remove untouched proposals. The original commit and index remain unchanged. The job skips repositories with local work or new staged changes, a changed HEAD, and corrections to files edited while it runs. Explicit-message commits retain their existing behavior.

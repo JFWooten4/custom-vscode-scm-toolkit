@@ -429,6 +429,55 @@ def normalize_staged_final_newlines() -> list[str]:
     def repo_git(*args: str, input_data: bytes | None = None):
         return git_bytes("-C", worktree_root, "--literal-pathspecs", *args, input_data=input_data)
 
+    def added_line_numbers(path: str) -> set[int]:
+        diff_result = repo_git(
+            "diff",
+            "--cached",
+            "--no-ext-diff",
+            "--no-textconv",
+            "--unified=0",
+            "--no-color",
+            "--",
+            path,
+        )
+        if diff_result.returncode != 0:
+            raise RuntimeError(f"could not inspect staged additions for {path}")
+
+        added = set()
+        next_line = None
+        for line in diff_result.stdout.splitlines():
+            if line.startswith(b"@@ "):
+                match = re.match(rb"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@", line)
+                next_line = int(match.group(1)) if match else None
+                continue
+            if next_line is None:
+                continue
+            if line.startswith(b"+"):
+                added.add(next_line)
+                next_line += 1
+            elif line.startswith(b"-") or line.startswith(b"\\"):
+                continue
+            else:
+                next_line += 1
+        return added
+
+    def strip_added_trailing_whitespace(data: bytes, path: str) -> bytes:
+        added = added_line_numbers(path)
+        if not added:
+            return data
+
+        lines = data.split(b"\n")
+        for line_number in added:
+            index = line_number - 1
+            if index < 0 or index >= len(lines):
+                continue
+            line = lines[index]
+            if line.endswith(b"\r"):
+                lines[index] = line[:-1].rstrip(b" \t") + b"\r"
+            else:
+                lines[index] = line.rstrip(b" \t")
+        return b"\n".join(lines)
+
     changed = repo_git("diff", "--cached", "--name-only", "--no-relative",
                        "--diff-filter=ACMR", "-z", "--")
     if changed.returncode != 0:
@@ -475,12 +524,13 @@ def normalize_staged_final_newlines() -> list[str]:
             data.decode("utf-8")
         except UnicodeDecodeError:
             continue
-        last_lf = data.rfind(b"\n")
-        newline = b"\r\n" if last_lf > 0 and data[last_lf - 1:last_lf] == b"\r" else b"\n"
-        if data.endswith(b"\r"):
-            updated = data + b"\n"
+        cleaned = strip_added_trailing_whitespace(data, path)
+        last_lf = cleaned.rfind(b"\n")
+        newline = b"\r\n" if last_lf > 0 and cleaned[last_lf - 1:last_lf] == b"\r" else b"\n"
+        if cleaned.endswith(b"\r"):
+            updated = cleaned + b"\n"
         else:
-            trimmed = data
+            trimmed = cleaned
             while trimmed.endswith((b"\r\n", b"\n")):
                 trimmed = trimmed[:-2] if trimmed.endswith(b"\r\n") else trimmed[:-1]
             updated = trimmed + newline
@@ -887,6 +937,18 @@ def generate_message(
 def generate_title(stat: str, diff: str, files: list[str]) -> str:
     return generate_message(stat, diff, files)[0]
 
+def load_post_commit_spellcheck():
+    import importlib.util
+    from pathlib import Path
+    source = Path(__file__).with_name("post_commit_spellcheck.py")
+    if not source.exists():
+        source = Path(__file__).with_name(Path(__file__).name + "-spellcheck.py")
+    spec = importlib.util.spec_from_file_location("scm_toolkit_post_commit_spellcheck", source)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def main() -> None:
     global GIT_GLOBAL_ARGS
 
@@ -929,7 +991,28 @@ def main() -> None:
     message_args = ["-m", title]
     if description:
         message_args.extend(["-m", description])
-    os.execv(REAL_GIT, [REAL_GIT, *argv, *message_args])
+    if not git_config_bool("scm-toolkit.post-commit-spellcheck", False):
+        os.execv(REAL_GIT, [REAL_GIT, *argv, *message_args])
+
+    spellcheck = None
+    paths = []
+    previous_head = ""
+    try:
+        spellcheck = load_post_commit_spellcheck()
+        if not spellcheck.has_unstaged_changes(GIT_GLOBAL_ARGS):
+            paths = spellcheck.staged_markdown_paths(GIT_GLOBAL_ARGS)
+            previous_head = spellcheck.head_sha(GIT_GLOBAL_ARGS)
+    except Exception as exc:
+        print(f"scm-toolkit: post-commit spellcheck unavailable ({exc})", file=sys.stderr)
+    result = subprocess.run([REAL_GIT, *argv, *message_args], check=False)
+    if result.returncode == 0 and paths:
+        try:
+            committed_head = spellcheck.head_sha(GIT_GLOBAL_ARGS)
+            if committed_head and committed_head != previous_head:
+                spellcheck.spawn_post_commit(GIT_GLOBAL_ARGS, paths, committed_head, os.path.abspath(__file__))
+        except Exception as exc:
+            print(f"scm-toolkit: post-commit spellcheck skipped ({exc})", file=sys.stderr)
+    raise SystemExit(result.returncode)
 
 
 if __name__ == "__main__":

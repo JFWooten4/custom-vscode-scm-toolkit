@@ -416,6 +416,24 @@ class AiWrapperTests(unittest.TestCase):
             self.assertTrue(destination.stat().st_mode & 0o111)
             self.assertFalse(install.sync_ai_wrapper(check=True, destination=destination))
 
+    def test_installed_wrapper_loads_spellcheck_helper_and_core(self):
+        import importlib.util
+        from importlib.machinery import SourceFileLoader
+        with tempfile.TemporaryDirectory() as tmp:
+            destination = Path(tmp) / "scm-toolkit-git"
+            install.sync_ai_wrapper(destination=destination)
+            loader = SourceFileLoader("installed_commit_core", str(destination))
+            spec = importlib.util.spec_from_file_location("installed_commit_core", destination, loader=loader)
+            core = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(core)
+            worker = core.load_post_commit_spellcheck()
+            helper = destination.with_name(destination.name + "-spellcheck.py")
+            self.assertEqual(helper.read_bytes(), (install.HERE / "post_commit_spellcheck.py").read_bytes())
+            with patch.object(worker, "CORE_PATH", str(destination)):
+                self.assertTrue(callable(worker.load_core().generate_message))
+            install.sync_ai_wrapper(remove=True, destination=destination)
+            self.assertFalse(helper.exists())
+
     def test_sync_ai_wrapper_uninstall_removes_copy(self):
         with tempfile.TemporaryDirectory() as tmp:
             destination = Path(tmp) / "scm-toolkit-git"
