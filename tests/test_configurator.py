@@ -39,6 +39,19 @@ class SubmissionTests(unittest.TestCase):
         values["postCommitSpellcheck"] = ["true"]
         self.assertTrue(configurator.parse_submission(values)["postCommitSpellcheck"])
 
+    def test_browser_toggles_default_off_and_save_on(self):
+        values = form_values()
+        self.assertFalse(install.DEFAULT_SETTINGS["cmdClickCloseOthers"])
+        self.assertFalse(install.DEFAULT_SETTINGS["browserChatgptHome"])
+        parsed = configurator.parse_submission(values)
+        self.assertFalse(parsed["cmdClickCloseOthers"])
+        self.assertFalse(parsed["browserChatgptHome"])
+        values["cmdClickCloseOthers"] = ["true"]
+        values["browserChatgptHome"] = ["true"]
+        parsed = configurator.parse_submission(values)
+        self.assertTrue(parsed["cmdClickCloseOthers"])
+        self.assertTrue(parsed["browserChatgptHome"])
+
     def test_parses_optional_composer_colors(self):
         values = form_values()
         values['codexSendBackground'] = ['#43AF49']
@@ -67,6 +80,8 @@ class SubmissionTests(unittest.TestCase):
         self.assertTrue(parsed["openPanelOnStartup"])
         self.assertEqual(parsed["commitButtonLabel"], "Send")
         self.assertTrue(parsed["autoPublishToggle"])
+        self.assertFalse(parsed["cmdClickCloseOthers"])
+        self.assertFalse(parsed["browserChatgptHome"])
         self.assertFalse(parsed["workspaceSearchActivityBar"])
         self.assertEqual(parsed["workspaceSearchLabel"], "EFS")
         self.assertFalse(parsed["workspaceSearchAskOllama"])
@@ -152,6 +167,8 @@ class SubmissionTests(unittest.TestCase):
         self.assertIn("Open Sweetie Bot on startup", page)
         self.assertIn('name="commitButtonLabel"', page)
         self.assertIn('name="autoPublishToggle"', page)
+        self.assertIn('name="cmdClickCloseOthers"', page)
+        self.assertIn('name="browserChatgptHome"', page)
         self.assertIn('name="codexHideChatTimestamps"', page)
         self.assertIn('name="codexHideDictation"', page)
         self.assertIn('name="workspaceSearchActivityBar"', page)
