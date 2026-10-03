@@ -73,6 +73,7 @@ def source_files() -> dict[Path, Path]:
         for path in SOURCE.rglob("*")
         if path.is_file()
     }
+    files[Path("prune_merged_branches.py")] = HERE / "prune_merged_branches.py"
     files[Path("configurator.py")] = HERE / "configurator.py"
     files[Path("toolkit_settings.py")] = HERE / "toolkit_settings.py"
     files[Path("codex_colors.py")] = HERE / "codex_colors.py"

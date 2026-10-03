@@ -9,6 +9,9 @@ Current features:
 - show enabled action icons in pure white while hovering SCM or Source Control Graph rows and action buttons, preserving their normal theme colors otherwise
 - shorten the commit-message placeholder to `Message`
 - optionally show a commit-and-push checkbox that dispatches the push without holding commit completion
+- clean up unchanged local branches after their same-repository PR merges into the default branch
+- suppress the GitHub PR extension’s redundant cleanup prompt when the repository deletes merged branches automatically
+- open the PR-number link in the GitHub PR view once per click
 - optionally show a guarded local-branch cleanup button
 - optionally create a freshly synced branch from `main` using configurable built-in, imported, and custom name packs
 - optionally show a quick toggle for VS Code inline autocomplete
@@ -615,6 +618,18 @@ You can also use `--check` with `--uninstall` to validate the removal without wr
 ```sh
 python3 scripts/install.py --uninstall --check
 ```
+
+## Automatic merged-branch cleanup
+
+Sweetiebot checks open local repositories when VS Code starts and every ten minutes. It uses authenticated `gh` to verify that a same-repository PR merged into the default branch. A local branch is removed only if its tip still equals the recorded PR head, no PR for that branch is open, and no worktree has it checked out. Git removes the reference with the expected SHA, preserving a branch that moves during cleanup. Remote branches are left to GitHub’s repository setting.
+
+Preview one repository without deleting branches:
+
+```sh
+python3 scripts/prune_merged_branches.py --repo /path/to/repository --force --dry-run
+```
+
+The installer also applies reversible fixes to supported GitHub Pull Requests extension builds. It suppresses the automatic cleanup prompt when the repository already deletes branches on merge, while retaining the manual Delete Branch action and explicitly configured native automatic deletion. The PR-number link keeps its existing click handler as its sole opening path. Rerun the installer after updating that extension; unsupported assets are skipped with a warning.
 
 
 Automatic staged commits remove trailing spaces and tabs from added or changed text lines and normalize the final newline. Existing untouched lines, LF/CRLF style, file modes, cached attribute exclusions, and unstaged edits are preserved. Explicit-message commits keep their existing behavior.
