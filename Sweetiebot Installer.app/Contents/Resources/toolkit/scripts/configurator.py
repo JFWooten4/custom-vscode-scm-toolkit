@@ -445,6 +445,7 @@ def render_form(
     options = "".join(f'<option value="{html.escape(model, quote=True)}"></option>' for model in models)
     error_html = f'<div class="error" role="alert">{html.escape(error)}</div>' if error else ""
     action = "/save?token=" + urllib.parse.quote(token)
+    models_json = json.dumps(models).replace("<", "\\u003c")
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SCM Toolkit Setup</title><style>
@@ -539,7 +540,7 @@ if (packSearch) {{
   updatePacks();
 }}
 
-let installedModels = {json.dumps(models).replace("<", "\\u003c")};
+let installedModels = {models_json};
 const normalizeModel = name => name.split('/').pop().includes(':') ? name : name + ':latest';
 function updateModelRows() {{
   for (const button of document.querySelectorAll('.download-model')) {{
