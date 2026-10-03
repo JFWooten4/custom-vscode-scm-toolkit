@@ -317,6 +317,13 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     if (settings.commitButtonLabel) {
         scmToolkitCustomizeCommitButtonLabel(widget, settings.commitButtonLabel);
     }
+    const homeButton = doc.createElement('button');
+    homeButton.type = 'button';
+    homeButton.className = 'scm-toolkit-home codicon codicon-home';
+    homeButton.hidden = true;
+    homeButton.title = 'Home: switch to main';
+    homeButton.setAttribute('aria-label', 'Home: switch to main');
+
     const branchButton = doc.createElement('button');
     branchButton.type = 'button';
     branchButton.className = 'scm-toolkit-branch';
@@ -426,7 +433,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     settingsButton.title = 'Open SCM Toolkit settings';
     settingsButton.setAttribute('aria-label', 'Open SCM Toolkit settings');
 
-    widget.element.prepend(branchButton);
+    widget.element.prepend(homeButton, branchButton);
     widget.element.append(
         pushControl,
         syncButton,
@@ -809,6 +816,9 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     };
 
     const refreshBranchControls = () => {
+        homeButton.hidden = branchButton.hidden;
+        homeButton.disabled = pending || deletingBranch || creatingPullRequest || creatingPonyBranch
+            || !currentRepositoryUri || currentBranch === 'main';
         branchButton.disabled =
             pending || deletingBranch || creatingPullRequest || creatingPonyBranch || !currentCommand?.id;
 
@@ -845,6 +855,26 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         refreshCodexCommit();
         refreshPullRequest();
         refreshPonyBranch();
+    };
+
+    const returnHome = async event => {
+        event.stopPropagation();
+        const repository = currentRepositoryUri;
+        if (!repository || currentBranch === 'main' || pending || deletingBranch
+            || creatingPullRequest || creatingPonyBranch) return;
+
+        pending = true;
+        pushCheckbox.disabled = true;
+        refreshBranchControls();
+        try {
+            await commands.executeCommand('scmToolkit.returnHome', repository);
+        } catch (error) {
+            notifications.error(error);
+        } finally {
+            pending = false;
+            pushCheckbox.disabled = updatingPush || deletingBranch;
+            refreshBranchControls();
+        }
     };
 
     const openBranchPicker = async event => {
@@ -916,6 +946,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
         }
     };
 
+    homeButton.addEventListener('click', returnHome);
     branchButton.addEventListener('click', openBranchPicker);
     syncButton.addEventListener('click', syncBranch);
     deleteButton.addEventListener('click', deleteBranch);
@@ -925,6 +956,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
     settingsButton.addEventListener('click', openSettings);
     widget.disposables.add({
         dispose() {
+            homeButton.removeEventListener('click', returnHome);
             branchButton.removeEventListener('click', openBranchPicker);
             syncButton.removeEventListener('click', syncBranch);
             deleteButton.removeEventListener('click', deleteBranch);
@@ -935,6 +967,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             pullRequestButton.removeEventListener('click', createPullRequest);
             ponyBranchButton.removeEventListener('click', createPonyBranch);
             settingsButton.removeEventListener('click', openSettings);
+            homeButton.remove();
             branchButton.remove();
             pushControl.remove();
             syncButton.remove();
@@ -952,6 +985,9 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
 
     return {
         width() {
+            const homeWidth = homeButton.hidden
+                ? 0
+                : homeButton.getBoundingClientRect().width;
             const branchWidth = branchButton.hidden
                 ? 0
                 : branchButton.getBoundingClientRect().width;
@@ -988,7 +1024,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             const settingsWidth = settingsButton.hidden
                 ? 0
                 : settingsButton.getBoundingClientRect().width;
-            return branchWidth + pushWidth + syncWidth + deleteWidth + firstDividerWidth
+            return homeWidth + branchWidth + pushWidth + syncWidth + deleteWidth + firstDividerWidth
                 + autocompleteWidth + codexWidth + autoPublishWidth + secondDividerWidth
                 + pullRequestWidth + ponyBranchWidth + settingsWidth;
         },
@@ -999,6 +1035,8 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
             currentRepositoryArgument = undefined;
             currentRepositoryUri = undefined;
             currentInput = undefined;
+            homeButton.hidden = true;
+            homeButton.disabled = true;
             branchButton.hidden = true;
             branchButton.disabled = true;
             pushControl.hidden = true;

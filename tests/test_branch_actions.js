@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { createBranch, publishBranch, deleteBranch, syncBranch, registerBranchCommands } = require('../workspace-search-extension/branch_actions');
+const { returnHome, createBranch, publishBranch, deleteBranch, syncBranch, registerBranchCommands } = require('../workspace-search-extension/branch_actions');
 
 const options = { defaultBranch: 'main', remote: 'origin', names: ['used', 'remote-used', 'fresh'] };
 
@@ -30,6 +30,24 @@ function fixture() {
 }
 
 async function run() {
+  {
+    const { repository, calls } = fixture();
+    assert.equal(await returnHome(repository), 'main');
+    assert.deepEqual(calls, [['checkout', 'main'], ['status']]);
+    assert.equal(repository.inputBox.value, 'Existing draft');
+  }
+  {
+    const { repository, calls } = fixture();
+    repository.checkout = async () => { throw new Error('Local changes would be overwritten'); };
+    await assert.rejects(returnHome(repository), /Local changes would be overwritten/);
+    assert.equal(repository.state.HEAD.name, 'topic');
+    assert.deepEqual(calls, []);
+  }
+  {
+    const { repository } = fixture();
+    repository.checkout = async () => {};
+    await assert.rejects(returnHome(repository), /Could not switch to main/);
+  }
   {
     const { repository, calls } = fixture();
     assert.equal(await syncBranch(repository, { ...options, branch: 'topic' }), 'topic');
@@ -165,7 +183,8 @@ async function run() {
     };
     const context = { subscriptions: [] };
     registerBranchCommands(vscode, context);
-    assert.equal(context.subscriptions.length, 4);
+    assert.equal(context.subscriptions.length, 5);
+    assert.equal(await commands.get('scmToolkit.returnHome')({ rootUri: uri }), 'main');
     assert.equal(await commands.get('scmToolkit.createBranch')(uri, options), 'fresh');
     assert.equal(await commands.get('scmToolkit.createBranch')({ ...uri }, options), 'fresh');
     assert.equal(await commands.get('scmToolkit.createBranch')({ rootUri: uri }, options), 'fresh');
