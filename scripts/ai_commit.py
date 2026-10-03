@@ -81,6 +81,18 @@ def git_output(*args: str) -> str:
     return result.stdout
 
 
+def git_bytes(
+    *args: str,
+    input_data: bytes | None = None,
+) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [REAL_GIT, *GIT_GLOBAL_ARGS, *args],
+        check=False,
+        capture_output=True,
+        input=input_data,
+    )
+
+
 def git_config_bool(key: str, default: bool) -> bool:
     result = subprocess.run(
         [REAL_GIT, "config", "--global", "--type=bool", "--get", key],
@@ -406,6 +418,100 @@ def uses_staged_index(args: list[str]) -> bool:
         "--status",
     }
     return all(arg in flags or arg.startswith("--gpg-sign=") for arg in args)
+
+
+def normalize_staged_final_newlines() -> list[str]:
+    root = git_bytes("rev-parse", "--show-toplevel")
+    if root.returncode != 0:
+        raise RuntimeError("could not locate the working tree")
+    worktree_root = os.fsdecode(root.stdout.rstrip(b"\n"))
+
+    def repo_git(*args: str, input_data: bytes | None = None):
+        return git_bytes("-C", worktree_root, "--literal-pathspecs", *args, input_data=input_data)
+
+    changed = repo_git("diff", "--cached", "--name-only", "--no-relative",
+                       "--diff-filter=ACMR", "-z", "--")
+    if changed.returncode != 0:
+        raise RuntimeError("could not list staged files for final-newline normalization")
+    staged_paths = {os.fsdecode(path) for path in changed.stdout.split(b"\0") if path}
+    if not staged_paths:
+        return []
+
+    entries = repo_git("ls-files", "--stage", "-z", "--", *sorted(staged_paths))
+    if entries.returncode != 0:
+        raise RuntimeError("could not inspect staged files for final-newline normalization")
+    attributes = repo_git("check-attr", "--cached", "-z", "--stdin", "text", "diff", "filter",
+                          input_data=b"".join(os.fsencode(path) + b"\0" for path in sorted(staged_paths)))
+    if attributes.returncode != 0:
+        raise RuntimeError("could not inspect staged file attributes")
+    fields = attributes.stdout.split(b"\0")[:-1]
+    attrs = {}
+    for offset in range(0, len(fields), 3):
+        path, name, value = fields[offset:offset + 3]
+        attrs.setdefault(os.fsdecode(path), {})[name] = value
+
+    pending = []
+    for raw_entry in entries.stdout.split(b"\0"):
+        if not raw_entry:
+            continue
+        try:
+            metadata, raw_path = raw_entry.split(b"\t", 1)
+            mode, blob, stage = metadata.decode("ascii").split()
+        except (ValueError, UnicodeDecodeError) as exc:
+            raise RuntimeError("could not parse staged file metadata") from exc
+        path = os.fsdecode(raw_path)
+        attr = attrs.get(path, {})
+        if (path not in staged_paths or stage != "0" or mode not in {"100644", "100755"}
+                or attr.get(b"text") == b"unset" or attr.get(b"diff") == b"unset"
+                or attr.get(b"filter") not in {b"unspecified", b"unset"}):
+            continue
+        blob_result = repo_git("cat-file", "blob", blob)
+        if blob_result.returncode != 0:
+            raise RuntimeError(f"could not read staged content for {path}")
+        data = blob_result.stdout
+        if not data or b"\0" in data:
+            continue
+        try:
+            data.decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+        last_lf = data.rfind(b"\n")
+        newline = b"\r\n" if last_lf > 0 and data[last_lf - 1:last_lf] == b"\r" else b"\n"
+        if data.endswith(b"\r"):
+            updated = data + b"\n"
+        else:
+            trimmed = data
+            while trimmed.endswith((b"\r\n", b"\n")):
+                trimmed = trimmed[:-2] if trimmed.endswith(b"\r\n") else trimmed[:-1]
+            updated = trimmed + newline
+        if updated == data:
+            continue
+        hashed = repo_git("hash-object", "-w", "--stdin", input_data=updated)
+        if hashed.returncode != 0:
+            raise RuntimeError(f"could not write normalized staged content for {path}")
+        pending.append((path, mode, hashed.stdout.strip(), data, updated))
+
+    if pending:
+        # Publish all normalized blobs in one locked index update.
+        index_info = b"".join(mode.encode() + b" " + blob + b"\t" + os.fsencode(path) + b"\0"
+                              for path, mode, blob, _, _ in pending)
+        result = repo_git("update-index", "-z", "--index-info", input_data=index_info)
+        if result.returncode != 0:
+            raise RuntimeError("could not update the staged copies for final-newline normalization")
+
+    for path, _, _, data, updated in pending:
+        worktree_path = os.path.join(worktree_root, path)
+        try:
+            if os.path.islink(worktree_path):
+                continue
+            with open(worktree_path, "rb") as worktree_file:
+                worktree_data = worktree_file.read()
+            if worktree_data == data:
+                with open(worktree_path, "wb") as worktree_file:
+                    worktree_file.write(updated)
+        except OSError:
+            pass
+    return [item[0] for item in pending]
 
 
 def staged_diff() -> tuple[str, str, list[str]]:
@@ -803,6 +909,12 @@ def main() -> None:
         or not uses_staged_index(commit_args)
     ):
         os.execv(REAL_GIT, [REAL_GIT, *argv])
+
+    try:
+        normalize_staged_final_newlines()
+    except RuntimeError as exc:
+        print(f"scm-toolkit: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
 
     stat, diff, files = staged_diff()
     if not stat and not diff:
