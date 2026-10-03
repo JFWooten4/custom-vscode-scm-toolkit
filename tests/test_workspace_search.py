@@ -42,12 +42,21 @@ class WorkspaceSearchInstallerTests(unittest.TestCase):
             package["activationEvents"],
         )
         self.assertNotIn("scmToolkit.workspaceSearch.reindex", command_ids)
-        self.assertIn("const AUTO_REINDEX_INTERVAL_MS = 2 * 60 * 1000;", extension)
-        self.assertIn("index.refresh({ force: true })", extension)
+        self.assertIn("const INDEX_SYNC_INTERVAL_MS = 2 * 60 * 1000;", extension)
+        self.assertIn("void index.load().then(() => index.refresh())", extension)
+        self.assertNotIn("index.refresh({ force: true })", extension)
         self.assertNotIn(
             "registerCommand('scmToolkit.workspaceSearch.reindex'",
             extension,
         )
+        view = (workspace_search.SOURCE / "view.js").read_text()
+        search_index = (workspace_search.SOURCE / "search_index.js").read_text()
+        ollama = (workspace_search.SOURCE / "ollama.js").read_text()
+        self.assertNotIn("Reindex", view)
+        self.assertNotIn("type:'reindex'", view)
+        self.assertNotIn("this.index.dirty.size", view)
+        self.assertIn("if (this.dirty.size) void this.refresh().then(() => {", search_index)
+        self.assertIn("keep_alive: '30m'", ollama)
 
     def test_default_manifest_stays_in_source_control(self):
         package = workspace_search.render_package(DEFAULTS)
