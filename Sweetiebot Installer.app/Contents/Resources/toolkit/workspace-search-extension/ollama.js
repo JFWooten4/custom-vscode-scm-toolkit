@@ -76,7 +76,8 @@ async function embedTexts(settings, texts) {
   const response = await requestJson(settings.ollamaUrl, '/api/embed', {
     model: settings.embeddingModel,
     input: texts,
-    truncate: true
+    truncate: true,
+    keep_alive: '30m'
   });
   if (!Array.isArray(response.embeddings) || response.embeddings.length !== texts.length) {
     throw new Error(`Ollama model ${settings.embeddingModel} did not return one embedding per input.`);

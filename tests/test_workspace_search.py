@@ -11,6 +11,18 @@ DEFAULTS = dict(toolkit_settings.DEFAULT_SETTINGS)
 
 
 class WorkspaceSearchInstallerTests(unittest.TestCase):
+    def test_saved_feature_preferences_reach_installed_defaults(self):
+        settings = dict(DEFAULTS, autoPublishNewBranches=True, automaticBranchCleanup=False,
+                        workspaceSearchAutoReindex=False, workspaceSearchMode="exact",
+                        workspaceSearchResultLimit="35", workspaceSearchMaxFileSizeMB="2.5")
+        properties = workspace_search.render_package(settings)["contributes"]["configuration"]["properties"]
+        self.assertTrue(properties["scmToolkit.autoPublishNewBranches"]["default"])
+        self.assertFalse(properties["scmToolkit.automaticBranchCleanup"]["default"])
+        self.assertFalse(properties["scmToolkit.workspaceSearch.autoReindex"]["default"])
+        self.assertEqual(properties["scmToolkit.workspaceSearch.mode"]["default"], "exact")
+        self.assertEqual(properties["scmToolkit.workspaceSearch.resultLimit"]["default"], 35)
+        self.assertEqual(properties["scmToolkit.workspaceSearch.maxFileSizeMB"]["default"], 2.5)
+
     def test_embedding_selection_reaches_installed_manifest(self):
         package = workspace_search.render_package(dict(DEFAULTS, workspaceSearchEmbeddingModel="custom:embed"))
         self.assertEqual(package["contributes"]["configuration"]["properties"]["scmToolkit.workspaceSearch.embeddingModel"]["default"], "custom:embed")

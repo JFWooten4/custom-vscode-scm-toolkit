@@ -4,11 +4,11 @@ const { spawn } = require('child_process');
 function registerBranchMaintenance(vscode, context) {
   let running, disposed = false;
   const scan = async () => {
-    if (disposed || running) return;
+    if (disposed || running || !vscode.workspace.getConfiguration('scmToolkit').get('automaticBranchCleanup', true)) return;
     const extension = vscode.extensions.getExtension('vscode.git');
     if (!extension) return;
     const git = await extension.activate();
-    if (disposed || running) return;
+    if (disposed || running || !vscode.workspace.getConfiguration('scmToolkit').get('automaticBranchCleanup', true)) return;
     const repositories = git.getAPI(1).repositories.filter(repo => repo.rootUri.scheme === 'file');
     if (!repositories.length) return;
     const script = vscode.Uri.joinPath(context.extensionUri, 'prune_merged_branches.py').fsPath;

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import html
 import json
+import math
 import re
 import secrets
 import shutil
@@ -15,7 +16,7 @@ import urllib.request
 import webbrowser
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from toolkit_settings import load_settings
+from toolkit_settings import load_settings, VSCODE_SETTINGS
 from codex_colors import validate_color
 from branch_names import load_catalog, merge_catalog, parse_imported_packs, parse_name_list, parse_pack_id_list
 from chatgpt_integration import import_pgp_secret_key, sync_codex_instructions
@@ -33,6 +34,9 @@ class Setting:
     description: str
     section: str
     kind: str = "bool"
+    choices: tuple[str, ...] = ()
+    minimum: float | None = None
+    maximum: float | None = None
 
 
 SETTINGS = (
@@ -47,17 +51,32 @@ SETTINGS = (
     Setting("branchCleanup", "scm-toolkit.branch-cleanup", "Branch cleanup", "Show guarded local-branch cleanup controls.", "Source control"),
     Setting("autocompleteToggle", "scm-toolkit.autocomplete-toggle", "Autocomplete toggle", "Show the inline-suggestion switch in the SCM message row.", "Source control"),
     Setting("autoPublishToggle", "scm-toolkit.auto-publish-toggle", "Auto-publish toggle", "Show the cloud control that publishes newly selected local branches to the configured remote.", "Source control"),
+    Setting("autoPublishNewBranches", "scm-toolkit.auto-publish-new-branches", "Automatically publish new branches", "Publish newly selected local branches to the configured remote. Saved as your VS Code user preference; the cloud control reflects this setting.", "Source control"),
+    Setting("automaticBranchCleanup", "scm-toolkit.automatic-branch-cleanup", "Automatically clean merged branches", "Check for merged branches on startup and every ten minutes, and remove eligible local branches.", "Source control"),
+    Setting("hideSCMProgress", "scm-toolkit.hide-scm-progress", "Hide Source Control progress bar", "Hide the progress animation during Git operations and background refreshes.", "Source control"),
+    Setting("inlineSuggestions", "scm-toolkit.inline-suggestions", "Inline suggestions", "Enable inline suggestions, including in the commit-message editor.", "Source control"),
+    Setting("postCommitAction", "scm-toolkit.post-commit-action", "After committing", "Choose whether commits automatically push or sync with the remote.", "Source control", "select", ("none", "push", "sync")),
     Setting("codexCoauthor", "scm-toolkit.codex-coauthor", "Codex co-author button", "Show the attributed commit action.", "Source control"),
     Setting("codexCommitContext", "scm-toolkit.codex-commit-context", "Local commit messages from Codex text", "When the co-author commit message is blank, use this window's current conversation and staged changes with local Ollama. Codex keeps running.", "Source control"),
     Setting("codexKeepAwake", "scm-toolkit.codex-keep-awake", "Keep awake while Codex works", "Prevent idle sleep on macOS while Codex tasks are running. The display can still turn off. Enabled by default; VS Code's Codex Keep Awake setting can override it.", "Codex"),
     Setting("hideOutgoingSyncCount", "scm-toolkit.hide-outgoing-sync-count", "Hide outgoing count", "Remove the outgoing commit count from Sync.", "Source control"),
     Setting("blankStateRefresh", "scm-toolkit.blank-state-refresh", "Refresh blank repositories", "Refresh clean repositories so their first new change appears quickly.", "Source control"),
+    Setting("autoPullClean", "scm-toolkit.auto-pull-clean", "Automatically pull clean branches", "Fast-forward clean branches when their upstream is ahead, independently of blank-state refresh.", "Source control"),
     Setting("graphOpenWorkingFile", "scm-toolkit.graph-open-working-file", "Open graph files from working tree", "Make Source Control Graph Open File target the checked-out working-tree file instead of the selected commit snapshot.", "Source control"),
+    Setting("cmdClickCloseOthers", "scm-toolkit.cmd-click-close-others", "Cmd-click closes other tabs", "Hold Command while clicking a tab's X to keep that tab open and close the other editors in its group.", "Browser"),
+    Setting("browserChatgptHome", "scm-toolkit.browser-chatgpt-home", "ChatGPT for blank browser tabs", "Open blank Integrated Browser tabs at https://chatgpt.com/ while preserving explicit URLs.", "Browser"),
     Setting("workspaceSearchActivityBar", "scm-toolkit.workspace-search-activity-bar", "Standalone Activity Bar", "Move Workspace Search into its own Activity Bar container instead of the Source Control view.", "Workspace Search"),
     Setting("workspaceSearchLabel", "scm-toolkit.workspace-search-label", "Search label", "Label for the Workspace Search panel and its standalone Activity Bar container.", "Workspace Search", "text"),
     Setting("workspaceSearchEmbeddingModel", "scm-toolkit.workspace-search-embedding-model", "Search embedding model", "Turns workspace passages into searchable meaning. Choose an embedding model, separate from chat models.", "Workspace Search", "model"),
     Setting("workspaceSearchAskOllama", "scm-toolkit.workspace-search-ask-ollama", "Ask Ollama", "Show the Ask Ollama action in EFS search results.", "Workspace Search"),
     Setting("workspaceSearchChatModel", "scm-toolkit.workspace-search-chat-model", "Ask Ollama chat model", "Ollama chat model used by Ask Ollama. Required when Ask Ollama is enabled.", "Workspace Search", "optional_model"),
+    Setting("workspaceSearchOllamaUrl", "scm-toolkit.workspace-search-ollama-url", "Search Ollama server", "Loopback URL of the Ollama server used for workspace search.", "Workspace Search", "url"),
+    Setting("workspaceSearchMode", "scm-toolkit.workspace-search-mode", "Search ranking", "Default ranking mode for search results.", "Workspace Search", "select", ("hybrid", "semantic", "exact")),
+    Setting("workspaceSearchAutoReindex", "scm-toolkit.workspace-search-auto-reindex", "Automatically refresh search index", "Refresh the workspace search index every two minutes.", "Workspace Search"),
+    Setting("workspaceSearchResultLimit", "scm-toolkit.workspace-search-result-limit", "Search result limit", "Maximum number of result passages shown.", "Workspace Search", "integer", minimum=1, maximum=100),
+    Setting("workspaceSearchMaxFiles", "scm-toolkit.workspace-search-max-files", "Search file limit", "Maximum number of workspace files considered for indexing.", "Workspace Search", "integer", minimum=1, maximum=50000),
+    Setting("workspaceSearchMaxFileSizeMB", "scm-toolkit.workspace-search-max-file-size-mb", "Maximum indexed file size (MB)", "Maximum file size indexed directly.", "Workspace Search", "number", minimum=0.1, maximum=100),
+    Setting("workspaceSearchExclude", "scm-toolkit.workspace-search-exclude", "Search exclusions", "Glob of paths excluded from workspace indexing. Leave blank to use no exclusions.", "Workspace Search", "optional_text"),
     Setting("defaultBranch", "scm-toolkit.default-branch", "Default branch", "Protected branch and pull-request base.", "Repository", "text"),
     Setting("remote", "scm-toolkit.remote", "Git remote", "Remote used for branch checks and repository discovery.", "Repository", "text"),
     Setting("branchNameDisabledPacks", "scm-toolkit.branch-name-disabled-packs", "Name packs", "Enable or disable built-in and imported branch-name packs.", "Branch names", "packs"),
@@ -65,13 +84,17 @@ SETTINGS = (
     Setting("branchNameImports", "scm-toolkit.branch-name-imports", "Imported packs", "Paste third-party packs as JSON using id, label, description, and names.", "Branch names", "imports"),
     Setting("postCommitSpellcheck", "scm-toolkit.post-commit-spellcheck", "Post-commit Markdown spellcheck", "After an automatic commit, propose corrections to changed Markdown prose as unstaged edits for review. Use ASCII punctuation. Off by default.", "Ollama"),
     Setting("aiCommit", "scm-toolkit.ai-commit", "AI commit titles", "Generate commit messages through the local Ollama service.", "Ollama"),
+    Setting("spellcheckManualCommit", "scm-toolkit.spellcheck-manual-commit", "Spellcheck manual commit messages", "Use local Ollama to correct manually entered commit messages.", "Ollama"),
     Setting("aiDefaultBranchDescription", "scm-toolkit.ai-default-branch-description", "Default-branch descriptions", "Add a short description when generating commits on the default branch.", "Ollama"),
     Setting("aiModelPicker", "scm-toolkit.ai-model-picker", "Model picker command", "Install the separate model-selection helper.", "Ollama"),
     Setting("aiCommitModel", "scm-toolkit.ai-commit-model", "Normal model", "Ollama model used when memory is available.", "Ollama", "model"),
     Setting("aiCommitLowMemoryModel", "scm-toolkit.ai-commit-low-memory-model", "Low-memory model", "Smaller Ollama model used below the memory threshold.", "Ollama", "model"),
     Setting("aiLowMemoryGiB", "scm-toolkit.ai-low-memory-gib", "Low-memory threshold (GiB)", "Available-memory threshold for selecting the smaller model.", "Ollama", "number"),
     Setting("mcpPullRequest", "scm-toolkit.mcp-pull-request", "Pull-request button", "Open ChatGPT in the Integrated Browser with a prompt explaining the current branch's intent and effects.", "Pull requests"),
+    Setting("mcpPrServer", "scm-toolkit.mcp-pr-server", "Pull-request MCP server", "Configured MCP server name for pull-request integrations.", "Pull requests", "text"),
+    Setting("mcpPrTool", "scm-toolkit.mcp-pr-tool", "Pull-request MCP tool", "Configured MCP tool name for pull-request integrations.", "Pull requests", "text"),
     Setting("codexUsageResetCountdown", "scm-toolkit.codex-usage-reset-countdown", "Codex reset countdown", "Show the live usage-reset countdown in Codex limit banners.", "Codex"),
+    Setting("codexHidePromotions", "scm-toolkit.codex-hide-promotions", "Hide Codex promotions", "Hide promotional panels in Codex.", "Codex"),
     Setting("codexSendBackground", "scm-toolkit.codex-send-background", "Send button background", "Hex color for the Codex send button. Leave blank to use the theme.", "Codex", "color"),
     Setting("codexSendForeground", "scm-toolkit.codex-send-foreground", "Send button icon", "Hex color for the Codex send icon. Leave blank to use the theme.", "Codex", "color"),
     Setting("codexComposerLabelColor", "scm-toolkit.codex-composer-label-color", "Composer label text", "Hex color for Full access and Work locally controls. Leave blank to use the theme.", "Codex", "color"),
@@ -184,16 +207,36 @@ def parse_submission(values: dict[str, list[str]]) -> dict[str, bool | str]:
                 raise ValueError(f"{setting.label} must fit on one line.")
             parsed[setting.name] = value
             continue
+        if setting.kind == "select":
+            if value not in setting.choices:
+                raise ValueError(f"Choose a valid {setting.label.lower()}.")
+            parsed[setting.name] = value
+            continue
+        if setting.kind == "optional_text":
+            if "\x00" in value or "\n" in value or "\r" in value:
+                raise ValueError(f"{setting.label} must fit on one line.")
+            parsed[setting.name] = value
+            continue
         if not value:
             raise ValueError(f"{setting.label} cannot be empty.")
         if "\x00" in value or "\n" in value or "\r" in value:
             raise ValueError(f"{setting.label} must fit on one line.")
-        if setting.kind == "number":
+        if setting.kind in {"number", "integer"}:
             try:
-                if float(value) <= 0:
+                number = float(value)
+                if not math.isfinite(number) or number <= 0:
                     raise ValueError
             except ValueError as error:
                 raise ValueError(f"{setting.label} must be greater than zero.") from error
+            if setting.kind == "integer" and not number.is_integer():
+                raise ValueError(f"{setting.label} must be a whole number.")
+            if ((setting.minimum is not None and number < setting.minimum)
+                    or (setting.maximum is not None and number > setting.maximum)):
+                raise ValueError(f"{setting.label} must be between {setting.minimum} and {setting.maximum}.")
+        if setting.kind == "url":
+            url = urllib.parse.urlparse(value)
+            if url.scheme not in {"http", "https"} or url.hostname not in {"localhost", "127.0.0.1", "::1"} or url.username or url.password:
+                raise ValueError(f"{setting.label} must be a loopback HTTP URL.")
         parsed[setting.name] = value
     if parsed.get("workspaceSearchAskOllama") and not parsed.get("workspaceSearchChatModel"):
         raise ValueError("Ask Ollama requires a chat model.")
@@ -323,12 +366,29 @@ def _setting_control(setting: Setting, current: object) -> str:
         )
 
     value = html.escape(str(current), quote=True)
+    if setting.kind == "select":
+        options = "".join(
+            f'<option value="{html.escape(choice, quote=True)}"'
+            + (' selected' if choice == str(current) else '')
+            + f'>{html.escape(choice.capitalize() if choice else "None")}</option>'
+            for choice in setting.choices
+        )
+        return (
+            '<label class="setting field-row">'
+            f'<span><strong>{label}</strong><small>{description}</small></span>'
+            f'<select name="{name}">{options}</select></label>'
+        )
     attrs = ' type="text"'
-    if setting.kind == "number":
-        attrs = ' type="number" min="0.1" step="0.1" inputmode="decimal"'
+    if setting.kind in {"number", "integer"}:
+        minimum = setting.minimum if setting.minimum is not None else 0.1
+        maximum = f' max="{setting.maximum}"' if setting.maximum is not None else ''
+        step = '1' if setting.kind == "integer" else '0.1'
+        attrs = f' type="number" min="{minimum}"{maximum} step="{step}" inputmode="decimal"'
     list_attr = ' list="ollama-models"' if setting.kind in {"model", "optional_model"} else ""
     if setting.kind == "color":
         required = ' placeholder="#43AF49"'
+    elif setting.kind == "optional_text":
+        required = ""
     elif setting.kind == "optional_model":
         required = ' placeholder="Choose a chat model"'
     else:
@@ -393,11 +453,11 @@ def render_form(
 main{{width:min(880px,calc(100% - 32px));margin:40px auto 96px}}header{{margin-bottom:24px}}h1{{margin:0 0 8px;font-size:30px}}header p,.status{{color:var(--muted)}}
 section{{margin:16px 0;padding:8px 20px;background:var(--panel);border:1px solid var(--line);border-radius:12px}}h2{{font-size:16px;margin:10px 0}}
 .setting{{display:flex;align-items:center;gap:20px;min-height:62px;padding:10px 0;border-top:1px solid var(--line)}}.setting:first-of-type{{border-top:0}}.setting>span:first-child{{flex:1;min-width:0}}strong,small{{display:block}}small{{margin-top:2px;color:var(--muted)}}.model-row{{gap:12px}}.model-row input{{width:min(280px,38%)}}.model-row button{{flex:none}}button:disabled{{opacity:.6;cursor:default}}
-.field-row input,.textarea-row textarea{{width:min(440px,52%);padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text);font:inherit}}.textarea-row textarea{{resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}}
-.toggle-row input{{position:absolute;opacity:0;pointer-events:none}}.toggle{{position:relative;width:42px;height:24px;flex:none;border-radius:99px;background:#484f58;transition:.15s}}.toggle:after{{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:white;transition:.15s}}input:checked+.toggle{{background:var(--accent)}}input:checked+.toggle:after{{transform:translateX(18px)}}input:focus-visible+.toggle,.field-row input:focus,.textarea-row textarea:focus{{outline:2px solid var(--accent);outline-offset:2px}}
+.field-row input,.field-row select,.textarea-row textarea{{width:min(440px,52%);padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text);font:inherit}}.textarea-row textarea{{resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}}
+.toggle-row input{{position:absolute;opacity:0;pointer-events:none}}.toggle{{position:relative;width:42px;height:24px;flex:none;border-radius:99px;background:#484f58;transition:.15s}}.toggle:after{{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:white;transition:.15s}}input:checked+.toggle{{background:var(--accent)}}input:checked+.toggle:after{{transform:translateX(18px)}}input:focus-visible+.toggle,.field-row input:focus,.field-row select:focus,.textarea-row textarea:focus{{outline:2px solid var(--accent);outline-offset:2px}}
 .actions{{position:sticky;bottom:0;display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:24px;padding:16px;background:color-mix(in srgb,var(--bg) 92%,transparent);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(12px)}}.save-status{{margin-right:auto;color:var(--muted)}}.save-status.error-state{{color:#ffb3ad}}button{{padding:9px 15px;border:1px solid var(--line);border-radius:7px;background:transparent;color:var(--text);font:inherit;cursor:pointer}}button.primary{{border-color:var(--accent);background:var(--accent);font-weight:600}}.error{{margin-bottom:16px;padding:12px;border:1px solid var(--danger);border-radius:8px;color:#ffb3ad}}
 .pack-picker{{margin:12px 0;padding:14px;border:1px solid var(--line);border-radius:10px;min-width:0}}.pack-picker legend{{font-weight:600;padding:0 6px}}.pack-picker p{{margin:0 0 12px;color:var(--muted)}}.pack-toolbar{{display:flex;align-items:center;gap:12px;margin-bottom:12px}}.pack-toolbar input{{width:100%;min-width:0;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font:inherit}}.pack-toolbar output{{white-space:nowrap;color:var(--muted);font-size:12px}}.pack-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;max-height:320px;overflow:auto;padding:3px}}.pack-card{{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:var(--bg);transition:border-color .15s,background .15s}}.pack-card:has(input:checked){{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--bg))}}.pack-card:has(input:focus-visible){{outline:2px solid var(--accent);outline-offset:1px}}.pack-card input{{accent-color:var(--accent);width:16px;height:16px;flex:none}}.pack-card[hidden]{{display:none}}.pack-card strong{{font-size:13px}}.pack-card small{{font-size:12px}}
-@media(max-width:620px){{main{{width:min(100% - 20px,880px);margin-top:20px}}.field-row,.textarea-row{{align-items:flex-start;flex-direction:column;gap:8px}}.field-row input,.textarea-row textarea{{width:100%}}}}
+@media(max-width:620px){{main{{width:min(100% - 20px,880px);margin-top:20px}}.field-row,.textarea-row{{align-items:flex-start;flex-direction:column;gap:8px}}.field-row input,.field-row select,.textarea-row textarea{{width:100%}}}}
 </style></head><body><main><header><h1>SCM Toolkit Setup</h1><p>Configure locally. Changes save automatically to global Git config. No data leaves this computer.</p></header>
 {error_html}<form method="post" action="{action}">{''.join(sections)}<datalist id="ollama-models">{options}</datalist>
 <div class="actions"><output id="save-status" class="save-status" role="status" aria-live="polite">Saved</output><button class="primary" type="submit" name="action" value="save">{html.escape(action_label)}</button></div></form>
@@ -566,16 +626,21 @@ if (syncButton) {{
 
 
 def extension_settings_payload(settings: dict[str, bool | str]) -> dict[str, object]:
-    return {
-        "workspaceSearch": {
-            "embeddingModel": settings["workspaceSearchEmbeddingModel"],
-            "chatModel": settings["workspaceSearchChatModel"],
-            "askOllama": settings["workspaceSearchAskOllama"],
-        },
-        "vscodeSettings": {
-            "openPanelOnStartup": settings["openPanelOnStartup"],
-        },
+    payload = {
+        group: {key: settings[name] for key, name in names.items()}
+        for group, names in VSCODE_SETTINGS.items()
     }
+    for key in ("resultLimit", "maxFiles"):
+        payload["workspaceSearch"][key] = int(settings[VSCODE_SETTINGS["workspaceSearch"][key]])
+    payload["workspaceSearch"]["maxFileSizeMB"] = float(settings["workspaceSearchMaxFileSizeMB"])
+    return payload
+
+
+def apply_vscode_settings(current, payload):
+    for group, names in VSCODE_SETTINGS.items():
+        for key, name in names.items():
+            if key in payload.get(group, {}):
+                current[name] = payload[group][key]
 
 
 def _result_page(saved: bool) -> str:
@@ -733,6 +798,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--no-browser", action="store_true", help="Send the URL to the calling extension.")
+    parser.add_argument("--vscode-settings", help="Current feature preferences supplied by the companion extension.")
     parser.add_argument(
         "--open-panel-on-startup",
         choices=("true", "false"),
@@ -740,6 +806,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     current = load_settings()
+    if args.vscode_settings is not None:
+        apply_vscode_settings(current, json.loads(args.vscode_settings))
     if args.open_panel_on_startup is not None:
         current["openPanelOnStartup"] = args.open_panel_on_startup == "true"
     run_configurator(current, open_browser=not args.no_browser)
