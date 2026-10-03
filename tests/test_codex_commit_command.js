@@ -29,7 +29,7 @@ async function run() {
     stderr: { setEncoding() {}, on() {} },
     on(event, callback) { if (event === 'close') this.close = callback; },
     stdin: { on() {}, end(value) {
-      assert.equal(JSON.parse(value).context, 'Same-window conversation');
+      assert.equal(JSON.parse(value).context, bridgeInstalled ? 'Same-window conversation' : '');
       child.stdout.callback(JSON.stringify({ message: 'Fix generation' }));
       child.close(0);
     } }
@@ -69,12 +69,12 @@ async function run() {
   repository.state.mergeChanges = ['conflict'];
   await assert.rejects(prepare(uri), /Resolve merge conflicts/);
   assert.equal(additions, 1, 'clean and conflicted repositories do not stage anything');
-  await assert.rejects(command({ scheme: 'file', fsPath: '/selected' }), /Close and reopen this window/);
+  assert.equal(await command({ scheme: 'file', fsPath: '/selected' }), 'Fix generation');
   assert.equal(active, true, 'activate Codex before looking for its bridge');
-  assert.equal(progress, 0);
+  assert.equal(progress, 1, 'missing optional bridge still generates from the staged diff');
   bridgeInstalled = true;
   assert.equal(await command({ scheme: 'file', fsPath: '/selected' }), 'Fix generation');
-  assert.equal(progress, 1);
+  assert.equal(progress, 2);
   console.log('Local Codex commit command checks passed.');
 }
 run().catch(error => { console.error(error); process.exitCode = 1; });

@@ -8,8 +8,8 @@ import ai_commit
 
 def main():
     context = json.load(sys.stdin).get('context', '')
-    if not isinstance(context, str) or not context.strip():
-        raise ValueError('The current Codex conversation has no captured text.')
+    if not isinstance(context, str):
+        raise ValueError('The Codex conversation snapshot is invalid.')
     stat, diff, files = ai_commit.staged_diff()
     if not stat and not diff:
         raise ValueError('Stage the intended changes before using the local Codex commit button.')

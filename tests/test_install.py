@@ -588,6 +588,19 @@ class CodexCountdownTests(unittest.TestCase):
 
 
 class CodexPromotionTests(unittest.TestCase):
+    def test_split_usage_and_promotion_chunks_are_both_discovered(self):
+        with tempfile.TemporaryDirectory() as directory:
+            extension = Path(directory)
+            assets = extension / 'webview/assets'
+            assets.mkdir(parents=True)
+            banner = assets / 'usage-new-hash.js'
+            banner.write_text(CodexCountdownTests().modern_fixture())
+            promo = assets / 'promotion-new-hash.js'
+            promo.write_text('const title=`Enable Fast mode`;')
+            (assets / 'locale.js').write_text('"codex.rateLimitUpsellBanner.dismiss":"Dismiss usage banner"')
+            self.assertEqual(set(install.codex_bundle_paths(extension)), {banner, promo})
+            self.assertEqual(install.codex_bundle_path(extension), banner)
+
     def test_bundle_discovery_supports_split_extension_chunks(self):
         with tempfile.TemporaryDirectory() as directory:
             extension = Path(directory)
