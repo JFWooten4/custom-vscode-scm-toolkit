@@ -1,5 +1,14 @@
 'use strict';
 
+async function returnHome(repository) {
+  await repository.checkout('main');
+  await repository.status();
+  if (repository.state.HEAD?.name !== 'main') {
+    throw new Error('Could not switch to main.');
+  }
+  return 'main';
+}
+
 async function syncDefaultBranch(repository, defaultBranch, remote) {
   await repository.checkout(defaultBranch);
   await repository.status();
@@ -91,6 +100,7 @@ async function syncBranch(repository, { branch, defaultBranch, remote }) {
 
 function registerBranchCommands(vscode, context) {
   for (const [command, action] of [
+    ['scmToolkit.returnHome', returnHome],
     ['scmToolkit.createBranch', createBranch],
     ['scmToolkit.publishBranch', publishBranch],
     ['scmToolkit.deleteBranch', deleteBranch],
@@ -112,4 +122,4 @@ function registerBranchCommands(vscode, context) {
   }
 }
 
-module.exports = { createBranch, publishBranch, deleteBranch, syncBranch, registerBranchCommands };
+module.exports = { returnHome, createBranch, publishBranch, deleteBranch, syncBranch, registerBranchCommands };

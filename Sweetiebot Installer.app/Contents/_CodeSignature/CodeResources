@@ -58,15 +58,15 @@
 		</data>
 		<key>Resources/toolkit/assets/workbench/outlined_buttons.css</key>
 		<data>
-		WJKp4MgViK+zUe6VbqMhJYQSybw=
+		Aq7m35RRyA69deMzbq9HbbDQX18=
 		</data>
 		<key>Resources/toolkit/assets/workbench/picker.css</key>
 		<data>
-		ojRyVLnd2Prk+0sPycX6HCQQl90=
+		F1VJEsNMFZmRRP3RSuoFKU/i0NI=
 		</data>
 		<key>Resources/toolkit/assets/workbench/picker.js</key>
 		<data>
-		fy7bRwjfaR1VXgSMFJIJpfjmOAg=
+		4xH1v8jbMXxXv9u7uYSeahVcx0A=
 		</data>
 		<key>Resources/toolkit/scripts/ai_commit.py</key>
 		<data>
@@ -150,7 +150,7 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/branch_actions.js</key>
 		<data>
-		F76SzoIyK9nL5hRMWW4WGCwG8xM=
+		/7vBebSxd2zz1DmsnhxNH5VFl6U=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/branch_maintenance.js</key>
 		<data>
@@ -186,7 +186,7 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/package.json</key>
 		<data>
-		ayTLqjAUl42f7kIzu+W3B55FhLY=
+		+X4sgfqpphhVeVhaiRoKsxUSfy4=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/pull_request.js</key>
 		<data>
@@ -350,33 +350,33 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			WJKp4MgViK+zUe6VbqMhJYQSybw=
+			Aq7m35RRyA69deMzbq9HbbDQX18=
 			</data>
 			<key>hash2</key>
 			<data>
-			/ZrS2DaRjn76wt2s9bSMv9+i+Ss13lI0/jeFqOCUUx8=
+			/efEAwgVEvWfLGJ2XRiXDdkyM8HCMA7Ezy1WRu5075M=
 			</data>
 		</dict>
 		<key>Resources/toolkit/assets/workbench/picker.css</key>
 		<dict>
 			<key>hash</key>
 			<data>
-			ojRyVLnd2Prk+0sPycX6HCQQl90=
+			F1VJEsNMFZmRRP3RSuoFKU/i0NI=
 			</data>
 			<key>hash2</key>
 			<data>
-			Vp88FbxKUnjNMrr9BaV84kvewxFfYBC3pwCWSnyb+bQ=
+			X6fTUst2Kkx4Vm9/M7dMl0E+LyNjjS6ctJC9VGhuNAw=
 			</data>
 		</dict>
 		<key>Resources/toolkit/assets/workbench/picker.js</key>
 		<dict>
 			<key>hash</key>
 			<data>
-			fy7bRwjfaR1VXgSMFJIJpfjmOAg=
+			4xH1v8jbMXxXv9u7uYSeahVcx0A=
 			</data>
 			<key>hash2</key>
 			<data>
-			VESytbmhCTo/7pOxIi66jjJxKbvUOEkCzugpJ+guasg=
+			rwerZJ7jAUfmEMtZ7uAwrWMnll6UVy14s7XrrVSqyEY=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/ai_commit.py</key>
@@ -603,11 +603,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			F76SzoIyK9nL5hRMWW4WGCwG8xM=
+			/7vBebSxd2zz1DmsnhxNH5VFl6U=
 			</data>
 			<key>hash2</key>
 			<data>
-			pxsryBzFR8AMKGlq5I2FpSsEPGlcx5VXp0bGeh6qGVI=
+			SfMPUL5agRYQyIClXUG6jtAwct2y/afYZTqrtwYyt6I=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/branch_maintenance.js</key>
@@ -702,11 +702,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			ayTLqjAUl42f7kIzu+W3B55FhLY=
+			+X4sgfqpphhVeVhaiRoKsxUSfy4=
 			</data>
 			<key>hash2</key>
 			<data>
-			LF8OVv4qaAlwo9ZDZyJEQw5BTz3+k3WaPLbNuGwC14U=
+			T2WhDwJPDWRyHSBcc5mJ7SUCQoBfCu0+x1NOOH/L6fc=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/pull_request.js</key>
