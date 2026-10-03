@@ -24,23 +24,29 @@ def transform(source, remove=False):
         if source.count(replacement) != 1:
             raise ValueError('Installed Codex image-drop patch changed.')
         source = source.replace(replacement, original, 1)
-    if remove or 'dragCounterRef:' not in source:
+    if remove or not re.search(r'addEventListener\([`\"\']dragenter[`\"\']', source):
         return source
     ident = r'[A-Za-z_$][\w$]*'
+    quote = r'''[`"']'''
+    capture = r'(?:!0|true)'
     pattern = re.compile(
         rf'if\((?P<root>{ident})!=null\)return '
-        rf'(?P=root)\.addEventListener\(`dragenter`,(?P<enter>{ident}),!0\),'
-        rf'(?P=root)\.addEventListener\(`dragover`,(?P=enter),!0\),'
-        rf'(?P=root)\.addEventListener\(`dragleave`,(?P<leave>{ident}),!0\),'
-        rf'(?P=root)\.addEventListener\(`drop`,(?P<drop>{ident}),!0\),'
-        rf'\(\)=>\{{(?P=root)\.removeEventListener\(`dragenter`,(?P=enter),!0\),'
-        rf'(?P=root)\.removeEventListener\(`dragover`,(?P=enter),!0\),'
-        rf'(?P=root)\.removeEventListener\(`dragleave`,(?P=leave),!0\),'
-        rf'(?P=root)\.removeEventListener\(`drop`,(?P=drop),!0\)\}}'
+        rf'(?P=root)\.addEventListener\({quote}dragenter{quote},(?P<enter>{ident}),{capture}\),'
+        rf'(?P=root)\.addEventListener\({quote}dragover{quote},(?P=enter),{capture}\),'
+        rf'(?P=root)\.addEventListener\({quote}dragleave{quote},(?P<leave>{ident}),{capture}\),'
+        rf'(?P=root)\.addEventListener\({quote}drop{quote},(?P<drop>{ident}),{capture}\),'
+        rf'\(\)=>\{{(?P=root)\.removeEventListener\({quote}dragenter{quote},(?P=enter),{capture}\),'
+        rf'(?P=root)\.removeEventListener\({quote}dragover{quote},(?P=enter),{capture}\),'
+        rf'(?P=root)\.removeEventListener\({quote}dragleave{quote},(?P=leave),{capture}\),'
+        rf'(?P=root)\.removeEventListener\({quote}drop{quote},(?P=drop),{capture}\)\}}'
     )
     matches = list(pattern.finditer(source))
+    if not matches:
+        if 'dragCounterRef:' in source:
+            raise ValueError('Unsupported Codex build: image-drop listeners do not match.')
+        return source
     if len(matches) != 1:
-        raise ValueError('Unsupported Codex build: image-drop listeners do not match.')
+        raise ValueError('Unsupported Codex build: image-drop listeners are ambiguous.')
     match = matches[0]
     original = match.group(0)
     replacement = ('return scmToolkitRegisterImageDropTarget('

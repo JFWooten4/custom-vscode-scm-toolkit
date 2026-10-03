@@ -7,6 +7,16 @@ import local_codex_commit
 
 
 class LocalCodexCommitTests(unittest.TestCase):
+    def test_missing_optional_chat_context_uses_staged_diff(self):
+        with patch('sys.stdin', io.StringIO('{"context":""}')), \
+             patch('sys.stdout', io.StringIO()), \
+             patch('ai_commit.staged_diff', return_value=('stat', 'diff', ['file'])), \
+             patch('ai_commit.git_output', return_value='main'), \
+             patch('ai_commit.should_add_default_branch_description', return_value=False), \
+             patch('ai_commit.generate_message', return_value=('Fix button', '')) as generate:
+            local_codex_commit.main()
+        self.assertEqual(generate.call_args.kwargs['conversation_context'], '')
+
     def test_only_generates_from_staged_changes_and_in_memory_context(self):
         staged = ('stat', 'diff', ['file.txt'])
         output = io.StringIO()

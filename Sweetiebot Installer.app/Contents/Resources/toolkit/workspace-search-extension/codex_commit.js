@@ -55,15 +55,14 @@ function registerCodexCommitCommand(vscode, extensionContext) {
     if (root.scheme !== 'file') throw new Error('Local commit generation requires a local repository.');
     const codex = vscode.extensions.getExtension('openai.chatgpt');
     if (codex && !codex.isActive) await codex.activate();
-    if (!(await vscode.commands.getCommands(true)).includes('scmToolkit.readCodexContext')) {
-      throw new Error('This window is running the older Codex extension. Close and reopen this window after its current task finishes.');
-    }
+    const hasContext = (await vscode.commands.getCommands(true)).includes('scmToolkit.readCodexContext');
     return vscode.window.withProgress({
       location: vscode.ProgressLocation.Notification,
-      title: 'Generating commit message with local Ollama', cancellable: false
+      title: hasContext ? 'Generating commit message with local Ollama'
+        : 'Generating commit message from staged changes with local Ollama', cancellable: false
     }, async () => {
-      const context = await vscode.commands.executeCommand('scmToolkit.readCodexContext');
-      if (typeof context !== 'string' || !context.trim()) throw new Error('The current Codex conversation has no captured text.');
+      const context = hasContext ? await vscode.commands.executeCommand('scmToolkit.readCodexContext') : '';
+      if (typeof context !== 'string') throw new Error('The Codex conversation snapshot is invalid.');
       const script = vscode.Uri.joinPath(extensionContext.extensionUri, 'local_codex_commit.py').fsPath;
       return generateMessage(script, root.fsPath, context.slice(-6000));
     });
