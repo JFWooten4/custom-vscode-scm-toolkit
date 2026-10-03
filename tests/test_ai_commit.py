@@ -59,6 +59,34 @@ class RoutingTests(unittest.TestCase):
         self.assertTrue(ai_commit.uses_staged_index(["--quiet"]))
 
 
+class NewlineRoutingTests(unittest.TestCase):
+    def test_manual_disabled_and_non_index_commits_skip_normalization(self):
+        for args, enabled in [(["commit", "-m", "Manual"], True), (["commit"], False), (["commit", "--all"], True), (["status"], True)]:
+            with self.subTest(args=args, enabled=enabled), patch.object(
+                sys, "argv", ["wrapper", *args]
+            ), patch.object(ai_commit, "manual_spellcheck_enabled", return_value=False), patch.object(
+                ai_commit, "feature_enabled", return_value=enabled
+            ), patch.object(ai_commit, "normalize_staged_final_newlines") as normalize, patch.object(
+                ai_commit.os, "execv", side_effect=RuntimeError("exec")
+            ):
+                with self.assertRaisesRegex(RuntimeError, "exec"):
+                    ai_commit.main()
+                normalize.assert_not_called()
+
+    def test_normalizes_before_reading_the_automatic_commit_diff(self):
+        calls = []
+        with patch.object(sys, "argv", ["wrapper", "commit"]), patch.object(
+            ai_commit, "manual_spellcheck_enabled", return_value=False
+        ), patch.object(ai_commit, "feature_enabled", return_value=True), patch.object(
+            ai_commit, "normalize_staged_final_newlines", side_effect=lambda: calls.append("normalize")
+        ), patch.object(ai_commit, "staged_diff", side_effect=lambda: (calls.append("diff") or ("", "", []))), patch.object(
+            ai_commit.os, "execv", side_effect=RuntimeError("exec")
+        ):
+            with self.assertRaisesRegex(RuntimeError, "exec"):
+                ai_commit.main()
+        self.assertEqual(calls, ["normalize", "diff"])
+
+
 class ConfigurationTests(unittest.TestCase):
     @patch.object(ai_commit, "git_config_bool", return_value=False)
     def test_ai_commit_can_be_disabled_globally(self, _config):
