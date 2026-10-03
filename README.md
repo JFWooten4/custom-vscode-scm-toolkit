@@ -506,8 +506,10 @@ This uses VS Code's existing `git.refresh` command; the toolkit does not run its
 own Git status implementation. The SCM progress bar stays hidden, including during
 background Git fetches, so updates do not flash a distracting animation.
 
-When `auto-pull-clean` is enabled, each blank-state refresh also checks the current
-branch against its tracked upstream. The toolkit pulls only when the working tree is
+When `auto-pull-clean` is enabled, the toolkit checks the current branch against its
+tracked upstream on the same polling schedule, even when `blank-state-refresh` is
+disabled. Disabling blank-state refresh skips the extra `git.refresh` calls while
+automatic pulling continues. The toolkit pulls only when the working tree is
 still clean and the local HEAD is an ancestor of the upstream HEAD. That means a
 behind-only branch can fast-forward automatically, while branches with unpushed or
 diverged commits are left untouched. The pull uses VS Code's existing `git.pull`

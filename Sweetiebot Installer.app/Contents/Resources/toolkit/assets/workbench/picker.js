@@ -100,7 +100,8 @@ function scmToolkitEnableBlankStateRefresh(
     input,
     commands,
     repositoryArgument,
-    autoPullClean
+    autoPullClean,
+    blankStateRefresh
 ) {
     const doc = widget.element.ownerDocument;
     const win = doc.defaultView;
@@ -156,7 +157,9 @@ function scmToolkitEnableBlankStateRefresh(
 
             refreshing = true;
             try {
-                await commands.executeCommand('git.refresh', repositoryArgument);
+                if (blankStateRefresh) {
+                    await commands.executeCommand('git.refresh', repositoryArgument);
+                }
                 await maybeAutoPull();
             } catch {
                 // The built-in Git extension owns refresh errors; keep blank-state polling best-effort.
@@ -1127,7 +1130,7 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
                 }
 
                 if (
-                    settings.blankStateRefresh
+                    (settings.blankStateRefresh || settings.autoPullClean)
                     && currentRepositoryArgument
                     && !blankStateRefreshDisposable
                 ) {
@@ -1136,7 +1139,8 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
                         input,
                         commands,
                         currentRepositoryArgument,
-                        settings.autoPullClean
+                        settings.autoPullClean,
+                        settings.blankStateRefresh
                     );
                     if (blankStateRefreshDisposable) {
                         widget.repositoryDisposables.add(blankStateRefreshDisposable);
