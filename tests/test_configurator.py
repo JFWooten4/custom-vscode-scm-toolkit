@@ -139,6 +139,9 @@ class SubmissionTests(unittest.TestCase):
         self.assertIn("&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;", page)
         self.assertIn('<option value="local:model">', page)
         self.assertIn("/save?token=test-token", page)
+        self.assertIn("'/autosave' + location.search", page)
+        self.assertIn('id="save-status"', page)
+        self.assertNotIn('value="cancel"', page)
         self.assertIn("G4 ponies", page)
         self.assertIn('name="branchNamePack"', page)
         self.assertIn('name="branchCustomNames"', page)
@@ -302,6 +305,62 @@ class ServerTests(unittest.TestCase):
 
         self.assertFalse(thread.is_alive())
         self.assertFalse(result["saved"])
+
+    @patch("configurator.fetch_ollama_models", return_value=([], "Ollama offline"))
+    def test_autosave_persists_without_closing_server(self, _models):
+        opened = threading.Event()
+        captured = {}
+        result = {}
+
+        def open_browser(url):
+            captured["url"] = url
+            opened.set()
+            return True
+
+        def run_server():
+            result["saved"] = configurator.run_configurator(install.DEFAULT_SETTINGS)
+
+        with patch("configurator.webbrowser.open", side_effect=open_browser), \
+             patch("configurator.validate_models"), \
+             patch("configurator.save_settings") as save, \
+             patch("configurator.sync_codex_instructions"), \
+             patch("configurator.import_pgp_secret_key"), \
+             patch("configurator.print"):
+            thread = threading.Thread(target=run_server)
+            thread.start()
+            self.assertTrue(opened.wait(5))
+            parsed = urllib.parse.urlsplit(captured["url"])
+
+            def endpoint(path):
+                return urllib.parse.urlunsplit(
+                    (parsed.scheme, parsed.netloc, path, parsed.query, "")
+                )
+
+            values = form_values()
+            values.pop("branchPicker")
+            request = urllib.request.Request(
+                endpoint("/autosave"),
+                data=urllib.parse.urlencode(values, doseq=True).encode(),
+                method="POST",
+            )
+            with urllib.request.urlopen(request, timeout=5) as response:
+                self.assertTrue(json.load(response)["saved"])
+            self.assertTrue(thread.is_alive())
+            self.assertFalse(save.call_args.args[0]["branchPicker"])
+
+            finish_values = form_values()
+            finish_values["action"] = ["save"]
+            request = urllib.request.Request(
+                endpoint("/save"),
+                data=urllib.parse.urlencode(finish_values, doseq=True).encode(),
+                method="POST",
+            )
+            with urllib.request.urlopen(request, timeout=5) as response:
+                self.assertIn("Configuration saved", response.read().decode())
+            thread.join(5)
+
+        self.assertFalse(thread.is_alive())
+        self.assertTrue(result["saved"])
 
     @patch("configurator.fetch_ollama_models", return_value=([], "Ollama offline"))
     def test_extension_mode_emits_url_without_opening_external_browser(self, _models):

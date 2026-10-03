@@ -394,13 +394,70 @@ section{{margin:16px 0;padding:8px 20px;background:var(--panel);border:1px solid
 .setting{{display:flex;align-items:center;gap:20px;min-height:62px;padding:10px 0;border-top:1px solid var(--line)}}.setting:first-of-type{{border-top:0}}.setting>span:first-child{{flex:1;min-width:0}}strong,small{{display:block}}small{{margin-top:2px;color:var(--muted)}}.model-row{{gap:12px}}.model-row input{{width:min(280px,38%)}}.model-row button{{flex:none}}button:disabled{{opacity:.6;cursor:default}}
 .field-row input,.textarea-row textarea{{width:min(440px,52%);padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text);font:inherit}}.textarea-row textarea{{resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}}
 .toggle-row input{{position:absolute;opacity:0;pointer-events:none}}.toggle{{position:relative;width:42px;height:24px;flex:none;border-radius:99px;background:#484f58;transition:.15s}}.toggle:after{{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:white;transition:.15s}}input:checked+.toggle{{background:var(--accent)}}input:checked+.toggle:after{{transform:translateX(18px)}}input:focus-visible+.toggle,.field-row input:focus,.textarea-row textarea:focus{{outline:2px solid var(--accent);outline-offset:2px}}
-.actions{{position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:10px;margin-top:24px;padding:16px;background:color-mix(in srgb,var(--bg) 92%,transparent);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(12px)}}button{{padding:9px 15px;border:1px solid var(--line);border-radius:7px;background:transparent;color:var(--text);font:inherit;cursor:pointer}}button.primary{{border-color:var(--accent);background:var(--accent);font-weight:600}}.error{{margin-bottom:16px;padding:12px;border:1px solid var(--danger);border-radius:8px;color:#ffb3ad}}
+.actions{{position:sticky;bottom:0;display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:24px;padding:16px;background:color-mix(in srgb,var(--bg) 92%,transparent);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(12px)}}.save-status{{margin-right:auto;color:var(--muted)}}.save-status.error-state{{color:#ffb3ad}}button{{padding:9px 15px;border:1px solid var(--line);border-radius:7px;background:transparent;color:var(--text);font:inherit;cursor:pointer}}button.primary{{border-color:var(--accent);background:var(--accent);font-weight:600}}.error{{margin-bottom:16px;padding:12px;border:1px solid var(--danger);border-radius:8px;color:#ffb3ad}}
 .pack-picker{{margin:12px 0;padding:14px;border:1px solid var(--line);border-radius:10px;min-width:0}}.pack-picker legend{{font-weight:600;padding:0 6px}}.pack-picker p{{margin:0 0 12px;color:var(--muted)}}.pack-toolbar{{display:flex;align-items:center;gap:12px;margin-bottom:12px}}.pack-toolbar input{{width:100%;min-width:0;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font:inherit}}.pack-toolbar output{{white-space:nowrap;color:var(--muted);font-size:12px}}.pack-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;max-height:320px;overflow:auto;padding:3px}}.pack-card{{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:var(--bg);transition:border-color .15s,background .15s}}.pack-card:has(input:checked){{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--bg))}}.pack-card:has(input:focus-visible){{outline:2px solid var(--accent);outline-offset:1px}}.pack-card input{{accent-color:var(--accent);width:16px;height:16px;flex:none}}.pack-card[hidden]{{display:none}}.pack-card strong{{font-size:13px}}.pack-card small{{font-size:12px}}
 @media(max-width:620px){{main{{width:min(100% - 20px,880px);margin-top:20px}}.field-row,.textarea-row{{align-items:flex-start;flex-direction:column;gap:8px}}.field-row input,.textarea-row textarea{{width:100%}}}}
-</style></head><body><main><header><h1>SCM Toolkit Setup</h1><p>Configure locally, save to global Git config, then return to the terminal. No data leaves this computer.</p></header>
+</style></head><body><main><header><h1>SCM Toolkit Setup</h1><p>Configure locally. Changes save automatically to global Git config. No data leaves this computer.</p></header>
 {error_html}<form method="post" action="{action}">{''.join(sections)}<datalist id="ollama-models">{options}</datalist>
-<div class="actions"><button type="submit" name="action" value="cancel">Cancel</button><button class="primary" type="submit" name="action" value="save">{html.escape(action_label)}</button></div></form>
+<div class="actions"><output id="save-status" class="save-status" role="status" aria-live="polite">Saved</output><button class="primary" type="submit" name="action" value="save">{html.escape(action_label)}</button></div></form>
 <script>
+const settingsForm = document.querySelector('form');
+const saveStatus = document.getElementById('save-status');
+let autosaveTimer = null;
+let saveChain = Promise.resolve();
+
+async function persistSettings() {{
+  saveStatus.textContent = 'Saving…';
+  saveStatus.classList.remove('error-state');
+  const data = new FormData(settingsForm);
+  data.delete('pgpSecretKey');
+  data.delete('action');
+  try {{
+    const response = await fetch('/autosave' + location.search, {{
+      method: 'POST',
+      body: new URLSearchParams(data)
+    }});
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Unable to save settings.');
+    saveStatus.textContent = 'Saved';
+  }} catch (error) {{
+    saveStatus.textContent = 'Not saved: ' + error.message;
+    saveStatus.classList.add('error-state');
+  }}
+}}
+
+function queueAutosave() {{
+  saveChain = saveChain.then(persistSettings, persistSettings);
+  return saveChain;
+}}
+
+function scheduleAutosave(event) {{
+  const target = event.target;
+  if (!target?.name || target.name === 'pgpSecretKey' || target.name === 'action') return;
+  clearTimeout(autosaveTimer);
+  saveStatus.textContent = 'Unsaved changes';
+  saveStatus.classList.remove('error-state');
+  autosaveTimer = setTimeout(() => {{
+    autosaveTimer = null;
+    void queueAutosave();
+  }}, 500);
+}}
+
+if (settingsForm) {{
+  settingsForm.addEventListener('input', scheduleAutosave);
+  settingsForm.addEventListener('change', scheduleAutosave);
+  settingsForm.addEventListener('submit', async event => {{
+    event.preventDefault();
+    if (autosaveTimer) {{
+      clearTimeout(autosaveTimer);
+      autosaveTimer = null;
+      queueAutosave();
+    }}
+    await saveChain;
+    HTMLFormElement.prototype.submit.call(settingsForm);
+  }});
+}}
+
 const packSearch = document.getElementById('pack-search');
 const packCards = [...document.querySelectorAll('.pack-card')];
 function updatePacks() {{
@@ -514,10 +571,11 @@ def _result_page(saved: bool) -> str:
 
 
 def run_configurator(
-    current: dict[str, object], action_label: str = "Save configuration", *, open_browser: bool = True
+    current: dict[str, object], action_label: str = "Done", *, open_browser: bool = True
 ) -> bool:
     token = secrets.token_urlsafe(24)
     outcome: dict[str, bool | None] = {"saved": None}
+    session_settings = dict(current)
 
     class Handler(BaseHTTPRequestHandler):
         def _send(self, content: str, status: int = 200) -> None:
@@ -552,7 +610,7 @@ def run_configurator(
                 self._send_json({"models": names, "status": status})
                 return
             names, status = fetch_ollama_models()
-            self._send(render_form(current, names, status, token, action_label))
+            self._send(render_form(session_settings, names, status, token, action_label))
 
         def do_POST(self) -> None:
             if not self._authorized():
@@ -590,6 +648,28 @@ def run_configurator(
                 except Exception:
                     self.wfile.write(b'{"error":"Download interrupted. Retry the download."}\n')
                 return
+            if urllib.parse.urlsplit(self.path).path == "/autosave":
+                parsed = {}
+                try:
+                    parsed = parse_submission(values)
+                    validate_models(parsed)
+                    save_settings(parsed)
+                    sync_codex_instructions(
+                        str(parsed["chatgptCustomInstructions"]),
+                        bool(parsed["chatgptWebCodexCoauthor"]),
+                    )
+                except (RuntimeError, ValueError) as error:
+                    self._send_json({"saved": False, "error": str(error)}, 400)
+                    return
+                session_settings.update(parsed)
+                if not open_browser:
+                    print(json.dumps({"workspaceSearch": {
+                        "embeddingModel": parsed["workspaceSearchEmbeddingModel"],
+                        "chatModel": parsed["workspaceSearchChatModel"],
+                        "askOllama": parsed["workspaceSearchAskOllama"],
+                    }}), flush=True)
+                self._send_json({"saved": True})
+                return
             if values.get("action", [""])[0] == "cancel":
                 outcome["saved"] = False
                 self._send(_result_page(False))
@@ -607,10 +687,11 @@ def run_configurator(
                 import_pgp_secret_key(values.get("pgpSecretKey", [""])[0])
             except (RuntimeError, ValueError) as error:
                 names, status = fetch_ollama_models()
-                submitted = dict(current)
+                submitted = dict(session_settings)
                 submitted.update(parsed)
                 self._send(render_form(submitted, names, status, token, action_label, str(error)), 400)
                 return
+            session_settings.update(parsed)
             outcome["saved"] = True
             if not open_browser:
                 print(json.dumps({"workspaceSearch": {
