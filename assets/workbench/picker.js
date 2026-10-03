@@ -571,7 +571,6 @@ function scmToolkitCreateControls(widget, observe, commands, notifications, conf
                 currentRepositoryUri,
                 { branch, remote: settings.remote }
             );
-            if (published) notifications.info(`Published ${branch} to ${settings.remote}.`);
             return Boolean(published);
         } catch (error) {
             notifications.error(error);

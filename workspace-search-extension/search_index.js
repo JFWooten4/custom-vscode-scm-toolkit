@@ -24,6 +24,8 @@ class SearchIndex {
     this.embeddingWarning = '';
     this.embeddingAvailable = true;
     this.persistTimer = undefined;
+    this.loadPromise = undefined;
+    this.refreshPromise = undefined;
   }
 
   get storageUri() {
@@ -32,14 +34,24 @@ class SearchIndex {
 
   async load() {
     if (this.loaded) return;
-    this.loaded = true;
+    if (this.loadPromise) return this.loadPromise;
+    const work = (async () => {
+      try {
+        const raw = await vscode.workspace.fs.readFile(this.storageUri);
+        const payload = JSON.parse(Buffer.from(raw).toString('utf8'));
+        if (payload.version !== INDEX_VERSION || payload.embeddingModel !== this.embeddingModel || !Array.isArray(payload.files)) return;
+        for (const file of payload.files) this.files.set(file.uri, file);
+      } catch {
+        // A missing or stale index starts clean.
+      } finally {
+        this.loaded = true;
+      }
+    })();
+    this.loadPromise = work;
     try {
-      const raw = await vscode.workspace.fs.readFile(this.storageUri);
-      const payload = JSON.parse(Buffer.from(raw).toString('utf8'));
-      if (payload.version !== INDEX_VERSION || payload.embeddingModel !== this.embeddingModel || !Array.isArray(payload.files)) return;
-      for (const file of payload.files) this.files.set(file.uri, file);
-    } catch {
-      // A missing or stale index starts clean.
+      return await work;
+    } finally {
+      if (this.loadPromise === work) this.loadPromise = undefined;
     }
   }
 
@@ -100,7 +112,18 @@ class SearchIndex {
     this.files.set(uri.toString(), { uri: uri.toString(), mtime: stat.mtime, size: stat.size, chunks: indexed });
   }
 
-  async refresh({ force = false, progress } = {}) {
+  async refresh(options = {}) {
+    if (this.refreshPromise) return this.refreshPromise;
+    const work = this.refreshNow(options);
+    this.refreshPromise = work;
+    try {
+      return await work;
+    } finally {
+      if (this.refreshPromise === work) this.refreshPromise = undefined;
+    }
+  }
+
+  async refreshNow({ force = false, progress } = {}) {
     await this.load();
     if (this.embeddingModel !== this.getSettings().embeddingModel) {
       this.files.clear();
@@ -136,7 +159,7 @@ class SearchIndex {
 
   async search(query, mode) {
     await this.load();
-    if (!this.files.size || this.dirty.size || this.embeddingModel !== this.getSettings().embeddingModel) await this.refresh();
+    if (!this.files.size || this.embeddingModel !== this.getSettings().embeddingModel) await this.refresh();
     const settings = this.getSettings();
     const selectedMode = mode || settings.mode;
     let queryVector = null;
@@ -170,6 +193,10 @@ class SearchIndex {
       }
     }
     scored.sort((a, b) => b.score - a.score);
+    if (this.dirty.size) void this.refresh().then(() => {
+      if (this.dirty.size) return this.refresh();
+      return undefined;
+    }).catch(() => {});
     return { results: scored.slice(0, settings.resultLimit), warning: this.embeddingWarning, mode: selectedMode };
   }
 }
