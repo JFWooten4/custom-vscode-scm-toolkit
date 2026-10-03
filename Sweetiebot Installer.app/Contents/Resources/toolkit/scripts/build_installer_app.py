@@ -27,11 +27,11 @@ def build(destination: Path) -> None:
             ("scripts", {".py", ".json"}),
             ("assets/workbench", {".js", ".css"}),
             ("assets/codex", {".js", ".css"}),
-            ("workspace-search-extension", {".js", ".json", ".svg", ".md"}),
+            ("workspace-search-extension", {".js", ".json"}),
         ):
-            for source in (ROOT / directory).rglob("*"):
+            for source in (ROOT / directory).iterdir():
                 if source.is_file() and source.suffix in suffixes:
-                    target = payload / directory / source.relative_to(ROOT / directory)
+                    target = payload / directory / source.name
                     target.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(source, target)
         info_path = app / "Contents/Info.plist"

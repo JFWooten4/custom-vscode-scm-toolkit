@@ -66,7 +66,7 @@
 		</data>
 		<key>Resources/toolkit/scripts/ai_commit.py</key>
 		<data>
-		OVsNVkNoU38U5jZRTGu3cZ1OiT0=
+		JA+LtukIkvy3PzAlI8CMld2N6Bk=
 		</data>
 		<key>Resources/toolkit/scripts/branch_name_packs.json</key>
 		<data>
@@ -78,7 +78,7 @@
 		</data>
 		<key>Resources/toolkit/scripts/build_installer_app.py</key>
 		<data>
-		kIzgKHza3htX59QPKJsbXmhAKxc=
+		XgB24ks9FlDxhkPUT43MSWiCehQ=
 		</data>
 		<key>Resources/toolkit/scripts/chatgpt_integration.py</key>
 		<data>
@@ -102,19 +102,15 @@
 		</data>
 		<key>Resources/toolkit/scripts/configurator.py</key>
 		<data>
-		kJKEfqMVo/m+VuTo/wKbglb7Pjs=
+		lxXx95tcD3Vszf8StHTWLhQv8LI=
 		</data>
 		<key>Resources/toolkit/scripts/configure.py</key>
 		<data>
 		k4Ov7Ty8ePH2srT8GSorvqw5lJs=
 		</data>
-		<key>Resources/toolkit/scripts/github_pr.py</key>
-		<data>
-		TPpmm0dogPaedO04KOPlo3FqXCA=
-		</data>
 		<key>Resources/toolkit/scripts/install.py</key>
 		<data>
-		e/E9+hWU9Ip/iV6rWevMVnKHZnU=
+		nAw8vjalCTs5Hd05m86WqqD4Tu8=
 		</data>
 		<key>Resources/toolkit/scripts/local_codex_commit.py</key>
 		<data>
@@ -124,17 +120,17 @@
 		<data>
 		igRXx3tAcv5NLw9BB3pQNrDhjNA=
 		</data>
-		<key>Resources/toolkit/scripts/prune_merged_branches.py</key>
+		<key>Resources/toolkit/scripts/post_commit_spellcheck.py</key>
 		<data>
-		SVZKY5w6diX57Jf4U+YonAL2u/c=
+		L7X1DeZuO1/lDm/zkGyETrvUASs=
 		</data>
 		<key>Resources/toolkit/scripts/toolkit_settings.py</key>
 		<data>
-		Oyx2FMwPt7gV7FpU7P7Yn34Fqk8=
+		o5f3iST8Yf9TGsPtTAzAIIoWYqM=
 		</data>
 		<key>Resources/toolkit/scripts/workspace_search.py</key>
 		<data>
-		pxQ4kje5Pbo2nHJ8OXguVjfYFSY=
+		A2GrNBnaf4SkIXYqhPoLhq8Vkvs=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/THIRD_PARTY_NOTICES.md</key>
 		<data>
@@ -143,10 +139,6 @@
 		<key>Resources/toolkit/workspace-search-extension/branch_actions.js</key>
 		<data>
 		F76SzoIyK9nL5hRMWW4WGCwG8xM=
-		</data>
-		<key>Resources/toolkit/workspace-search-extension/branch_maintenance.js</key>
-		<data>
-		db01eUP0wwh/KlVmq+JWIiKUVCg=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/codex_commit.js</key>
 		<data>
@@ -158,7 +150,7 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/extension.js</key>
 		<data>
-		AY4V/2usVxR1Qzu3h3GqohohbhU=
+		xUHLx3VVTogTLGlQCEFC9mVJpDM=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/extract.js</key>
 		<data>
@@ -174,7 +166,7 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/package.json</key>
 		<data>
-		4k4aPpGUykcVVzMVJe6vc0MzCLc=
+		pnn4GFJskuzDfj9koIIJ01GMZaM=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/pull_request.js</key>
 		<data>
@@ -360,11 +352,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			OVsNVkNoU38U5jZRTGu3cZ1OiT0=
+			JA+LtukIkvy3PzAlI8CMld2N6Bk=
 			</data>
 			<key>hash2</key>
 			<data>
-			paYDRh8tpZ3+4Q3+0t6IlQfIOX/+IaQooBqX8oxIvA8=
+			pYfEUyBtw3mcLpFKu05lXbBoukMn2A3Svo0S+g8248U=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/branch_name_packs.json</key>
@@ -393,11 +385,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			kIzgKHza3htX59QPKJsbXmhAKxc=
+			XgB24ks9FlDxhkPUT43MSWiCehQ=
 			</data>
 			<key>hash2</key>
 			<data>
-			K40zhLJiJOmlJUZUtPZzRItTC6IJLOk5J0XmaTsVTNg=
+			NkRAEXWcvxlYytTmCeRKsCSR9mMJegxoZLPqz/c7UxQ=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/chatgpt_integration.py</key>
@@ -459,11 +451,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			kJKEfqMVo/m+VuTo/wKbglb7Pjs=
+			lxXx95tcD3Vszf8StHTWLhQv8LI=
 			</data>
 			<key>hash2</key>
 			<data>
-			jb7t/SZ1nd/fAOsmxPacKXkjubFEMHSnujNI3INHhFs=
+			ybaarZ4XfVqE4zt574M/J4/YEApJ+hayCYgKHcLhKww=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/configure.py</key>
@@ -477,26 +469,15 @@
 			SicA5p7lCrzWlG1hlP+J3AcrUX93KC313kYuxYSox9I=
 			</data>
 		</dict>
-		<key>Resources/toolkit/scripts/github_pr.py</key>
-		<dict>
-			<key>hash</key>
-			<data>
-			TPpmm0dogPaedO04KOPlo3FqXCA=
-			</data>
-			<key>hash2</key>
-			<data>
-			z+HuyFLMfLvPfjbL4L6IKhp/6o7/mI1ebVQ9LavO12Q=
-			</data>
-		</dict>
 		<key>Resources/toolkit/scripts/install.py</key>
 		<dict>
 			<key>hash</key>
 			<data>
-			e/E9+hWU9Ip/iV6rWevMVnKHZnU=
+			nAw8vjalCTs5Hd05m86WqqD4Tu8=
 			</data>
 			<key>hash2</key>
 			<data>
-			YhPWyHxL2HZsRSrvRBjv8iO8gdDnOY1dmF1s60hsE7E=
+			iGQ8CfLHkWURP0DJir0v5a5zF+pkE8WmM8eKHgakRhc=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/local_codex_commit.py</key>
@@ -521,37 +502,37 @@
 			Z5oxEuA04fnlCsXsxdW5H9U0rkaOqKfXanv+MZBpFSI=
 			</data>
 		</dict>
-		<key>Resources/toolkit/scripts/prune_merged_branches.py</key>
+		<key>Resources/toolkit/scripts/post_commit_spellcheck.py</key>
 		<dict>
 			<key>hash</key>
 			<data>
-			SVZKY5w6diX57Jf4U+YonAL2u/c=
+			L7X1DeZuO1/lDm/zkGyETrvUASs=
 			</data>
 			<key>hash2</key>
 			<data>
-			aFpKlQnwhoNnkH5Vdxr5jjagZxfwc05CJeCiopyO8fo=
+			1U8SXV9b0Gy0AVOjNaoXVgRFocz6GgI24554+Hby8nY=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/toolkit_settings.py</key>
 		<dict>
 			<key>hash</key>
 			<data>
-			Oyx2FMwPt7gV7FpU7P7Yn34Fqk8=
+			o5f3iST8Yf9TGsPtTAzAIIoWYqM=
 			</data>
 			<key>hash2</key>
 			<data>
-			2BuIqhbAG9nXX6Vxx84wHdkUY3p96gPxEg67J4EpJ4U=
+			/PckIbn8wev/044dPPaSl5S2ZOijgHNtVrA67cEuy0E=
 			</data>
 		</dict>
 		<key>Resources/toolkit/scripts/workspace_search.py</key>
 		<dict>
 			<key>hash</key>
 			<data>
-			pxQ4kje5Pbo2nHJ8OXguVjfYFSY=
+			A2GrNBnaf4SkIXYqhPoLhq8Vkvs=
 			</data>
 			<key>hash2</key>
 			<data>
-			qcxTeB1W10EVAYIik/J9G1ht/MeKhB5/SL2hrxkLEiA=
+			OxjSFIzpMQcGdaXPnGugN9IZ0Rn51ePRiWdg86WqN4U=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/THIRD_PARTY_NOTICES.md</key>
@@ -574,17 +555,6 @@
 			<key>hash2</key>
 			<data>
 			pxsryBzFR8AMKGlq5I2FpSsEPGlcx5VXp0bGeh6qGVI=
-			</data>
-		</dict>
-		<key>Resources/toolkit/workspace-search-extension/branch_maintenance.js</key>
-		<dict>
-			<key>hash</key>
-			<data>
-			db01eUP0wwh/KlVmq+JWIiKUVCg=
-			</data>
-			<key>hash2</key>
-			<data>
-			0+lu923l2Ap7ffvTxCAY89X0khUca3iYE+cl6ZpZ86M=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/codex_commit.js</key>
@@ -613,11 +583,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			AY4V/2usVxR1Qzu3h3GqohohbhU=
+			xUHLx3VVTogTLGlQCEFC9mVJpDM=
 			</data>
 			<key>hash2</key>
 			<data>
-			zeBc65jqyQ2RENYeAyvSBbztpdebbyNnqIv1vBDKda4=
+			lxD6yIPZpUOysbsN1sAHRT/laT5/0BSSQ4W1laMbgXw=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/extract.js</key>
@@ -657,11 +627,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			4k4aPpGUykcVVzMVJe6vc0MzCLc=
+			pnn4GFJskuzDfj9koIIJ01GMZaM=
 			</data>
 			<key>hash2</key>
 			<data>
-			0XyB+aPtlkUZgIjERfv6x9ozvxOPMeX38HTpURYxhow=
+			qjNRCcPAi6iTsubS8XdK4VY8/uoStSw67XtW9nysGpQ=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/pull_request.js</key>

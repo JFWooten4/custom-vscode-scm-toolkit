@@ -1,6 +1,8 @@
 import importlib.util
 from pathlib import Path
 import sys
+from types import SimpleNamespace
+from contextlib import ExitStack
 import unittest
 from unittest.mock import patch
 
@@ -85,6 +87,32 @@ class NewlineRoutingTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "exec"):
                 ai_commit.main()
         self.assertEqual(calls, ["normalize", "diff"])
+
+
+class PostCommitRoutingTests(unittest.TestCase):
+    def test_job_only_follows_a_successful_new_automatic_commit(self):
+        for returncode, dirty, new_head in [(0, False, "new"), (1, False, "old"), (0, True, "new"), (0, False, "old")]:
+            with self.subTest(returncode=returncode, dirty=dirty, new_head=new_head), ExitStack() as stack:
+                worker = SimpleNamespace(
+                    has_unstaged_changes=lambda args: dirty,
+                    staged_markdown_paths=lambda args: ["note.md"],
+                    head_sha=lambda args: "old",
+                )
+                worker.head_sha = stack.enter_context(patch.object(worker, "head_sha", create=True, side_effect=["old", new_head]))
+                spawn = stack.enter_context(patch.object(worker, "spawn_post_commit", create=True))
+                stack.enter_context(patch.object(sys, "argv", ["wrapper", "commit"]))
+                for name, value in [
+                    ("manual_spellcheck_enabled", False), ("feature_enabled", True),
+                    ("normalize_staged_final_newlines", []), ("staged_diff", ("1 file", "diff", ["note.md"])),
+                    ("generate_message", ("Title", "")), ("should_add_default_branch_description", False),
+                    ("git_config_bool", True), ("load_post_commit_spellcheck", worker),
+                ]:
+                    stack.enter_context(patch.object(ai_commit, name, return_value=value))
+                stack.enter_context(patch.object(ai_commit.subprocess, "run", return_value=SimpleNamespace(returncode=returncode)))
+                with self.assertRaises(SystemExit) as exit_result:
+                    ai_commit.main()
+                self.assertEqual(exit_result.exception.code, returncode)
+                self.assertEqual(spawn.called, returncode == 0 and not dirty and new_head != "old")
 
 
 class ConfigurationTests(unittest.TestCase):

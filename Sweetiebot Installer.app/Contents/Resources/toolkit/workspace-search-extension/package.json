@@ -133,12 +133,6 @@
           "type": "string",
           "default": "**/{.git,node_modules,dist,build,out,target,.venv,venv,__pycache__,coverage}/**",
           "description": "Glob excluded from workspace indexing."
-        },
-        "scmToolkit.openPanelOnStartup": {
-          "type": "boolean",
-          "default": true,
-          "scope": "window",
-          "description": "Open Source Control when each window starts, using its configured panel location instead of restoring a hidden Output tab."
         }
       }
     }

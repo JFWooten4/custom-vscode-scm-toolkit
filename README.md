@@ -630,3 +630,18 @@ python3 scripts/prune_merged_branches.py --repo /path/to/repository --force --dr
 ```
 
 The installer also applies reversible fixes to supported GitHub Pull Requests extension builds. It suppresses the automatic cleanup prompt when the repository already deletes branches on merge, while retaining the manual Delete Branch action and explicitly configured native automatic deletion. The PR-number link keeps its existing click handler as its sole opening path. Rerun the installer after updating that extension; unsupported assets are skipped with a warning.
+
+
+Automatic staged commits remove trailing spaces and tabs from added or changed text lines and normalize the final newline. Existing untouched lines, LF/CRLF style, file modes, cached attribute exclusions, and unstaged edits are preserved. Explicit-message commits keep their existing behavior.
+
+### Post-commit Markdown spellcheck
+
+Enable **Post-commit Markdown spellcheck** in SweetieBot settings under Ollama, or run:
+
+```sh
+git config --global scm-toolkit.post-commit-spellcheck true
+```
+
+This toggle is off by default. After a successful automatic staged commit, the local Ollama model reviews changed Markdown prose and proposes conservative spelling, grammar, and ASCII punctuation corrections. Fenced code, inline code, URLs, Markdown prefixes, and line endings are protected. Unavailable models and unchanged text produce no dialog.
+
+Proposals appear as unstaged edits in Source Control. Choose **Keep edits** to review them or **Discard** to remove untouched proposals. The original commit and index remain unchanged. The job skips repositories with local work or new staged changes, a changed HEAD, and corrections to files edited while it runs. Explicit-message commits retain their existing behavior.
