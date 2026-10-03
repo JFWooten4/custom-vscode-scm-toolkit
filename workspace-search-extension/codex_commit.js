@@ -42,8 +42,11 @@ function registerCodexCommitCommand(vscode, extensionContext) {
     if (!repository.state.workingTreeChanges.length && !repository.state.untrackedChanges.length) {
       throw new Error('There are no changes to commit.');
     }
-    // The public Git API converts paths to file URIs, so use the absolute root.
-    await repository.add([repository.rootUri.fsPath]);
+    // The Git API makes paths relative to the root, which becomes an invalid
+    // empty pathspec when the root itself is passed. Stage the changed files.
+    const paths = [...repository.state.workingTreeChanges, ...repository.state.untrackedChanges]
+      .map(change => change.uri.fsPath);
+    await repository.add([...new Set(paths)]);
     await repository.status();
     if (!repository.state.indexChanges.length) throw new Error('No changes were staged.');
   }));

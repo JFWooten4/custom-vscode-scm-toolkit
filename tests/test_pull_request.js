@@ -14,6 +14,10 @@ async function run() {
   const prompt = pullRequestPrompt({ branch: 'draft', repositoryPath: '/repo with spaces', repositoryUrl: 'https://github.com/owner/repo', base: 'main' });
   assert(prompt.includes('in repository https://github.com/owner/repo, against'));
   assert(!prompt.includes('/repo with spaces'));
+  for (const repositoryUrl of [undefined, null, '', '   ', 'invalid', 'https://gitlab.com/owner/repo']) {
+    const fallback = pullRequestPrompt({ branch: 'draft', repositoryPath: '/repo with spaces', repositoryUrl, base: 'main' });
+    assert(fallback.includes('in repository "/repo with spaces", against'));
+  }
   assert.match(prompt, /natural, human-readable paragraphs/);
   assert.match(prompt, /code, prose, research, or brainstorming/);
   assert.match(prompt, /intent and meaning/);
@@ -62,6 +66,13 @@ async function run() {
   repository.state.HEAD.name = 'main';
   await assert.rejects(callback(uri, { branch: 'main', base: 'main' }), /other than/);
   assert.equal(calls.length, 1, 'Unavailable or changed selections never open a chat');
+  repository.state.HEAD.name = 'draft';
+  for (const remote of [undefined, { name: 'origin', fetchUrl: '' }, { name: 'origin', fetchUrl: null }, { name: 'origin', fetchUrl: 'invalid' }]) {
+    repository.state.remotes = remote ? [remote] : [];
+    await callback(uri, { branch: 'draft', remote: 'origin', base: 'main' });
+    const fallback = new URL(calls.at(-1).options.url).searchParams.get('q');
+    assert(fallback.includes('in repository "/selected repository", against'));
+  }
   assert(require('../workspace-search-extension/package.json').activationEvents.includes('onCommand:scmToolkit.openPullRequestChat'));
 
   const source = fs.readFileSync(require.resolve('../assets/workbench/picker.js'), 'utf8');

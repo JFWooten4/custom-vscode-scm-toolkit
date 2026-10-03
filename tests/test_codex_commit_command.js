@@ -13,11 +13,13 @@ async function run() {
   let additions = 0;
   const repository = {
     rootUri: { fsPath: '/selected' },
-    state: { indexChanges: ['staged'], workingTreeChanges: ['unstaged'], untrackedChanges: ['new'], mergeChanges: [] },
+    state: { indexChanges: ['staged'], workingTreeChanges: [{ uri: { fsPath: '/selected/edited file' } }, { uri: { fsPath: '/selected/deleted file' } }], untrackedChanges: [{ uri: { fsPath: '/selected/new file' } }], mergeChanges: [] },
     async status() {},
     async add(paths) {
-      assert.equal(paths.length, 1);
-      assert.equal(paths[0], this.rootUri.fsPath, 'Git API staging receives the absolute selected repository root');
+      assert.deepEqual(Array.from(paths), ['/selected/edited file', '/selected/deleted file', '/selected/new file']);
+      for (const file of paths) {
+        assert.notEqual(path.relative(this.rootUri.fsPath, file), '', 'Git receives nonempty relative pathspecs');
+      }
       additions++;
       this.state.indexChanges = ['staged'];
     }

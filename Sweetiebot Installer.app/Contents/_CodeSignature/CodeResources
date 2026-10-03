@@ -138,7 +138,7 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/codex_commit.js</key>
 		<data>
-		cDwd72iALmLplnNBt+INioGJgN4=
+		q1QcELxurbyBPEU38sdMbRL6M9E=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/core.js</key>
 		<data>
@@ -166,7 +166,7 @@
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/pull_request.js</key>
 		<data>
-		bdKU4gZu8ncS0Rpj/xyiOcN8qlI=
+		lV5ZwHgDBRDxZP1OKXpdRbkXzn8=
 		</data>
 		<key>Resources/toolkit/workspace-search-extension/search_index.js</key>
 		<data>
@@ -546,11 +546,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			cDwd72iALmLplnNBt+INioGJgN4=
+			q1QcELxurbyBPEU38sdMbRL6M9E=
 			</data>
 			<key>hash2</key>
 			<data>
-			esTdySbxM2Xz6fhocale7jttvTnXBemHDmb6yF+ModQ=
+			8SzUilz57JgaJztiiLOl9Hrz9ubkB9rdmRIjRTQi8hc=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/core.js</key>
@@ -623,11 +623,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			bdKU4gZu8ncS0Rpj/xyiOcN8qlI=
+			lV5ZwHgDBRDxZP1OKXpdRbkXzn8=
 			</data>
 			<key>hash2</key>
 			<data>
-			6vk6dO19/mX5e+jZf8ULpWaQ8YrUoeFZ3BSntpU0YdA=
+			FxBwEx736/MxM0oSQs0lcbUZykwCN5j2WV3xZj9PcZo=
 			</data>
 		</dict>
 		<key>Resources/toolkit/workspace-search-extension/search_index.js</key>
