@@ -1,6 +1,6 @@
 'use strict';
 
-const PONY_FOOTER = '<p align="center"><a href="https://github.com/pony-factor/kefania"><img src="https://github.com/user-attachments/assets/2d5481b8-54dc-48c6-87e5-b67927d630bd" alt="This PR description was written automatically." width="160"></a></p>';
+const PONY_FOOTER = '<p align="center"><a href="https://github.com/pony-factor/kefania"><img src="https://github.com/user-attachments/assets/2d5481b8-54dc-48c6-87e5-b67927d630bd" alt="This PR description was written automatically."></a></p>';
 
 function githubRepository(remoteUrl) {
   const match = String(remoteUrl ?? '').trim().match(
