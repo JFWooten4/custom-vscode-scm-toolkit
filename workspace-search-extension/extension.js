@@ -12,7 +12,7 @@ const { registerBranchMaintenance } = require('./branch_maintenance');
 const VIEW_ID = 'scmToolkit.workspaceSearch';
 const CONFIG_ROOT = 'scmToolkit.workspaceSearch';
 const SETTINGS_BROWSER_COMMAND = 'workbench.action.browser.open';
-const AUTO_REINDEX_INTERVAL_MS = 2 * 60 * 1000;
+const INDEX_SYNC_INTERVAL_MS = 2 * 60 * 1000;
 let configuratorProcess;
 let configuratorURL;
 
@@ -222,17 +222,21 @@ async function activate(context) {
     watcher.onDidDelete(uri => index.remove(uri))
   );
 
-  let autoReindexRunning = false;
-  const autoReindexTimer = setInterval(() => {
-    if (autoReindexRunning) return;
-    autoReindexRunning = true;
-    void index.refresh({ force: true }).catch(error => {
-      console.error('Workspace Search automatic reindex failed:', error);
+  void index.load().then(() => index.refresh()).catch(error => {
+    console.error('Workspace Search startup index sync failed:', error);
+  });
+
+  let indexSyncRunning = false;
+  const indexSyncTimer = setInterval(() => {
+    if (indexSyncRunning) return;
+    indexSyncRunning = true;
+    void index.refresh().catch(error => {
+      console.error('Workspace Search automatic index sync failed:', error);
     }).finally(() => {
-      autoReindexRunning = false;
+      indexSyncRunning = false;
     });
-  }, AUTO_REINDEX_INTERVAL_MS);
-  context.subscriptions.push({ dispose: () => clearInterval(autoReindexTimer) });
+  }, INDEX_SYNC_INTERVAL_MS);
+  context.subscriptions.push({ dispose: () => clearInterval(indexSyncTimer) });
 
   context.subscriptions.push(vscode.commands.registerCommand('scmToolkit.workspaceSearch.clearIndex', async () => {
     await index.clear();
